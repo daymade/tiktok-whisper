@@ -5,6 +5,8 @@
 ## About tiktok-whisper-video-to-text-go
 使用 openai 的 whisper 或者本地 coreML 的 whisper.cpp 批量将视频转换为文字
 
+tiktok-whisper 工具可以使用OpenAI的Whisper或本地coreML的Whisper.cpp批量转换视频为文本。它的功能包括将拷贝导出为Excel，将转换结果保存为SQLite或PostgreSQL，视频时长统计，以及关键词搜索来定位视频。
+
 ## Feature
 
 - [x] 批量转换视频为文字
