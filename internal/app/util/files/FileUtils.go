@@ -49,17 +49,22 @@ func CheckAndCreateMP3Directory(mp3Dir string) {
 	}
 }
 
-func GetAllMP4Files(inputDir string) []model.FileInfo {
-	files, err := ioutil.ReadDir(inputDir)
+func GetAllFiles(directory string, extension string) ([]model.FileInfo, error) {
+	absoluteDir, err := GetAbsolutePath(directory)
 	if err != nil {
-		log.Fatalf("Failed to read input directory: %v\n", err)
+		return nil, err
+	}
+
+	files, err := ioutil.ReadDir(absoluteDir)
+	if err != nil {
+		log.Fatalf("Failed to read input directory: %v, err: %v\n", directory, err)
 	}
 
 	var fileInfos []model.FileInfo
 	for _, file := range files {
-		if strings.ToLower(filepath.Ext(file.Name())) == ".mp4" {
+		if strings.ToLower(filepath.Ext(file.Name())) == "."+strings.ToLower(extension) {
 			fileInfos = append(fileInfos, model.FileInfo{
-				FullPath: filepath.Join(inputDir, file.Name()),
+				FullPath: filepath.Join(absoluteDir, file.Name()),
 				ModTime:  file.ModTime(),
 				Name:     file.Name(),
 			})
@@ -70,7 +75,7 @@ func GetAllMP4Files(inputDir string) []model.FileInfo {
 		return fileInfos[i].ModTime.Before(fileInfos[j].ModTime)
 	})
 
-	return fileInfos
+	return fileInfos, nil
 }
 
 // ReadOutputFile reads the specified output file and returns its text content.
