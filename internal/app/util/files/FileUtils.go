@@ -17,6 +17,21 @@ func GetProjectRoot() (string, error) {
 	return findGoModRoot(filename)
 }
 
+// GetAbsolutePath returns the absolute path based on the input path.
+// If the input path is relative, it returns the path relative to the current working directory.
+// If the input path is absolute, it returns the path as is.
+func GetAbsolutePath(path string) (string, error) {
+	if filepath.IsAbs(path) {
+		return path, nil
+	} else {
+		wd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(wd, path), nil
+	}
+}
+
 func GetUserMp3Dir(userNickname string) string {
 	root, err := GetProjectRoot()
 	if err != nil {

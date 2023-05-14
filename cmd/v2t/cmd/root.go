@@ -5,18 +5,22 @@ import (
 	"os"
 	"tiktok-whisper/cmd/v2t/cmd/config"
 	"tiktok-whisper/cmd/v2t/cmd/convert"
+	"tiktok-whisper/cmd/v2t/cmd/download"
 	"tiktok-whisper/cmd/v2t/cmd/export"
 	"tiktok-whisper/cmd/v2t/cmd/version"
 )
 
+var Verbose bool
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "cmd",
+	Use:   "v2t",
 	Short: "An application for batch converting video to text, supports tiktok and other video sites",
 	Long: `An application for batch converting video to text, supports tiktok and other video sites or local video.
 - First download all videos to local machine
 - Call v2t to batch process the videos with local folder path
 - The processed records will be saved to sqlite.`,
+	TraverseChildren: true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -33,6 +37,9 @@ func init() {
 	rootCmd.AddCommand(config.Cmd)
 	rootCmd.AddCommand(convert.Cmd)
 	rootCmd.AddCommand(version.Cmd)
+	rootCmd.AddCommand(download.Cmd)
+
+	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
