@@ -2,6 +2,7 @@ package converter
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 	"log"
 	"path/filepath"
 	"strings"
@@ -29,14 +30,47 @@ func (c *Converter) Close() error {
 	return c.db.Close()
 }
 
-// Do Enter the directory and the number of conversions as parameters
-func (c *Converter) Do(userNickname string, inputDir string, convertCount int) {
+func (c *Converter) ConvertAudioDir(directory string, extension string) error {
+	absDir, err := files.GetAbsolutePath(directory)
+	if err != nil {
+		return err
+	}
+
+	// Get all files with specified extension in directory and sort them by old and new
+	fileInfos, err := files.GetAllFiles(absDir, extension)
+	if err != nil {
+		return err
+	}
+
+	files := lo.Map(fileInfos, func(f model.FileInfo, i int) string {
+		return f.FullPath
+	})
+
+	return c.ConvertAudios(files)
+}
+
+func (c *Converter) ConvertAudios(files []string) error {
+	for _, file := range files {
+		transcription, err := c.transcriber.Transcript(file)
+		if err != nil {
+			return fmt.Errorf("Transcription error: %v\n", err)
+		}
+		fmt.Printf("%s Transcripted: %s\n", file, transcription)
+	}
+	return nil
+}
+
+// ConvertVideoDir Enter the directory and the number of conversions as parameters
+func (c *Converter) ConvertVideoDir(userNickname string, inputDir string, fileExtension string, convertCount int) {
 	// Check and create the data/mp3/userNickname subdirectory
 	convertedMp3Dir := files.GetUserMp3Dir(userNickname)
 	files.CheckAndCreateMP3Directory(convertedMp3Dir)
 
 	// Get all MP4 files in the input directory and sort them by old and new
-	fileInfos := files.GetAllMP4Files(inputDir)
+	fileInfos, err := files.GetAllFiles(inputDir, fileExtension)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	filesToProcess := c.filterUnProcessedFiles(fileInfos, convertCount)
 	for _, file := range filesToProcess {

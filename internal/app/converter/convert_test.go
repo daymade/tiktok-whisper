@@ -43,7 +43,10 @@ func TestDo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			converter.Do(tt.args.user, filepath.Join(projectRoot, tt.args.filePath), tt.args.convertCount)
+			converter.ConvertVideoDir(tt.args.user,
+				filepath.Join(projectRoot, tt.args.filePath),
+				"mp4",
+				tt.args.convertCount)
 		})
 	}
 }

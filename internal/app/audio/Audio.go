@@ -75,19 +75,25 @@ func ConvertTo16kHzWav(inputFilePath string) (string, error) {
 	return outputFilePath, nil
 }
 
-func convertTo16kHzWav(inputMp3Path, outputWavPath string) error {
-	if _, err := os.Stat(outputWavPath); os.IsNotExist(err) {
-		fmt.Printf("Processing file: %s\n", inputMp3Path)
-
-		// Convert MP3 to 16kHz WAV
-		cmd := exec.Command("ffmpeg", "-i", inputMp3Path, "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "2", outputWavPath)
-		err = cmd.Run()
-		if err != nil {
-			return fmt.Errorf("FFmpeg error: %v\n", err)
-		}
-		fmt.Printf("MP3 to 16kHz WAV conversion completed: '%s'\n", outputWavPath)
-	} else {
-		fmt.Printf("16kHz WAV file already exists for '%s', skipping conversion.\n", inputMp3Path)
+func convertTo16kHzWav(inputAudioFilePath, outputWavPath string) error {
+	if _, err := os.Stat(outputWavPath); !os.IsNotExist(err) {
+		fmt.Printf("16kHz WAV file already exists for '%s', skipping conversion.\n", inputAudioFilePath)
+		return nil
 	}
+
+	ext := filepath.Ext(inputAudioFilePath)
+	if ext != ".mp3" && ext != ".m4a" {
+		return fmt.Errorf("unsupported audio format: %s\n", ext)
+	}
+
+	fmt.Printf("Processing file: %s\n", inputAudioFilePath)
+
+	// Convert audio to 16kHz WAV
+	cmd := exec.Command("ffmpeg", "-i", inputAudioFilePath, "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "2", outputWavPath)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("FFmpeg error: %v\n", err)
+	}
+
+	fmt.Printf("Audio to 16kHz WAV conversion completed: '%s'\n", outputWavPath)
 	return nil
 }

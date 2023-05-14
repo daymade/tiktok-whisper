@@ -44,6 +44,18 @@ func TestLocalTranscriber_Transcript(t *testing.T) {
 			want:    "星巴克",
 			wantErr: false,
 		},
+		{
+			name: "large-m4a",
+			fields: fields{
+				binaryPath: "/Users/tiansheng/workspace/cpp/whisper.cpp/main",
+				modelPath:  "/Users/tiansheng/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin",
+			},
+			args: args{
+				inputFilePath: "/Users/tiansheng/workspace/go/tiktok-whisper/test/data/output.m4a",
+			},
+			want:    "大家好",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

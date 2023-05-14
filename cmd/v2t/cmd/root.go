@@ -33,13 +33,13 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.AddCommand(export.Cmd)
 	rootCmd.AddCommand(config.Cmd)
-	rootCmd.AddCommand(convert.Cmd)
-	rootCmd.AddCommand(version.Cmd)
 	rootCmd.AddCommand(download.Cmd)
+	rootCmd.AddCommand(convert.Cmd)
+	rootCmd.AddCommand(export.Cmd)
+	rootCmd.AddCommand(version.Cmd)
 
-	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "V", false, "verbose output")
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
