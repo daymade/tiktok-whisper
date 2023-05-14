@@ -25,6 +25,14 @@ go build -o v2t ./cmd/v2t/main.go
 ./v2t help
 ```
 
+windows
+```cmd
+cd tiktok-whisper
+go build -o v2t.exe .\cmd\v2t\main.go
+.\v2t.exe help
+```
+
+
 ## TODO
 - [x] Export copy as Excel
 - [x] Use whisper_cpp + coreML for local transcription
