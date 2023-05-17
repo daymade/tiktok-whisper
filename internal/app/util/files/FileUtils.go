@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -86,6 +87,30 @@ func ReadOutputFile(filePath string) (string, error) {
 	}
 
 	return strings.TrimSpace(string(content)), nil
+}
+
+func WriteToFile(content, filepath string) error {
+	// Ensure the parent directory exists
+	dir := path.Dir(filepath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0755) // use 0755 permissions for the created directories
+		if err != nil {
+			return err
+		}
+	}
+
+	file, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(content)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func findGoModRoot(path string) (string, error) {

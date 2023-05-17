@@ -6,6 +6,7 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
+	"sync"
 	"tiktok-whisper/internal/app/api"
 	"tiktok-whisper/internal/app/audio"
 	"tiktok-whisper/internal/app/model"
@@ -30,15 +31,22 @@ func (c *Converter) Close() error {
 	return c.db.Close()
 }
 
-func (c *Converter) ConvertAudioDir(directory string, extension string) error {
+// ConvertAudioDir converts audio files in a directory to text in parallel.
+// It takes the directory, the file extension of the audios, the output directory,
+// and the number of parallel conversions as parameters.
+func (c *Converter) ConvertAudioDir(directory string, extension string, outputDirectory string, parallel int) error {
 	absDir, err := files.GetAbsolutePath(directory)
 	if err != nil {
+		log.Printf("Error getting absolute path of directory %s: %v\n", directory, err)
 		return err
 	}
+
+	log.Printf("Starting to convert audio files in directory %s\n", absDir)
 
 	// Get all files with specified extension in directory and sort them by old and new
 	fileInfos, err := files.GetAllFiles(absDir, extension)
 	if err != nil {
+		log.Printf("Error getting all files in directory %s: %v\n", absDir, err)
 		return err
 	}
 
@@ -46,22 +54,67 @@ func (c *Converter) ConvertAudioDir(directory string, extension string) error {
 		return f.FullPath
 	})
 
-	return c.ConvertAudios(files)
-}
+	log.Printf("Found %d files to convert\n", len(files))
 
-func (c *Converter) ConvertAudios(files []string) error {
-	for _, file := range files {
-		transcription, err := c.transcriber.Transcript(file)
-		if err != nil {
-			return fmt.Errorf("Transcription error: %v\n", err)
-		}
-		fmt.Printf("%s Transcripted: %s\n", file, transcription)
+	err = c.ConvertAudios(files, outputDirectory, parallel)
+	if err != nil {
+		log.Printf("Error converting audio files: %v\n", err)
+		return err
 	}
+
+	log.Printf("Successfully converted all audio files\n")
+
 	return nil
 }
 
-// ConvertVideoDir Enter the directory and the number of conversions as parameters
-func (c *Converter) ConvertVideoDir(userNickname string, inputDir string, fileExtension string, convertCount int) {
+func (c *Converter) ConvertAudios(audioFiles []string, outputDirectory string, parallel int) error {
+	transcriptionDirectory, err := filepath.Abs(outputDirectory)
+	if err != nil {
+		return err
+	}
+
+	var wg sync.WaitGroup
+	sem := make(chan bool, parallel)
+
+	for _, file := range audioFiles {
+		wg.Add(1)
+		go func(file string) {
+			defer wg.Done()
+			sem <- true
+			c.processFile(file, transcriptionDirectory)
+			<-sem
+		}(file)
+	}
+	wg.Wait()
+	return nil
+}
+
+func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory string) {
+	log.Printf("Start to process %s\n", audioAbsPath)
+
+	transcription, err := c.transcriber.Transcript(audioAbsPath)
+	if err != nil {
+		log.Printf("Transcription error: %v\n", err)
+		return
+	}
+
+	fileName := filepath.Base(audioAbsPath)
+	fileNameWithoutExt := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	transcriptionFileName := fileNameWithoutExt + ".txt"
+	transcriptionFilepath := filepath.Join(transcriptionDirectory, transcriptionFileName)
+
+	err = files.WriteToFile(transcription, transcriptionFilepath)
+	if err != nil {
+		log.Printf("Error writing to audioAbsPath: %v\n", err)
+		return
+	}
+	log.Printf("Transcription saved to: %s\n", transcriptionFilepath)
+}
+
+// ConvertVideoDir converts videos in a directory to text in parallel.
+// It takes the user's nickname, the input directory, the file extension of the videos,
+// the maximum number of videos to convert, and the number of parallel conversions as parameters.
+func (c *Converter) ConvertVideoDir(userNickname string, inputDir string, fileExtension string, convertCount int, parallel int) {
 	// Check and create the data/mp3/userNickname subdirectory
 	convertedMp3Dir := files.GetUserMp3Dir(userNickname)
 	files.CheckAndCreateMP3Directory(convertedMp3Dir)
@@ -73,13 +126,26 @@ func (c *Converter) ConvertVideoDir(userNickname string, inputDir string, fileEx
 	}
 
 	filesToProcess := c.filterUnProcessedFiles(fileInfos, convertCount)
-	for _, file := range filesToProcess {
-		err := c.convertToText(userNickname, file)
 
-		if err != nil {
-			log.Fatalln(err)
-		}
+	var wg sync.WaitGroup
+	sem := make(chan bool, parallel)
+
+	for _, file := range filesToProcess {
+		wg.Add(1)
+		go func(file model.FileInfo) {
+			defer wg.Done()
+			sem <- true
+			err := c.convertToText(userNickname, file)
+			<-sem
+
+			if err != nil {
+				log.Printf("Error converting file %s: %v\n", file.Name, err)
+			} else {
+				log.Printf("Successfully converted file %s\n", file.Name)
+			}
+		}(file)
 	}
+	wg.Wait()
 }
 
 func (c *Converter) filterUnProcessedFiles(fileInfos []model.FileInfo, convertCount int) []model.FileInfo {

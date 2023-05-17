@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -220,30 +220,18 @@ func downloadFile(url string, filepath string) error {
 
 	// The local file doesn't exist or is different from the remote file,
 	// so we need to download the remote file
-
-	// Ensure the parent directory exists
-	dir := path.Dir(absFilePath)
-	if _, err = os.Stat(dir); os.IsNotExist(err) {
-		err = os.MkdirAll(dir, 0755) // use 0755 permissions for the created directories
-		if err != nil {
-			return err
-		}
-	}
-
-	out, err := os.Create(absFilePath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
 	resp, err = http.Get(url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	_, err = io.Copy(out, resp.Body)
-	return err
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return files.WriteToFile(string(body), absFilePath)
 }
 
 func calculateFileMD5(filepath string) (string, error) {
