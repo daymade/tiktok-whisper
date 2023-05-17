@@ -3,7 +3,9 @@ package whisper_cpp
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os/exec"
+	"strings"
 	"tiktok-whisper/internal/app/audio"
 	"tiktok-whisper/internal/app/util/files"
 )
@@ -24,18 +26,24 @@ func NewLocalTranscriber(binaryPath, modelPath string) *LocalTranscriber {
 
 // Transcript encapsulates native binary commands, takes the MP3 file path as input and returns the transcribed text and errors (if any).
 func (lt *LocalTranscriber) Transcript(inputFilePath string) (string, error) {
+	log.Printf("Starting transcription of file %s\n", inputFilePath)
+
 	// Check if the input file is a 16kHz WAV file
 	is16kHzWav, err := audio.Is16kHzWavFile(inputFilePath)
 	if err != nil {
+		log.Printf("Error checking if input file is a 16kHz WAV file: %v\n", err)
 		return "", fmt.Errorf("error checking input file: %v", err)
 	}
 
 	// Convert the input file to a 16kHz WAV file if necessary
 	if !is16kHzWav {
+		log.Printf("Input file is not a 16kHz WAV file, converting...\n")
 		inputFilePath, err = audio.ConvertTo16kHzWav(inputFilePath)
 		if err != nil {
+			log.Printf("Error converting input file to a 16kHz WAV file: %v\n", err)
 			return "", fmt.Errorf("error converting input file: %v", err)
 		}
+		log.Printf("Successfully converted input file to a 16kHz WAV file\n")
 	}
 
 	outputFile := "./1"
@@ -50,20 +58,28 @@ func (lt *LocalTranscriber) Transcript(inputFilePath string) (string, error) {
 		"-of", outputFile,
 	}
 
-	cmd := exec.Command(lt.binaryPath, args...)
+	command := exec.Command(lt.binaryPath, args...)
 	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	command.Stdout = &stdout
+	command.Stderr = &stderr
 
-	err = cmd.Run()
+	log.Printf("Running transcription command...\n command: %s %s", lt.binaryPath, strings.Join(args, " "))
+
+	err = command.Run()
 	if err != nil {
+		log.Printf("Error running transcription command: %v\n", err)
 		return "", fmt.Errorf("command execution error: %v, stderr: %s", err, stderr.String())
 	}
 
+	log.Printf("Successfully ran transcription command\n")
+
 	output, err := files.ReadOutputFile(outputFile + ".txt")
 	if err != nil {
+		log.Printf("Error reading output file: %v\n", err)
 		return "", fmt.Errorf("failed to read output file: %v", err)
 	}
+
+	log.Printf("Successfully read output file\n")
 
 	return output, nil
 }

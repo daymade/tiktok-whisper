@@ -8,10 +8,12 @@ import (
 
 var userNickname string
 var directory string
+var outputDirectory string
 var fileExtension string
 var video bool
 var audio bool
 var convertCount int
+var parallel int
 
 var inputFile string
 
@@ -19,9 +21,13 @@ func init() {
 	Cmd.Flags().StringVarP(&userNickname, "userNickname", "u", "",
 		"Which user owns the videos, this parameter affects the 'user' field when they are saved to the database")
 	Cmd.Flags().StringVarP(&directory, "directory", "d", "",
-		"Specifies the mp4 file directory, example: . /test/data/mp4")
+		"Specifies the mp4 file directory, example: ./test/data/mp4")
+	Cmd.Flags().StringVarP(&outputDirectory, "outputDirectory", "o", "./data/transcription",
+		"Specifies the transcriptions directory, example: ./test/data/transcription")
 	Cmd.Flags().IntVarP(&convertCount, "convertCount", "n", 1,
 		"How many files to convert from the directory this time")
+	Cmd.Flags().IntVarP(&parallel, "parallel", "p", 1,
+		"How many files to convert at the same time")
 
 	Cmd.Flags().StringVarP(&inputFile, "input", "i", "",
 		"Specifies the audio file to convert, example: . /test/data/test.mp3")
@@ -97,16 +103,17 @@ var Cmd = &cobra.Command{
 				directory,
 				fileExtension,
 				convertCount,
+				parallel,
 			)
 		} else if audio {
 			if directory != "" {
-				err := converter.ConvertAudioDir(directory, fileExtension)
+				err := converter.ConvertAudioDir(directory, fileExtension, outputDirectory, parallel)
 				if err != nil {
 					cmd.PrintErrf("ConvertAudioDir error: %v\n", err)
 					return
 				}
 			} else if inputFile != "" {
-				err := converter.ConvertAudios(strings.Split(inputFile, ","))
+				err := converter.ConvertAudios(strings.Split(inputFile, ","), outputDirectory, parallel)
 				if err != nil {
 					cmd.PrintErrf("ConvertAudios error: %v\n", err)
 					return
