@@ -137,3 +137,35 @@ func TestDownloadEpisode(t *testing.T) {
 		})
 	}
 }
+
+func Test_buildEpisodeFilePath(t *testing.T) {
+	type args struct {
+		dir           string
+		podcastName   string
+		episodeTitle  string
+		fileExtension string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "dir",
+			args: args{
+				dir:           "",
+				podcastName:   "虎言乱语",
+				episodeTitle:  "EP1",
+				fileExtension: ".m4a",
+			},
+			want: "虎言乱语/EP1.m4a",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := buildEpisodeFilePath(tt.args.dir, tt.args.podcastName, tt.args.episodeTitle, tt.args.fileExtension); got != tt.want {
+				t.Errorf("buildEpisodeFilePath() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

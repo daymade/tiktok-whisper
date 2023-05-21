@@ -43,19 +43,13 @@ func DownloadPodcast(input string, dir string) error {
 	podcastName := podcast.Props.PageProps.Podcast.Title
 
 	// create dir for /data/xiaoyuzhou/$podcast_name
-	podcastDir := filepath.Join(dir, validPath(podcastName))
-	if _, err := os.Stat(podcastDir); os.IsNotExist(err) {
-		err = os.MkdirAll(podcastDir, os.ModePerm)
-		if err != nil {
-			log.Fatal(fmt.Sprintf("failed to create directory %s: %v", podcastDir, err))
-		}
-	}
+	log.Printf("Start downloading %s", podcastName)
 
 	// Get data for each episode
 	for i, e := range podcast.Props.PageProps.Podcast.Episodes {
 		// eid is the identifier of each episode
 		log.Printf("Start downloading episode %d: %s", i+1, e.Title)
-		err = DownloadEpisode(buildEpisodeUrl(e.Eid), podcastDir)
+		err = DownloadEpisode(buildEpisodeUrl(e.Eid), dir)
 		if err != nil {
 			log.Printf("Error downloading episode %d: %s - %v", i+1, e.Title, err)
 			continue
@@ -90,11 +84,9 @@ func DownloadEpisode(url string, dir string) error {
 			return fmt.Errorf("cannot get file extension for url %v", audioUrl)
 		}
 
-		podcastDir := buildPodcastDir(dir, podcastName)
+		audioFilePath := buildEpisodeFilePath(dir, podcastName, episodeTitle, fileExtension)
 
-		audioFilePath := fmt.Sprintf("%s/%s%s", podcastDir, validPath(episodeTitle), fileExtension)
-
-		log.Printf("downloading episode %v into %v\n", episodeTitle, podcastDir)
+		log.Printf("downloading episode %v", episodeTitle)
 		err = downloadFile(audioUrl, audioFilePath)
 		if err != nil {
 			return fmt.Errorf("downloadFile failed for url %v, err: %v", audioUrl, err)
@@ -104,6 +96,11 @@ func DownloadEpisode(url string, dir string) error {
 	} else {
 		return fmt.Errorf("url is not an valid episode, url: %v", url)
 	}
+}
+
+func buildEpisodeFilePath(dir string, podcastName string, episodeTitle string, fileExtension string) string {
+	podcastDir := buildPodcastDir(dir, podcastName)
+	return filepath.Join(podcastDir, validPath(episodeTitle)+fileExtension)
 }
 
 func buildPodcastDir(dir string, podcastName string) string {
