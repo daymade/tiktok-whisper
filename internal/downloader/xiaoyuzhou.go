@@ -118,7 +118,14 @@ func buildPodcastDir(dir string, podcastName string) string {
 }
 
 func validPath(path string) string {
-	return strings.ReplaceAll(path, "/", "-")
+	// These characters are illegal in both Windows and macOS
+	illegalChars := []string{"<", ">", ":", "\"", "/", "\\", "|", "?", "*"}
+	replacement := "-"
+
+	for _, char := range illegalChars {
+		path = strings.ReplaceAll(path, char, replacement)
+	}
+	return path
 }
 
 // isValidXiaoyuzhouEpisodeUrl checks if the given URL is a valid xiaoyuzhou episode URL.
