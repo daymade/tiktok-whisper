@@ -76,7 +76,7 @@ func DownloadEpisode(url string, dir string) error {
 	if isValidXiaoyuzhouEpisodeUrl(url) {
 		audioUrl, episodeTitle, podcastName, err := getEpisodeInfo(url)
 		if err != nil {
-			return err
+			return fmt.Errorf("getEpisodeInfo failed: %v", err)
 		}
 
 		fileExtension := getAudioFileExtension(audioUrl)
@@ -219,6 +219,10 @@ func downloadFile(url string, filepath string) error {
 		} else {
 			log.Printf("local file size %v is different from remote file size %v, need to download the file\n",
 				fileInfo.Size(), remoteSize)
+		}
+	} else {
+		if !os.IsNotExist(err) {
+			log.Printf("Check local file err: %v, file: %v", err, absFilePath)
 		}
 	}
 
