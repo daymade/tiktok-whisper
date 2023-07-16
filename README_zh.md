@@ -65,6 +65,28 @@ go build -o v2t.exe .\cmd\v2t\main.go
 ./v2t download xiaoyuzhou -p "https://www.xiaoyuzhoufm.com/podcast/61e389402454b42a2b06177c"
 ```
 
+### 使用 Python 脚本运行 fast-whisper
+有两个 Python 脚本用于批量音频转录：
+
+- whisperToText.py: 转录单个目录中的音频文件。
+- whisperToTextParallel.py: 并行转录多个子目录中的音频文件。
+
+在运行脚本之前，请在项目根目录运行以下命令安装所需的 Python 包：
+
+```shell
+pip install -r requirements.txt
+```
+
+使用方法如下：
+
+```shell
+# 对单个目录
+python scripts/python/whisperToText.py --input_dir /path/to/input --output_dir /path/to/output
+
+# 对多个子目录
+python scripts/python/whisperToTextParallel.py --base_input_dir /path/to/base/input --base_output_dir /path/to/base/output --processes 4
+```
+
 ## TODO
 
 - [ ] 关键词搜索定位到视频
