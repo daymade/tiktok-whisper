@@ -17,13 +17,13 @@ import (
 	"tiktok-whisper/internal/app/util/files"
 )
 
-// provideTranscriber with openai's remote service conversion, must set environment variable OPENAI_API_KEY
-func provideTranscriber() api.Transcriber {
+// provideRemoteTranscriber with openai's remote service conversion, must set environment variable OPENAI_API_KEY
+func provideRemoteTranscriber() api.Transcriber {
 	return whisper.NewRemoteTranscriber(openai.GetClient())
 }
 
-// provideNewLocalTranscriber with native whisper.cpp conversion, you need to compile whisper.cpp/main executable by yourself
-func provideNewLocalTranscriber() api.Transcriber {
+// provideLocalTranscriber with native whisper.cpp conversion, you need to compile whisper.cpp/main executable by yourself
+func provideLocalTranscriber() api.Transcriber {
 	binaryPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/main"
 	modelPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
 	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
@@ -40,6 +40,6 @@ func provideTranscriptionDAO() repository.TranscriptionDAO {
 }
 
 func InitializeConverter() *converter.Converter {
-	wire.Build(converter.NewConverter, provideNewLocalTranscriber, provideTranscriptionDAO)
+	wire.Build(converter.NewConverter, provideLocalTranscriber, provideTranscriptionDAO)
 	return &converter.Converter{}
 }

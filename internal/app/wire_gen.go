@@ -22,7 +22,7 @@ import (
 // Injectors from wire.go:
 
 func InitializeConverter() *converter.Converter {
-	transcriber := provideNewLocalTranscriber()
+	transcriber := provideLocalTranscriber()
 	transcriptionDAO := provideTranscriptionDAO()
 	converterConverter := converter.NewConverter(transcriber, transcriptionDAO)
 	return converterConverter
@@ -30,13 +30,13 @@ func InitializeConverter() *converter.Converter {
 
 // wire.go:
 
-// provideTranscriber 用 openai 的远程服务转换, 必须设置环境变量 OPENAI_API_KEY
-func provideTranscriber() api.Transcriber {
+// provideRemoteTranscriber with openai's remote service conversion, must set environment variable OPENAI_API_KEY
+func provideRemoteTranscriber() api.Transcriber {
 	return whisper.NewRemoteTranscriber(openai.GetClient())
 }
 
-// provideNewLocalTranscriber 用本地 whisper.cpp 转换, 需要自行编译出 whisper.cpp/main 可执行文件
-func provideNewLocalTranscriber() api.Transcriber {
+// provideLocalTranscriber with native whisper.cpp conversion, you need to compile whisper.cpp/main executable by yourself
+func provideLocalTranscriber() api.Transcriber {
 	binaryPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/main"
 	modelPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
 	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
