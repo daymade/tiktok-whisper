@@ -64,10 +64,10 @@ go build -o v2t.exe .\cmd\v2t\main.go
 ./v2t download xiaoyuzhou -p "https://www.xiaoyuzhoufm.com/podcast/61e389402454b42a2b06177c"
 ```
 
-### Run fast-whisper with a Python script
-There are two Python scripts for batch audio transcription:
+### Run faster-whisper with a Python script
+There are two Python scripts for audio transcription:
 
-- whisperToText.py: Transcribes audio files in a single directory.
+- whisperToText.py: Transcribes a single audio file or audio files in a single directory.
 - whisperToTextParallel.py: Transcribes audio files in multiple subdirectories in parallel.
 
 Before running the scripts, please install the required Python packages by running the following command in the project root directory:
@@ -75,13 +75,21 @@ Before running the scripts, please install the required Python packages by runni
 ```shell
 pip install -r requirements.txt
 ```
+
 The usage is as follows:
 
+For transcribing a single file:
 ```shell
-# For a single directory
-python scripts/python/whisperToText.py --input_dir /path/to/input --output_dir /path/to/output
+python scripts/python/whisperToText.py --input_file /path/to/audiofile.mp3 --output_dir /path/to/output
+```
 
-# For multiple subdirectories
+For transcribing a single directory:
+```shell
+python scripts/python/whisperToText.py --input_dir /path/to/input --output_dir /path/to/output
+```
+
+For transcribing multiple subdirectories in parallel:
+```shell
 python scripts/python/whisperToTextParallel.py --base_input_dir /path/to/base/input --base_output_dir /path/to/base/output --processes 4
 ```
 

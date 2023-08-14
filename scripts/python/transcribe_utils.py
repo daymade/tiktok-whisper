@@ -9,20 +9,25 @@ model = WhisperModel(model_size, device="cuda", compute_type="float16")
 # Transcribe a file
 def transcribe_file(file_path, output_dir):
     print(f"Start transcribing {file_path}")
+
+    episode = os.path.splitext(os.path.basename(file_path))[0]
+    output_file_path = os.path.join(output_dir, episode + '.txt')
+
+    # If output file already exists and is not empty, skip this file
+    if os.path.exists(output_file_path) :
+        file_size = os.path.getsize(output_file_path)
+        if file_size > 0:
+            print(f"Output file {output_file_path} already exists and is not empty({file_size}), skipping...")
+            return
+        else:
+            print(f"Output file {output_file_path} already exists but is empty, starting transcription...")
+    
     start_time = time.time()  # Start time for transcription
     
     segments, info = model.transcribe(file_path, 
                                       beam_size=5, 
                                       language="zh", 
                                       initial_prompt="以下是简体中文普通话:")
-
-    episode = os.path.splitext(os.path.basename(file_path))[0]
-    output_file_path = os.path.join(output_dir, episode + '.txt')
-
-    # If output file already exists, skip this file
-    if os.path.exists(output_file_path):
-        print(f"Output file {output_file_path} already exists, skipping...")
-        return
 
     print_frequency = 100  # 输出频率，即每隔多少次输出一次
     print_interval = 30  # 输出间隔，即每隔多少秒输出一次
