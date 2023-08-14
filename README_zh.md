@@ -18,12 +18,11 @@ tiktok-whisper 工具可以使用 OpenAI 云端的 Whisper API 或本地 coreML 
 
 ## Feature
 
-- [x] 批量转换视频为文字
-- [x] 保存转换结果到 sqlite 或 postgres
-- [x] 视频时长统计
-- [x] 导出文案为 excel
-- [x] 使用 whisper_cpp + coreML 本地转录
-- [x] 输入小宇宙播客链接批量下载音频
+- [x] 输入小宇宙播客链接, 批量下载音频
+- [x] 批量识别音频或视频, 输出带时间轴的文字
+- [x] 保存识别结果到 sqlite 或 postgres
+- [x] 在 macOS 上使用 whisper_cpp + coreML 本地转录
+- [x] 导出历史识别结果
 
 ## 快速开始
 
@@ -89,6 +88,13 @@ data/
         └── EP21 程序员的职场晋升究竟与什么有关？漂亮的代码？.mp3
 ```
 
+### 使用 yt-dlp 下载 youtube 视频
+
+只下载音频就够了, 不需要视频, 请使用以下命令
+```shell
+yt-dlp --extract-audio --audio-format mp3 "https://www.youtube.com/watch?v=tWmNN87VvcE"
+```
+
 ### 将视频/音频转换为文本
 
 在 macOS 上可以使用 whisper.cpp 来转换音频, 请确保你已经正确设置了 whisper.cpp 的路径(wire.go 中的 binaryPath 和 modelPath)
@@ -143,15 +149,17 @@ python scripts/python/whisperToText.py --input_dir /path/to/input --output_dir /
 ```shell
 python scripts/python/whisperToTextParallel.py --base_input_dir /path/to/base/input --base_output_dir /path/to/base/output --processes 4
 ```
+
 例如:
 ```shell
 python scripts/python/whisperToText.py --input_dir ./data/xiaoyuzhou/硬地骇客/ --output_dir ./data/output
+python scripts/python/whisperToText.py --input_dir ./data/youtube/ --output_dir ./data/output
 ```
-
 
 
 ## TODO
 
+- [x] 视频时长统计
 - [ ] 关键词搜索定位到视频
 - [ ] 原始视频跳转链接
 - [ ] 转赞评统计
