@@ -30,7 +30,7 @@ tiktok-whisper 工具可以使用 OpenAI 云端的 Whisper API 或本地 coreML 
 ```shell
 cd ./internal/app
 go install github.com/google/wire
-# 如果用 OpenAI 远程转换就不用这一步, 如果用本地 coreML 转换, 需要修改 binaryPath 和 modelPath
+# 如果用 OpenAI 远程转换就不用这一步, 如果用 macOS 本地的 coreML 转换, 需要修改 binaryPath 和 modelPath
 wire
 
 cd tiktok-whisper
@@ -48,19 +48,6 @@ go build -o v2t.exe .\cmd\v2t\main.go
 
 ## 基本使用
 
-### 将视频/音频转换为文本
-
-```shell
-# 转换音频文件
-./v2t convert -audio --input ./test/data/test.mp3
-
-# 转换指定文件扩展名的目录中的所有文件
-./v2t convert -audio --directory ./test/data --type m4a
-
-# 将指定目录中的所有 mp4 文件转换为文本
-./v2t convert --video --directory "./test/data/mp4" --userNickname "testUser"
-```
-
 ### 从小宇宙下载音频或从 TikTok 下载视频
 
 ```shell
@@ -73,9 +60,33 @@ go build -o v2t.exe .\cmd\v2t\main.go
 # 从小宇宙的播客 URL 下载所有集数的音频
 ./v2t download xiaoyuzhou -p "https://www.xiaoyuzhoufm.com/podcast/61e389402454b42a2b06177c"
 ```
+下载完成后可以在 data 目录看到文件
+```shell
+$ tree data/
+data/
+└── xiaoyuzhou
+    └── 硬地骇客
+        └── EP21 程序员的职场晋升究竟与什么有关？漂亮的代码？.mp3
+```
+
+### 将视频/音频转换为文本
+
+在 macOS 上可以使用 whisper.cpp 来转换音频, 请确保你已经正确设置了 whisper.cpp 的路径(wire.go 中的 binaryPath 和 modelPath)
+
+```shell
+# 转换音频文件
+./v2t convert -audio --input ./test/data/test.mp3
+
+# 转换指定文件扩展名的目录中的所有文件
+./v2t convert -audio --directory ./test/data --type m4a
+
+# 将指定目录中的所有 mp4 文件转换为文本
+./v2t convert --video --directory "./test/data/mp4" --userNickname "testUser"
+```
 
 ### 使用 Python 脚本运行 faster-whisper
-有两个 Python 脚本用于音频转录：
+
+假如你是在 Windows 平台并且有独立显卡, 那么你可以使用 python 的 faster-whisper 来调用 CUDA 处理, 有两个 Python 脚本用于批量音频转录：
 
 - whisperToText.py: 转录单个文件或单个目录中的音频文件。
 - whisperToTextParallel.py: 并行转录多个子目录中的音频文件。
@@ -102,6 +113,11 @@ python scripts/python/whisperToText.py --input_dir /path/to/input --output_dir /
 ```shell
 python scripts/python/whisperToTextParallel.py --base_input_dir /path/to/base/input --base_output_dir /path/to/base/output --processes 4
 ```
+例如:
+```shell
+python scripts/python/whisperToText.py --input_dir ./data/xiaoyuzhou/硬地骇客/ --output_dir ./data/output
+```
+
 
 
 ## TODO
