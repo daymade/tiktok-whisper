@@ -27,18 +27,37 @@ tiktok-whisper 工具可以使用 OpenAI 云端的 Whisper API 或本地 coreML 
 
 ## 快速开始
 
+### macOS
+
+用 macOS 本地的 coreML 转换, 需要修改 binaryPath 和 modelPath, 如果你有 API KEY, 可以用 OpenAI 远程 API 转换, 请直接跳到第3步开始编译.
+
+1. 修改
+```go
+# 修改 binaryPath 和 modelPath
+func provideNewLocalTranscriber() api.Transcriber {
+	binaryPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/main"
+	modelPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
+	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
+}
+```
+
+2. 生成 wire 配置
 ```shell
 cd ./internal/app
 go install github.com/google/wire
-# 如果用 OpenAI 远程转换就不用这一步, 如果用 macOS 本地的 coreML 转换, 需要修改 binaryPath 和 modelPath
 wire
+```
 
+3. 编译出可执行程序
+```shell
 cd tiktok-whisper
 go build -o v2t ./cmd/v2t/main.go
 ./v2t help
 ```
 
-windows
+### Windows
+
+操作基本和 macOS 相同
 
 ```cmd
 cd tiktok-whisper
@@ -60,6 +79,7 @@ go build -o v2t.exe .\cmd\v2t\main.go
 # 从小宇宙的播客 URL 下载所有集数的音频
 ./v2t download xiaoyuzhou -p "https://www.xiaoyuzhoufm.com/podcast/61e389402454b42a2b06177c"
 ```
+
 下载完成后可以在 data 目录看到文件
 ```shell
 $ tree data/
@@ -83,6 +103,16 @@ data/
 # 将指定目录中的所有 mp4 文件转换为文本
 ./v2t convert --video --directory "./test/data/mp4" --userNickname "testUser"
 ```
+
+使用 OpenAI 的 API KEY 来转换音频, 请确保你已经正确设置了环境变量 `OPENAI_API_KEY`, 修改 wire.go 使用 provideRemoteTranscriber
+```diff
+func InitializeConverter() *converter.Converter {
+-   wire.Build(converter.NewConverter, provideLocalTranscriber, provideTranscriptionDAO)
++   wire.Build(converter.NewConverter, provideRemoteTranscriber, provideTranscriptionDAO)
+	return &converter.Converter{}
+}
+```
+
 
 ### 使用 Python 脚本运行 faster-whisper
 
