@@ -30,12 +30,26 @@ tiktok-whisper 工具可以使用 OpenAI 云端的 Whisper API 或本地 coreML 
 
 用 macOS 本地的 coreML 转换, 需要修改 binaryPath 和 modelPath, 如果你有 API KEY, 可以用 OpenAI 远程 API 转换, 请直接跳到第3步开始编译.
 
+0. 生成 coreML 的 model
+```shell
+mkdir -p ~/workspace/cpp/ && cd ~/workspace/cpp/
+git clone git@github.com:ggerganov/whisper.cpp.git
+cd whisper.cpp
+bash ./models/download-ggml-model.sh large
+conda create -n whisper-cpp python=3.10 -y
+conda activate whisper-cpp 
+pip install -U ane_transformers openai-whisper coremltools
+bash ./models/generate-coreml-model.sh large
+make clean
+WHISPER_COREML=1 make -j
+```
+
 1. 修改
 ```go
 # 修改 binaryPath 和 modelPath
 func provideNewLocalTranscriber() api.Transcriber {
-	binaryPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/main"
-	modelPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
+	binaryPath := "~/workspace/cpp/whisper.cpp/main"
+	modelPath := "~/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
 	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
 }
 ```
@@ -43,7 +57,7 @@ func provideNewLocalTranscriber() api.Transcriber {
 2. 生成 wire 配置
 ```shell
 cd ./internal/app
-go install github.com/google/wire
+go install github.com/google/wire/cmd/wire@latest
 wire
 ```
 
@@ -106,8 +120,11 @@ yt-dlp --extract-audio --audio-format mp3 "https://www.youtube.com/watch?v=tWmNN
 # 转换指定文件扩展名的目录中的所有文件
 ./v2t convert -audio --directory ./test/data --type m4a
 
-# 将指定目录中的所有 mp4 文件转换为文本
-./v2t convert --video --directory "./test/data/mp4" --userNickname "testUser"
+# 将指定目录中的所有 mp4 文件转换为文本, -n 指定最多转换多少个，默认 n=1
+./v2t convert --video --directory "./test/data/mp4" --userNickname "testUser" -n 100
+
+# 将指定用户的识别历史全部导出为 excel
+./v2t export --userNickname "testUser" --outputFilePath ./data/testUser.xlsx
 ```
 
 使用 OpenAI 的 API KEY 来转换音频, 请确保你已经正确设置了环境变量 `OPENAI_API_KEY`, 修改 wire.go 使用 provideRemoteTranscriber
