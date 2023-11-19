@@ -81,9 +81,9 @@ func convertTo16kHzWav(inputAudioFilePath, outputWavPath string) error {
 		return nil
 	}
 
-	ext := filepath.Ext(inputAudioFilePath)
-	if ext != ".mp3" && ext != ".m4a" {
-		return fmt.Errorf("unsupported audio format: %s\n", ext)
+	ext := strings.ToLower(filepath.Ext(inputAudioFilePath))
+	if ext != ".mp3" && ext != ".m4a" && ext != ".wav" {
+		return fmt.Errorf("unsupported audio format not in [mp3,m4a,wav]: %s", ext)
 	}
 
 	fmt.Printf("Processing file: %s\n", inputAudioFilePath)
@@ -91,7 +91,7 @@ func convertTo16kHzWav(inputAudioFilePath, outputWavPath string) error {
 	// Convert audio to 16kHz WAV
 	cmd := exec.Command("ffmpeg", "-i", inputAudioFilePath, "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "2", outputWavPath)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("FFmpeg error: %v\n", err)
+		return fmt.Errorf("FFmpeg error: %v", err)
 	}
 
 	fmt.Printf("Audio to 16kHz WAV conversion completed: '%s'\n", outputWavPath)
