@@ -2,7 +2,6 @@ package converter
 
 import (
 	"fmt"
-	"github.com/samber/lo"
 	"log"
 	"path/filepath"
 	"strings"
@@ -13,6 +12,8 @@ import (
 	"tiktok-whisper/internal/app/repository"
 	"tiktok-whisper/internal/app/util/files"
 	"time"
+
+	"github.com/samber/lo"
 )
 
 type Converter struct {
@@ -34,7 +35,11 @@ func (c *Converter) Close() error {
 // ConvertAudioDir converts audio files in a directory to text in parallel.
 // It takes the directory, the file extension of the audios, the output directory,
 // and the number of parallel conversions as parameters.
-func (c *Converter) ConvertAudioDir(directory string, extension string, outputDirectory string, parallel int) error {
+func (c *Converter) ConvertAudioDir(directory string,
+	extension string,
+	outputDirectory string,
+	convertCount int,
+	parallel int) error {
 	absDir, err := files.GetAbsolutePath(directory)
 	if err != nil {
 		log.Printf("Error getting absolute path of directory %s: %v\n", directory, err)
@@ -50,7 +55,9 @@ func (c *Converter) ConvertAudioDir(directory string, extension string, outputDi
 		return err
 	}
 
-	files := lo.Map(fileInfos, func(f model.FileInfo, i int) string {
+	filesToProcess := c.filterUnProcessedFiles(fileInfos, convertCount)
+
+	files := lo.Map(filesToProcess, func(f model.FileInfo, i int) string {
 		return f.FullPath
 	})
 
