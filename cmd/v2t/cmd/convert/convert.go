@@ -107,7 +107,13 @@ var Cmd = &cobra.Command{
 			)
 		} else if audio {
 			if directory != "" {
-				err := converter.ConvertAudioDir(directory, fileExtension, outputDirectory, parallel)
+				err := converter.ConvertAudioDir(
+					directory, 
+					fileExtension, 
+					outputDirectory, 
+					convertCount, 
+					parallel,
+				)
 				if err != nil {
 					cmd.PrintErrf("ConvertAudioDir error: %v\n", err)
 					return
