@@ -121,11 +121,7 @@ func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory stri
 // ConvertVideoDir converts videos in a directory to text in parallel.
 // It takes the user's nickname, the input directory, the file extension of the videos,
 // the maximum number of videos to convert, and the number of parallel conversions as parameters.
-func (c *Converter) ConvertVideoDir(userNickname string, inputDir string, fileExtension string, convertCount int, parallel int) {
-	// Check and create the data/mp3/userNickname subdirectory
-	convertedMp3Dir := files.GetUserMp3Dir(userNickname)
-	files.CheckAndCreateMP3Directory(convertedMp3Dir)
-
+func (c *Converter) ConvertVideoDir(userNickname string, inputDir string, fileExtension string, convertCount int, parallel int) error {
 	// Get all MP4 files in the input directory and sort them by old and new
 	fileInfos, err := files.GetAllFiles(inputDir, fileExtension)
 	if err != nil {
@@ -133,26 +129,53 @@ func (c *Converter) ConvertVideoDir(userNickname string, inputDir string, fileEx
 	}
 
 	filesToProcess := c.filterUnProcessedFiles(fileInfos, convertCount)
+	if len(filesToProcess) == 0 {
+		return nil
+	}
+
+	fileFullpaths := lo.Map(filesToProcess, func(f model.FileInfo, i int) string {
+		return f.FullPath
+	})
+
+	err = c.ConvertVideos(fileFullpaths, userNickname, convertCount, parallel)
+	if err != nil {
+		log.Printf("Error converting video files: %v\n", err)
+		return err
+	}
+
+	log.Printf("Successfully converted all video files\n")
+
+	return nil
+}
+
+func (c *Converter) ConvertVideos(fileFullpaths []string, userNickname string, convertCount int, parallel int) error {
+	// Check and create the data/mp3/userNickname subdirectory
+	convertedMp3Dir := files.GetUserMp3Dir(userNickname)
+	files.CheckAndCreateMP3Directory(convertedMp3Dir)
 
 	var wg sync.WaitGroup
 	sem := make(chan bool, parallel)
 
-	for _, file := range filesToProcess {
+	for _, fileAbsPath := range fileFullpaths {
 		wg.Add(1)
-		go func(file model.FileInfo) {
+		go func(fileAbsPath string) {
 			defer wg.Done()
+
+			fileName := filepath.Base(fileAbsPath)
+
 			sem <- true
-			err := c.convertToText(userNickname, file)
+			err := c.convertToText(userNickname, fileName, fileAbsPath)
 			<-sem
 
 			if err != nil {
-				log.Printf("Error converting file %s: %v\n", file.Name, err)
+				log.Fatalf("Error converting file %s: %v\n", fileName, err)
 			} else {
-				log.Printf("Successfully converted file %s\n", file.Name)
+				log.Printf("Successfully converted file %s\n", fileName)
 			}
-		}(file)
+		}(fileAbsPath)
 	}
 	wg.Wait()
+	return nil
 }
 
 func (c *Converter) filterUnProcessedFiles(fileInfos []model.FileInfo, convertCount int) []model.FileInfo {
@@ -162,7 +185,7 @@ func (c *Converter) filterUnProcessedFiles(fileInfos []model.FileInfo, convertCo
 		// Check if the file has been processed
 		id, err := c.db.CheckIfFileProcessed(fileInfo.Name)
 		if err == nil {
-			fmt.Printf("File '%s' with '%d' has already been processed, skipping...\n", fileInfo.Name, id)
+			log.Printf("File '%s' with '%d' has already been processed, skipping...\n", fileInfo.Name, id)
 			continue
 		}
 
@@ -174,17 +197,17 @@ func (c *Converter) filterUnProcessedFiles(fileInfos []model.FileInfo, convertCo
 	return filesToProcess
 }
 
-func (c *Converter) convertToText(userNickname string, file model.FileInfo) error {
-	fmt.Printf("Processing file '%s'\n", file.Name)
+func (c *Converter) convertToText(userNickname string, fileName string, fileFullPath string) error {
+	log.Printf("Processing file '%s'\n", fileName)
 
 	// Convert MP4 to MP3 using FFmpeg
-	mp3FileName := strings.TrimSuffix(file.Name, ".mp4") + ".mp3"
+	mp3FileName := strings.TrimSuffix(fileName, ".mp4") + ".mp3"
 	mp3FilePath := filepath.Join(files.GetUserMp3Dir(userNickname), mp3FileName)
 
 	// Check if the MP3 file already exists
-	err := audio.ConvertToMp3(file, mp3FilePath)
+	err := audio.ConvertToMp3(fileName, fileFullPath, mp3FilePath)
 	if err != nil {
-		c.db.RecordToDB(userNickname, file.FullPath, file.Name, mp3FileName, 0, "",
+		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, 0, "",
 			time.Now(), 1, fmt.Sprintf("FFmpeg error: %v", err))
 		return fmt.Errorf("FFmpeg error: %v", err)
 	}
@@ -192,22 +215,23 @@ func (c *Converter) convertToText(userNickname string, file model.FileInfo) erro
 	// Get audio duration
 	duration, err := audio.GetAudioDuration(mp3FilePath)
 	if err != nil {
-		c.db.RecordToDB(userNickname, file.FullPath, file.Name, mp3FileName, 0, "",
+		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, 0, "",
 			time.Now(), 1, fmt.Sprintf("Failed to get audio duration: %v", err))
-		return fmt.Errorf("Failed to get audio duration: %v\n", err)
+		return fmt.Errorf("failed to get audio duration: %v", err)
 	}
 
 	// Call Whisper with a new MP3 file path
 	transcription, err := c.transcriber.Transcript(mp3FilePath)
 	if err != nil {
-		c.db.RecordToDB(userNickname, file.FullPath, file.Name, mp3FileName, duration, "",
+		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, duration, "",
 			time.Now(), 1, fmt.Sprintf("Transcription error: %v", err))
-		return fmt.Errorf("Transcription error: %v\n", err)
+		return fmt.Errorf("transcription error: %v", err)
 	}
 
 	// Save conversion results to database
-	c.db.RecordToDB(userNickname, file.FullPath, file.Name, mp3FileName, duration, transcription, time.Now(), 0, "")
+	c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, duration, transcription, time.Now(), 0, "")
 
-	fmt.Printf("Transcription completed for file '%s':\n%s\n", file.Name, transcription)
+	log.Println("transcription completed for file: ", fileName)
+	fmt.Println(transcription)
 	return nil
 }

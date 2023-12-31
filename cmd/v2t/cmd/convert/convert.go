@@ -1,9 +1,11 @@
 package convert
 
 import (
-	"github.com/spf13/cobra"
+	"math"
 	"strings"
 	"tiktok-whisper/internal/app"
+
+	"github.com/spf13/cobra"
 )
 
 var userNickname string
@@ -76,6 +78,9 @@ var Cmd = &cobra.Command{
 			return
 		}
 
+		converter := app.InitializeConverter()
+		defer converter.Close()
+
 		if video {
 			if directory != "" && userNickname == "" {
 				cmd.PrintErrf("UserNickName must be set when converting video in directory\n")
@@ -86,32 +91,46 @@ var Cmd = &cobra.Command{
 			if fileExtension == "" {
 				fileExtension = "mp4"
 			}
+
+			if directory != "" {
+				err := converter.ConvertVideoDir(
+					userNickname,
+					directory,
+					fileExtension,
+					convertCount,
+					parallel,
+				)
+				if err != nil {
+					cmd.PrintErrf("ConvertAudioDir error: %v\n", err)
+					return
+				}
+			} else if inputFile != "" {
+				if userNickname == "" {
+					userNickname = "default"
+				}
+
+				// set convert count to int max
+				err := converter.ConvertVideos(strings.Split(inputFile, ","), userNickname, math.MaxInt, parallel)
+				if err != nil {
+					cmd.PrintErrf("ConvertVideos error: %v\n", err)
+					return
+				}
+			}
+
+			return
 		}
 
 		if audio {
 			if fileExtension == "" {
 				fileExtension = "mp3"
 			}
-		}
 
-		converter := app.InitializeConverter()
-		defer converter.Close()
-
-		if video {
-			converter.ConvertVideoDir(
-				userNickname,
-				directory,
-				fileExtension,
-				convertCount,
-				parallel,
-			)
-		} else if audio {
 			if directory != "" {
 				err := converter.ConvertAudioDir(
-					directory, 
-					fileExtension, 
-					outputDirectory, 
-					convertCount, 
+					directory,
+					fileExtension,
+					outputDirectory,
+					convertCount,
 					parallel,
 				)
 				if err != nil {
@@ -125,6 +144,9 @@ var Cmd = &cobra.Command{
 					return
 				}
 			}
+			return
 		}
+
+		cmd.Help()
 	},
 }

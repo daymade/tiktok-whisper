@@ -42,7 +42,7 @@ func GetUserMp3Dir(userNickname string) string {
 
 func CheckAndCreateMP3Directory(mp3Dir string) {
 	if _, err := os.Stat(mp3Dir); os.IsNotExist(err) {
-		fmt.Printf("Creating MP3 directory: %s\n", mp3Dir)
+		log.Printf("Creating MP3 directory: %s\n", mp3Dir)
 		if err := os.MkdirAll(mp3Dir, os.ModePerm); err != nil {
 			log.Fatalf("Failed to create MP3 directory: %v\n", err)
 		}
