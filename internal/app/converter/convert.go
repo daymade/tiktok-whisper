@@ -223,8 +223,11 @@ func (c *Converter) convertToText(userNickname string, fileName string, fileFull
 	// Call Whisper with a new MP3 file path
 	transcription, err := c.transcriber.Transcript(mp3FilePath)
 	if err != nil {
+		log.Printf("transcripting failed for %v, err: %v", fileName, err)
+
 		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, duration, "",
 			time.Now(), 1, fmt.Sprintf("Transcription error: %v", err))
+
 		return fmt.Errorf("transcription error: %v", err)
 	}
 
