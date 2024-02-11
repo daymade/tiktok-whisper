@@ -3,24 +3,51 @@
 ##### Translate to: [简体中文](README_zh.md)
 
 ## About tiktok-whisper-video-to-text-go
-Batch convert video to text using openai's whisper or the local coreML whisper.cpp
+Batch convert videos to text using OpenAI's Whisper or the local coreML whisper.cpp.
 
-The "tiktok-whisper" tool can batch convert video to text using OpenAI's Whisper or the local coreML Whisper.cpp. It has features like exporting copy as Excel, saving conversion results to SQLite or PostgreSQL, video duration statistics, and keyword search to locate videos. The tool also provides options to use whisper_cpp + coreML for local transcription and pgvector for vectorized search(yet to be implemented).
+The tiktok-whisper tool allows batch conversion of videos to text using either OpenAI's cloud-based Whisper API or local coreML's Whisper.cpp. It includes features such as exporting copies to Excel, saving conversion results to SQLite or PostgreSQL, video duration statistics, and keyword search to locate videos. It addresses the original whisper's limitations by offering solutions for macOS compatibility and speed enhancement.
 
 ## Features
-- [x] Batch convert videos to text
-- [x] Save conversion results to SQLite or PostgreSQL
-- [x] Video duration statistics
-- [x] Export copy as Excel
-- [x] Use whisper_cpp + coreML for local transcription
-- [x] batch download xiaoyuzhou podcasts with a simple url
+- [x] Input Xiaoyuzhou podcast links for batch audio downloading
+- [x] Batch recognize audio or video, outputting text with timestamps
+- [x] Save recognition results to SQLite or PostgreSQL
+- [x] Use whisper_cpp + coreML for local transcription on macOS
+- [x] Export historical recognition results
 
 ## Quick Start
 
+### macOS
+
+For local conversion using coreML on macOS, you need to modify `binaryPath` and `modelPath`. If you have an API KEY, you can use OpenAI's cloud API for conversion; skip to step 3 for compilation.
+
+1. Generate coreML's model:
+```shell
+mkdir -p ~/workspace/cpp/ && cd ~/workspace/cpp/
+git clone git@github.com:ggerganov/whisper.cpp.git
+cd whisper.cpp
+bash ./models/download-ggml-model.sh large
+conda create -n whisper-cpp python=3.10 -y
+conda activate whisper-cpp 
+pip install -U ane_transformers openai-whisper coremltools
+bash ./models/generate-coreml-model.sh large
+make clean
+WHISPER_COREML=1 make -j
+```
+
+2. Modify `binaryPath` and `modelPath`:
+```go
+# Modify binaryPath and modelPath
+func provideNewLocalTranscriber() api.Transcriber {
+    binaryPath := "~/workspace/cpp/whisper.cpp/main"
+    modelPath := "~/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
+    return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
+}
+```
+
+3. Generate wire configuration and compile the executable:
 ```shell
 cd ./internal/app
-go install github.com/google/wire
-# modify binaryPath and modelPath manually
+go install github.com/google/wire/cmd/wire@latest
 wire
 
 cd tiktok-whisper
@@ -28,7 +55,9 @@ go build -o v2t ./cmd/v2t/main.go
 ./v2t help
 ```
 
-windows
+### Windows
+
+The procedure is similar to macOS.
 
 ```cmd
 cd tiktok-whisper
@@ -38,63 +67,80 @@ go build -o v2t.exe .\cmd\v2t\main.go
 
 ## Usage
 
-### convert video/audio to text
+### Download audio from Xiaoyuzhou or video from TikTok
 
 ```shell
-# Convert only one file
-./v2t convert -audio --input ./test/data/test.mp3
-
-# Convert all files in directory with specified file extension
-./v2t convert -audio --directory ./test/data --type m4a
-
-# Convert all mp4 files in the specified directory to text
-./v2t convert --video --directory "./test/data/mp4" --userNickname "testUser" 
-```
-
-### download audio from xiaoyuzhou or video from tiktok
-
-```shell
-# download xiaoyuzhou with single episode url
+# Download Xiaoyuzhou audio using a single episode URL
 ./v2t download xiaoyuzhou -e "https://www.xiaoyuzhoufm.com/episode/6398c6ae3a2b7eba5ceb462f"
 
-# or an episode list
+# Or using multiple episode URLs
 ./v2t download xiaoyuzhou -e "https://www.xiaoyuzhoufm.com/episode/6398c6ae3a2b7eba5ceb462f,https://www.xiaoyuzhoufm.com/episode/6445559d420fc63f0b9e5747"
 
-# download all episodes from xiaoyuzhou with podcast url
+# Download all episodes from a Xiaoyuzhou podcast URL
 ./v2t download xiaoyuzhou -p "https://www.xiaoyuzhoufm.com/podcast/61e389402454b42a2b06177c"
 ```
 
-### Run faster-whisper with a Python script
-There are two Python scripts for audio transcription:
+After downloading, you can find the files in the data directory:
+```shell
+$ tree data/
+data/
+└── xiaoyuzhou
+    └── 硬地骇客
+        └── EP21 程序员的职场晋升究竟与什么有关？漂亮的代码？.mp3
+```
 
-- whisperToText.py: Transcribes a single audio file or audio files in a single directory.
-- whisperToTextParallel.py: Transcribes audio files in multiple subdirectories in parallel.
+### Use yt-dlp to download YouTube videos
 
-Before running the scripts, please install the required Python packages by running the following command in the project root directory:
+To download only audio without video, use the following command:
+```shell
+yt-dlp --extract-audio --audio-format mp3 "https://www.youtube.com/watch?v=tWmNN87VvcE"
+```
 
+### Convert videos/audios to text
+
+On macOS, you can use whisper.cpp for audio conversion, ensuring the correct setup of `binaryPath` and `modelPath` in `wire.go`:
+```shell
+# Convert an
+
+ audio file
+./v2t convert -audio --input ./test/data/test.mp3
+
+# Convert all files in a directory with a specified file extension
+./v2t convert -audio --directory ./test/data --type m4a
+
+# Convert all mp4 files in a specified directory to text, -n specifies the maximum number of files to convert, default n=1
+./v2t convert --video --directory "./test/data/mp4" --userNickname "testUser" -n 100
+
+# Export all recognition history of a specified user as excel
+./v2t export --userNickname "testUser" --outputFilePath ./data/testUser.xlsx
+```
+
+To use OpenAI's API KEY for audio conversion, ensure `OPENAI_API_KEY` is set correctly in your environment variables and modify `wire.go` to use `provideRemoteTranscriber`:
+```diff
+func InitializeConverter() *converter.Converter {
+-   wire.Build(converter.NewConverter, provideLocalTranscriber, provideTranscriptionDAO)
++   wire.Build(converter.NewConverter, provideRemoteTranscriber, provideTranscriptionDAO)
+    return &converter.Converter{}
+}
+```
+
+### Using Python scripts for faster-whisper
+
+If you are on Windows and have a dedicated GPU, you can use Python's faster-whisper for CUDA processing. There are two Python scripts for batch audio transcription:
+
+- `whisperToText.py`: Transcribes a single file or all files in a single directory.
+- `whisperToTextParallel.py`: Transcribes files in multiple subdirectories in parallel.
+
+Before running the scripts, install the required Python packages:
 ```shell
 pip install -r requirements.txt
 ```
 
-The usage is as follows:
-
-For transcribing a single file:
-```shell
-python scripts/python/whisperToText.py --input_file /path/to/audiofile.mp3 --output_dir /path/to/output
-```
-
-For transcribing a single directory:
-```shell
-python scripts/python/whisperToText.py --input_dir /path/to/input --output_dir /path/to/output
-```
-
-For transcribing multiple subdirectories in parallel:
-```shell
-python scripts/python/whisperToTextParallel.py --base_input_dir /path/to/base/input --base_output_dir /path/to/base/output --processes 4
-```
+For single file or directory transcription, and parallel transcription of multiple subdirectories, follow the provided commands in the documentation.
 
 ## TODO
 
+- [x] Video duration statistics
 - [ ] Keyword search to locate videos
 - [ ] Original video jump link
 - [ ] Like, share, and comment statistics
