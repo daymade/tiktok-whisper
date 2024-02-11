@@ -18,7 +18,11 @@ The tiktok-whisper tool allows batch conversion of videos to text using either O
 
 ### macOS
 
-For local conversion using coreML on macOS, you need to modify `binaryPath` and `modelPath`. If you have an API KEY, you can use OpenAI's cloud API for conversion; skip to step 3 for compilation.
+Tiktok-whipser is based on two whisper engines: local whisper_cpp and remote openai whisper API. 
+
+For local conversion using coreML on macOS, you need to modify `binaryPath` and `modelPath` direct to your local whisper_cpp. 
+
+If you have an API KEY, you can use OpenAI's cloud API for conversion; skip step 1,2,3 to step 4 for compilation.
 
 1. Generate coreML's model:
 ```shell
@@ -34,10 +38,10 @@ make clean
 WHISPER_COREML=1 make -j
 ```
 
-2. Modify `binaryPath` and `modelPath`:
+2. for using local whisper_cpp, you should modify the binaryPath and modelPath in `tiktok-whisper/internal/app/wire.go` manually.
 ```go
-# Modify binaryPath and modelPath
-func provideNewLocalTranscriber() api.Transcriber {
+func provideLocalTranscriber() api.Transcriber {
+    // Modify binaryPath and modelPath to your paths here!
     binaryPath := "~/workspace/cpp/whisper.cpp/main"
     modelPath := "~/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
     return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
@@ -49,9 +53,12 @@ func provideNewLocalTranscriber() api.Transcriber {
 cd ./internal/app
 go install github.com/google/wire/cmd/wire@latest
 wire
+```
 
+4. Compile tiktok-whisper with CGO_ENABLED
+```shell
 cd tiktok-whisper
-go build -o v2t ./cmd/v2t/main.go
+CGO_ENABLED=1 go build -o v2t ./cmd/v2t/main.go
 ./v2t help
 ```
 
