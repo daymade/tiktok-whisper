@@ -37,8 +37,8 @@ func provideRemoteTranscriber() api.Transcriber {
 
 // provideLocalTranscriber with native whisper.cpp conversion, you need to compile whisper.cpp/main executable by yourself
 func provideLocalTranscriber() api.Transcriber {
-	binaryPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/main"
-	modelPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
+	binaryPath := "/Volumes/SSD2T/workspace/cpp/whisper.cpp/main"
+	modelPath := "/Volumes/SSD2T/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
 	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
 }
 
