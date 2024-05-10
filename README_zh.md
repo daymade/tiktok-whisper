@@ -3,6 +3,9 @@
 ##### Translate to: [English](README.md)
 
 ## About tiktok-whisper-video-to-text-go
+
+![demo_download_xiaoyuzhou](doc/demo/download_xiaoyuzhou.gif)
+
 使用 openai 的 whisper 或者本地 coreML 的 whisper.cpp 批量将视频转换为文字
 
 tiktok-whisper 工具可以使用 OpenAI 云端的 Whisper API 或本地 coreML 的 Whisper.cpp 批量转换视频为文本。它的功能包括将拷贝导出为 Excel，将转换结果保存为 SQLite 或 PostgreSQL，视频时长统计，以及关键词搜索来定位视频。

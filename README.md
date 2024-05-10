@@ -3,6 +3,9 @@
 ##### Translate to: [简体中文](README_zh.md)
 
 ## About tiktok-whisper-video-to-text-go
+
+![demo_download_xiaoyuzhou](doc/demo/download_xiaoyuzhou.gif)
+
 Batch convert videos to text using OpenAI's Whisper or the local coreML whisper.cpp.
 
 The tiktok-whisper tool allows batch conversion of videos to text using either OpenAI's cloud-based Whisper API or local coreML's Whisper.cpp. It includes features such as exporting copies to Excel, saving conversion results to SQLite or PostgreSQL, video duration statistics, and keyword search to locate videos. It addresses the original whisper's limitations by offering solutions for macOS compatibility and speed enhancement.
