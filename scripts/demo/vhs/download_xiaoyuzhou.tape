@@ -1,8 +1,8 @@
 Set Shell zsh
 Set WindowBar Colorful
 Set FontSize 20
-Set Width 1500
-Set Height 500
+Set Width 1550
+Set Height 400
 
 Output doc/demo/download_xiaoyuzhou.gif
 
