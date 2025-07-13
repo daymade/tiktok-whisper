@@ -1,0 +1,18 @@
+# uv 生成的文件
+.venv/
+
+# 输出文件
+output/
+*.zip
+*.json
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 临时文件
+temp_*
+test_*
