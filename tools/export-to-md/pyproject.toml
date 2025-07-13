@@ -1,0 +1,6 @@
+[project]
+name = "export-to-md"
+version = "1.0.0"
+description = "Tiktok-Whisper 数据导出到 Markdown 工具"
+requires-python = ">=3.8"
+dependencies = []
