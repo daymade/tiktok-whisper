@@ -6,6 +6,7 @@ import (
 	"tiktok-whisper/cmd/v2t/cmd/config"
 	"tiktok-whisper/cmd/v2t/cmd/convert"
 	"tiktok-whisper/cmd/v2t/cmd/download"
+	"tiktok-whisper/cmd/v2t/cmd/embed"
 	"tiktok-whisper/cmd/v2t/cmd/export"
 	"tiktok-whisper/cmd/v2t/cmd/version"
 )
@@ -36,6 +37,7 @@ func init() {
 	rootCmd.AddCommand(config.Cmd)
 	rootCmd.AddCommand(download.Cmd)
 	rootCmd.AddCommand(convert.Cmd)
+	rootCmd.AddCommand(embed.Cmd)
 	rootCmd.AddCommand(export.Cmd)
 	rootCmd.AddCommand(version.Cmd)
 
