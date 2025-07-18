@@ -31,11 +31,20 @@ func (g *GeminiProvider) GenerateEmbedding(ctx context.Context, text string) ([]
 	// For now, return a mock 768-dimensional embedding
 	// This should be replaced with actual Gemini API integration
 	
-	// Generate a simple mock embedding based on text length
+	// Generate a deterministic mock embedding based on text content
 	// In production, this would call the actual Gemini API
 	embedding := make([]float32, 768)
+	
+	// Use a simple hash-like function based on character values
+	hash := 0
+	for i, char := range text {
+		hash = hash*31 + int(char) + i
+	}
+	
 	for i := range embedding {
-		embedding[i] = float32(len(text)%256) / 256.0
+		// Create different values based on position and text hash
+		value := (hash + i*7) % 256
+		embedding[i] = float32(value) / 256.0
 	}
 	
 	return embedding, nil
