@@ -41,10 +41,11 @@ go test ./...
 go test -v ./...
 ```
 
-**Run specific test files:**
+**Run specific test packages:**
 ```bash
 go test ./internal/app/converter/
 go test ./internal/app/repository/sqlite/
+go test ./internal/app/embedding/provider/
 ```
 
 ### Development Workflow
@@ -71,13 +72,16 @@ go mod tidy
 1. **CLI Layer** (`cmd/v2t/`): Cobra-based command-line interface with subcommands:
    - `download` - Download content from various sources
    - `convert` - Convert audio/video to text
+   - `embed` - Generate embeddings for similarity search and duplicate detection
    - `export` - Export transcription results
    - `config` - Configuration management
+   - `version` - Version information
 
 2. **Application Core** (`internal/app/`):
    - **API Layer**: Transcriber interface with local (whisper.cpp) and remote (OpenAI) implementations
-   - **Repository Layer**: Database abstraction supporting SQLite and PostgreSQL
+   - **Repository Layer**: Database abstraction supporting SQLite and PostgreSQL with pgvector
    - **Converter**: Core business logic orchestrating the transcription process
+   - **Embedding System**: Dual embedding support (OpenAI + Gemini) for similarity search
    - **Models**: Data structures for transcriptions, file info, and media metadata
 
 3. **Dependency Injection**: Uses Google Wire for DI container configuration
@@ -111,6 +115,7 @@ type TranscriptionDAO interface {
 **OpenAI API Setup:**
 - Set environment variable: `OPENAI_API_KEY`
 - Switch wire configuration to use `provideRemoteTranscriber`
+- Also used for embedding generation in dual embedding system
 
 ### Database Support
 
@@ -119,9 +124,10 @@ type TranscriptionDAO interface {
 - Uses `github.com/mattn/go-sqlite3` driver
 
 **PostgreSQL** (optional):
-- Requires external PostgreSQL instance
+- Requires external PostgreSQL instance with pgvector extension
 - Uses `github.com/lib/pq` driver
 - Migration scripts available in `scripts/pg/sql/`
+- Dual embedding storage for OpenAI and Gemini embeddings
 
 ## Python Scripts Alternative
 
@@ -146,6 +152,13 @@ The project uses table-driven tests and includes:
 - Repository tests: `internal/app/repository/*/test.go`
 - Converter tests: `internal/app/converter/convert_test.go`
 - API tests: `internal/app/api/*/test.go`
+- Embedding tests: `internal/app/embedding/provider/*/test.go`
+
+**Testing features:**
+- Table-driven tests with comprehensive coverage
+- Mock-based testing for external dependencies
+- Integration tests with real databases and APIs
+- Test utilities in `internal/app/testutil/`
 
 ## External Dependencies
 
@@ -211,6 +224,38 @@ uv run python export_to_md.py config --set html2md_path="/path/to/html2md/main.p
 
 See `tools/export-to-md/README.md` for complete documentation.
 
+## Embedding System
+
+The project features a dual embedding system for similarity search and duplicate detection:
+
+**CLI Commands:**
+```bash
+# Generate embeddings for all transcriptions
+v2t embed generate
+
+# Find similar transcriptions
+v2t embed search --text "search query" --limit 10
+
+# Calculate similarity between transcriptions
+v2t embed similarity --id1 123 --id2 456
+```
+
+**Architecture:**
+- **Dual Provider Support**: OpenAI text-embedding-3-small and Gemini text-embedding-004
+- **PostgreSQL Integration**: Uses pgvector extension for efficient similarity search
+- **Batch Processing**: Handles large datasets with progress tracking
+- **Error Resilience**: Robust error handling and retry mechanisms
+
+**Configuration:**
+- Requires `OPENAI_API_KEY` environment variable
+- PostgreSQL with pgvector extension for storage
+- Migration scripts: `scripts/pg/sql/add_dual_embeddings.sql`
+
+**Key Files:**
+- `internal/app/embedding/provider/` - Embedding providers (OpenAI, Gemini)
+- `cmd/v2t/cmd/embed/` - CLI commands for embedding operations
+- `docs/DUAL_EMBEDDING_TDD_PLAN.md` - Implementation documentation
+
 ## Important Configuration Files
 
 - `go.mod` - Go module dependencies
@@ -219,3 +264,5 @@ See `tools/export-to-md/README.md` for complete documentation.
 - `internal/app/wire_gen.go` - Generated DI code (don't edit manually)
 - `tools/export-to-md/config.json` - Export tool configuration
 - `tools/export-to-md/pyproject.toml` - uv project configuration
+- `scripts/pg/sql/add_dual_embeddings.sql` - PostgreSQL embedding schema
+- `docs/DUAL_EMBEDDING_TDD_PLAN.md` - Embedding system documentation
