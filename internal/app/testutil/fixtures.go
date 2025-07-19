@@ -3,6 +3,9 @@ package testutil
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
+	"testing"
 	"time"
 
 	"tiktok-whisper/internal/app/model"
@@ -379,4 +382,90 @@ func RandomTestErrorMessage() string {
 		return "Default test error message"
 	}
 	return TestErrorMessages[time.Now().UnixNano()%int64(len(TestErrorMessages))]
+}
+
+// CreateTestAudioFile creates a minimal valid WAV file for testing
+func CreateTestAudioFile(t *testing.T, filename string) string {
+	t.Helper()
+	
+	// Ensure the directory exists
+	dir := filepath.Dir(filename)
+	if dir != "." {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			t.Fatalf("Failed to create test directory %s: %v", dir, err)
+		}
+	}
+	
+	// Create absolute path in temp directory
+	tempDir := t.TempDir()
+	fullPath := filepath.Join(tempDir, filepath.Base(filename))
+	
+	// Create a minimal valid WAV file
+	wavHeader := []byte{
+		0x52, 0x49, 0x46, 0x46, // "RIFF"
+		0x24, 0x08, 0x00, 0x00, // File size (2084 bytes)
+		0x57, 0x41, 0x56, 0x45, // "WAVE"
+		0x66, 0x6D, 0x74, 0x20, // "fmt "
+		0x10, 0x00, 0x00, 0x00, // Chunk size
+		0x01, 0x00,             // Audio format (PCM)
+		0x01, 0x00,             // Channels (mono)
+		0x80, 0x3E, 0x00, 0x00, // Sample rate (16000)
+		0x00, 0x7D, 0x00, 0x00, // Byte rate
+		0x02, 0x00,             // Block align
+		0x10, 0x00,             // Bits per sample
+		0x64, 0x61, 0x74, 0x61, // "data"
+		0x00, 0x08, 0x00, 0x00, // Data size (2048 bytes)
+	}
+	
+	// Add some audio data (silence)
+	audioData := make([]byte, 2048)
+	
+	data := append(wavHeader, audioData...)
+	err := os.WriteFile(fullPath, data, 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test audio file: %v", err)
+	}
+	
+	return fullPath
+}
+
+// CleanupFile removes a test file
+func CleanupFile(t *testing.T, filepath string) {
+	t.Helper()
+	if filepath != "" {
+		os.Remove(filepath)
+	}
+}
+
+// CreateCorruptedAudioFile creates a file with invalid audio data for testing
+func CreateCorruptedAudioFile(t *testing.T, filename string) string {
+	t.Helper()
+	
+	tempDir := t.TempDir()
+	fullPath := filepath.Join(tempDir, filepath.Base(filename))
+	
+	// Create a file with invalid WAV header
+	corruptedData := []byte("This is not a valid audio file!")
+	err := os.WriteFile(fullPath, corruptedData, 0644)
+	if err != nil {
+		t.Fatalf("Failed to create corrupted file: %v", err)
+	}
+	
+	return fullPath
+}
+
+// CreateEmptyFile creates an empty file for testing
+func CreateEmptyFile(t *testing.T, filename string) string {
+	t.Helper()
+	
+	tempDir := t.TempDir()
+	fullPath := filepath.Join(tempDir, filepath.Base(filename))
+	
+	err := os.WriteFile(fullPath, []byte{}, 0644)
+	if err != nil {
+		t.Fatalf("Failed to create empty file: %v", err)
+	}
+	
+	return fullPath
 }
