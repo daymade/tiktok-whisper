@@ -6,6 +6,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Go-based CLI tool called `tiktok-whisper` that batch converts videos/audio to text transcriptions using either local whisper.cpp (with coreML acceleration on macOS) or remote OpenAI Whisper API. The project supports downloading content from sources like Xiaoyuzhou podcasts and YouTube, then transcribing them with timestamp-aligned text output.
 
+## Environment Setup
+
+### API Key Configuration
+
+**Security-first approach using .env files:**
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Edit .env file with your API keys
+# Note: .env files are automatically ignored by git for security
+```
+
+**Required API Keys:**
+- `OPENAI_API_KEY` - For OpenAI text-embedding-ada-002 (1536 dimensions)
+- `GEMINI_API_KEY` - For Google Gemini embedding-001 (768 dimensions)
+
+**Environment Variables:**
+```bash
+# Option 1: Use .env file (recommended for development)
+echo "OPENAI_API_KEY=sk-your-openai-key-here" >> .env
+echo "GEMINI_API_KEY=AIza-your-gemini-key-here" >> .env
+
+# Option 2: Set system environment variables
+export OPENAI_API_KEY="sk-your-openai-key-here"
+export GEMINI_API_KEY="AIza-your-gemini-key-here"
+```
+
+**Fail-fast validation:**
+- The application validates API key formats on startup
+- At least one API key must be configured
+- Invalid or missing keys will cause immediate startup failure
+
 ## Common Development Commands
 
 ### Building the Project
