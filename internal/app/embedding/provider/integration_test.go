@@ -28,7 +28,7 @@ func TestAllProvidersWithSameInput(t *testing.T) {
 		},
 		{
 			name:     "GeminiProvider",
-			provider: NewGeminiProvider("test-key"),
+			provider: NewGeminiProvider(""), // Empty API key for mock
 			skipReason: "Mock implementation",
 		},
 	}
@@ -78,7 +78,7 @@ func TestProviderEmbeddingDifferences(t *testing.T) {
 
 	// Generate embeddings from different providers
 	mockProvider := NewMockProvider(768)
-	geminiProvider := NewGeminiProvider("test-key")
+	geminiProvider := NewGeminiProvider("") // Empty API key for mock
 
 	mockEmbedding, err := mockProvider.GenerateEmbedding(ctx, testText)
 	require.NoError(t, err)
@@ -101,7 +101,7 @@ func TestProviderSwitching(t *testing.T) {
 
 	providers := []EmbeddingProvider{
 		NewMockProvider(256),
-		NewGeminiProvider("test-key"),
+		NewGeminiProvider(""), // Empty API key for mock
 	}
 
 	// Function that uses any provider
@@ -127,8 +127,8 @@ func TestConcurrentMultiProviderAccess(t *testing.T) {
 	providers := []EmbeddingProvider{
 		NewMockProvider(128),
 		NewMockProvider(256),
-		NewGeminiProvider("test-key-1"),
-		NewGeminiProvider("test-key-2"),
+		NewGeminiProvider(""), // Empty API key for mock
+		NewGeminiProvider(""), // Empty API key for mock
 	}
 
 	texts := []string{
@@ -197,7 +197,7 @@ func TestProviderPerformanceComparison(t *testing.T) {
 	}{
 		{"Mock-512", NewMockProvider(512)},
 		{"Mock-1536", NewMockProvider(1536)},
-		{"Gemini", NewGeminiProvider("test-key")},
+		{"Gemini", NewGeminiProvider("")}, // Empty API key for mock
 	}
 
 	testText := "Performance test text for embedding generation"
@@ -467,7 +467,7 @@ func BenchmarkAllProviders(b *testing.B) {
 		{"Mock-256", NewMockProvider(256)},
 		{"Mock-768", NewMockProvider(768)},
 		{"Mock-1536", NewMockProvider(1536)},
-		{"Gemini", NewGeminiProvider("test-key")},
+		{"Gemini", NewGeminiProvider("")}, // Empty API key for mock
 	}
 
 	testText := "Benchmark text for performance testing"

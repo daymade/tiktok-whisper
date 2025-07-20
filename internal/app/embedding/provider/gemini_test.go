@@ -24,7 +24,7 @@ func TestGeminiProviderInterface(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, "gemini", info.Name)
-	assert.Equal(t, "models/embedding-001", info.Model)
+	assert.Equal(t, "gemini-embedding-001", info.Model)
 	assert.Equal(t, 768, info.Dimension)
 	
 	// Verify interface methods are implemented
@@ -52,7 +52,7 @@ func TestGeminiProviderConstructor(t *testing.T) {
 			// Assert
 			assert.NotNil(t, provider)
 			assert.Equal(t, tc.apiKey, provider.apiKey)
-			assert.Equal(t, "models/embedding-001", provider.model)
+			assert.Equal(t, "gemini-embedding-001", provider.model)
 		})
 	}
 }
@@ -110,7 +110,7 @@ func TestGeminiEmbeddingGeneration(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			provider := NewGeminiProvider("test-key")
+			provider := NewGeminiProvider("") // Empty API key to use mock
 			ctx := context.Background()
 
 			// Act
@@ -143,7 +143,7 @@ func TestGeminiEmbeddingGeneration(t *testing.T) {
 // Test Gemini deterministic behavior (mock implementation)
 func TestGeminiDeterministicBehavior(t *testing.T) {
 	// Arrange
-	provider := NewGeminiProvider("test-key")
+	provider := NewGeminiProvider("") // Empty API key for mock
 	ctx := context.Background()
 
 	testCases := []struct {
@@ -197,7 +197,7 @@ func TestGeminiContextCancellation(t *testing.T) {
 	// This test documents expected behavior for real implementation
 	
 	// Arrange
-	provider := NewGeminiProvider("test-key")
+	provider := NewGeminiProvider("") // Empty API key for mock
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
@@ -215,7 +215,7 @@ func TestGeminiContextCancellation(t *testing.T) {
 // Test concurrent embedding generation
 func TestGeminiConcurrentRequests(t *testing.T) {
 	// Arrange
-	provider := NewGeminiProvider("test-key")
+	provider := NewGeminiProvider("") // Empty API key for mock
 	ctx := context.Background()
 	numRequests := 10
 	texts := make([]string, numRequests)
@@ -261,7 +261,7 @@ func TestGeminiConcurrentRequests(t *testing.T) {
 // Test extremely long text handling
 func TestGeminiExtremelyLongText(t *testing.T) {
 	// Arrange
-	provider := NewGeminiProvider("test-key")
+	provider := NewGeminiProvider("") // Empty API key for mock
 	ctx := context.Background()
 	// Gemini may have different token limits than OpenAI
 	longText := strings.Repeat("This is a test sentence with multiple words. ", 2000)
@@ -294,7 +294,7 @@ func TestGeminiUTF8EdgeCases(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			provider := NewGeminiProvider("test-key")
+			provider := NewGeminiProvider("") // Empty API key to use mock
 			ctx := context.Background()
 
 			// Verify input is valid UTF-8
@@ -313,7 +313,7 @@ func TestGeminiUTF8EdgeCases(t *testing.T) {
 
 // Benchmark Gemini embedding generation
 func BenchmarkGeminiEmbeddingGeneration(b *testing.B) {
-	provider := NewGeminiProvider("test-key")
+	provider := NewGeminiProvider("") // Empty API key for mock
 	ctx := context.Background()
 	testText := "This is a benchmark test for Gemini embedding generation performance."
 
@@ -329,7 +329,7 @@ func BenchmarkGeminiEmbeddingGeneration(b *testing.B) {
 // Test embedding value distribution
 func TestGeminiEmbeddingValueDistribution(t *testing.T) {
 	// Arrange
-	provider := NewGeminiProvider("test-key")
+	provider := NewGeminiProvider("") // Empty API key for mock
 	ctx := context.Background()
 	texts := []string{
 		"Short text",
@@ -400,7 +400,7 @@ func TestGeminiAPIKeyValidation(t *testing.T) {
 // Test timeout behavior
 func TestGeminiTimeout(t *testing.T) {
 	// Arrange
-	provider := NewGeminiProvider("test-key")
+	provider := NewGeminiProvider("") // Empty API key for mock
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
 

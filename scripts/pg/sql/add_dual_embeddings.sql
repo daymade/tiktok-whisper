@@ -3,7 +3,7 @@
 
 -- Add dual embedding columns with separate dimensions
 ALTER TABLE transcriptions ADD COLUMN embedding_openai vector(1536);
-ALTER TABLE transcriptions ADD COLUMN embedding_gemini vector(768);
+ALTER TABLE transcriptions ADD COLUMN embedding_gemini vector(3072);
 
 -- Metadata for OpenAI embeddings
 ALTER TABLE transcriptions ADD COLUMN embedding_openai_model varchar(50);
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS embedding_providers (
 INSERT INTO embedding_providers (provider_name, model_name, dimension, cost_per_1k_tokens, rate_limit_per_minute) 
 VALUES 
 ('openai', 'text-embedding-ada-002', 1536, 0.0001, 3000),
-('gemini', 'models/embedding-001', 768, 0.0001, 1500)
+('gemini', 'gemini-embedding-001', 3072, 0.0001, 1500)
 ON CONFLICT (provider_name) DO UPDATE SET
     model_name = EXCLUDED.model_name,
     dimension = EXCLUDED.dimension,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS embedding_batches (
 
 -- Add comments for documentation
 COMMENT ON COLUMN transcriptions.embedding_openai IS 'OpenAI text-embedding-ada-002 vector (1536 dimensions)';
-COMMENT ON COLUMN transcriptions.embedding_gemini IS 'Google Gemini embedding-001 vector (768 dimensions)';
+COMMENT ON COLUMN transcriptions.embedding_gemini IS 'Google Gemini embedding-001 vector (3072 dimensions)';
 COMMENT ON COLUMN transcriptions.primary_embedding_provider IS 'Which embedding to use for primary search (openai, gemini, both)';
 COMMENT ON COLUMN transcriptions.embedding_sync_status IS 'Status of embedding synchronization (pending, syncing, completed, failed)';
 
