@@ -96,9 +96,9 @@ func TestEmbeddingProviderMetadata(t *testing.T) {
 		},
 		{
 			name:             "GeminiProvider",
-			provider:         NewGeminiProvider("test-key"),
+			provider:         NewGeminiProvider(""), // Empty API key for mock
 			expectedName:     "gemini",
-			expectedModel:    "models/embedding-001",
+			expectedModel:    "gemini-embedding-001",
 			expectedDimension: 768,
 		},
 	}
