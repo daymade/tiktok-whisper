@@ -60,8 +60,12 @@
             <div class="control-group">
                 <label for="search-input">搜索相似内容:</label>
                 <div class="search-container">
-                    <input type="text" id="search-input" placeholder="输入关键词搜索相似转录..." />
-                    <button id="search-btn">🔍</button>
+                    <input type="text" id="search-input" 
+                           placeholder="输入关键词搜索相似转录..." 
+                           maxlength="200"
+                           minlength="2"
+                           title="搜索关键词长度应在2-200个字符之间" />
+                    <button id="search-btn" title="搜索">🔍</button>
                 </div>
             </div>
 
