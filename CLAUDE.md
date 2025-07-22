@@ -156,11 +156,53 @@ type TranscriptionDAO interface {
 - Embedded database, no setup required
 - Uses `github.com/mattn/go-sqlite3` driver
 
-**PostgreSQL** (optional):
+**PostgreSQL with pgvector** (for embedding storage):
 - Requires external PostgreSQL instance with pgvector extension
 - Uses `github.com/lib/pq` driver
 - Migration scripts available in `scripts/pg/sql/`
 - Dual embedding storage for OpenAI and Gemini embeddings
+
+**Database Connection Information:**
+- Container: `mypgvector` (Docker container with ankane/pgvector image)
+- Host: localhost
+- Port: 5432 (mapped from Docker)
+- Username: postgres
+- Password: (no password required)
+- Database: postgres
+- Main table: `transcriptions`
+
+**Manual Database Access Commands:**
+```bash
+# Connect using temporary Docker container
+docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres
+
+# View table structure
+docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres -c "\d transcriptions"
+
+# Check data statistics
+docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres -c "
+SELECT COUNT(*) as total_records, 
+COUNT(embedding_openai) as openai_embeddings, 
+COUNT(embedding_gemini) as gemini_embeddings,
+COUNT(CASE WHEN embedding_openai IS NOT NULL OR embedding_gemini IS NOT NULL THEN 1 END) as total_embeddings
+FROM transcriptions;"
+
+# View embedding status distribution
+docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres -c "
+SELECT 
+  embedding_openai_status,
+  COUNT(*) as openai_count,
+  embedding_gemini_status,
+  COUNT(*) as gemini_count
+FROM transcriptions 
+GROUP BY embedding_openai_status, embedding_gemini_status;"
+```
+
+**Current Data Status (as of latest check):**
+- Total transcription records: 1,060
+- OpenAI embeddings generated: 2
+- Gemini embeddings generated: 50
+- Total usable embeddings: 52
 
 ## Python Scripts Alternative
 
@@ -280,9 +322,14 @@ v2t embed similarity --id1 123 --id2 456
 - **Error Resilience**: Robust error handling and retry mechanisms
 
 **Configuration:**
-- Requires `OPENAI_API_KEY` environment variable
-- PostgreSQL with pgvector extension for storage
+- Requires `OPENAI_API_KEY` and `GEMINI_API_KEY` environment variables
+- PostgreSQL with pgvector extension for storage (see Database Connection Information above)
 - Migration scripts: `scripts/pg/sql/add_dual_embeddings.sql`
+
+**Data Access for Development:**
+- Use DataGrip or similar tools to connect to pgvector database
+- Connection details: localhost:5432, user: postgres, db: postgres
+- For command-line access, use the Docker commands listed in Database Connection Information section
 
 **Key Files:**
 - `internal/app/embedding/provider/` - Embedding providers (OpenAI, Gemini)

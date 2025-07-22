@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抖音转录数据可视化 - Embedding 聚类分析</title>
+    
+    <!-- Three.js (Local) -->
+    <script src="lib/three.min.js"></script>
+    <!-- OrbitControls (Local) -->
+    <script src="lib/OrbitControls.js"></script>
+    <!-- UMAP for dimension reduction -->
+    <script src="https://unpkg.com/umap-js@1.4.2/lib/umap-js.min.js"></script>
+    <!-- ML Matrix for math operations -->
+    <script src="https://unpkg.com/ml-matrix@6.10.7/matrix.umd.min.js"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h2>加载中...</h2>
+            <p id="loading-text">正在获取数据...</p>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🚀 抖音转录数据 Embedding 可视化</h1>
+            <div class="header-stats">
+                <div class="stat">
+                    <span class="stat-label">总转录数:</span>
+                    <span id="total-count" class="stat-value">-</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">已生成向量:</span>
+                    <span id="embedding-count" class="stat-value">-</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">覆盖率:</span>
+                    <span id="coverage" class="stat-value">-</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Control Panel -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="provider">向量提供商:</label>
+                <select id="provider">
+                    <option value="gemini" selected>Gemini (768维)</option>
+                    <option value="openai">OpenAI (1536维)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="search-input">搜索相似内容:</label>
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="输入关键词搜索相似转录..." />
+                    <button id="search-btn">🔍</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="cluster-method">聚类方法:</label>
+                <select id="cluster-method">
+                    <option value="umap" selected>UMAP 降维</option>
+                    <option value="tsne">t-SNE 降维</option>
+                    <option value="pca">PCA 降维</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="point-size">点大小:</label>
+                <input type="range" id="point-size" min="0.5" max="5" value="2" step="0.1">
+                <span id="point-size-value">2.0</span>
+            </div>
+
+            <div class="control-group">
+                <button id="reset-view">重置视角</button>
+                <button id="toggle-animation">暂停动画</button>
+            </div>
+        </div>
+
+        <!-- Visualization Container -->
+        <div id="visualization-container">
+            <canvas id="three-canvas"></canvas>
+            
+            <!-- Info Panel -->
+            <div id="info-panel" class="info-panel hidden">
+                <div class="info-header">
+                    <h3>转录详情</h3>
+                    <button id="close-info">×</button>
+                </div>
+                <div class="info-content">
+                    <p><strong>ID:</strong> <span id="info-id">-</span></p>
+                    <p><strong>用户:</strong> <span id="info-user">-</span></p>
+                    <p><strong>内容预览:</strong></p>
+                    <div id="info-text" class="info-text"></div>
+                    <p><strong>向量维度:</strong> <span id="info-dimensions">-</span></p>
+                    <p><strong>创建时间:</strong> <span id="info-created">-</span></p>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            <div id="search-results" class="search-results hidden">
+                <div class="search-header">
+                    <h3>搜索结果</h3>
+                    <button id="close-search">×</button>
+                </div>
+                <div id="search-list" class="search-list"></div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h4>图例</h4>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff6b6b;"></div>
+                <span>高相似度簇</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4ecdc4;"></div>
+                <span>中相似度簇</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #45b7d1;"></div>
+                <span>低相似度簇</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ffd93d;"></div>
+                <span>搜索结果</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/clustering.js"></script>
+    <script src="js/effects.js"></script>
+    <script src="js/visualization.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

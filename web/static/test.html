@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js 兼容性测试</title>
+    <style>
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: #fff; 
+            font-family: Arial, sans-serif;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        #container {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h2>🔍 Three.js 兼容性测试</h2>
+        <div id="status">正在检测...</div>
+        <div id="webgl-status"></div>
+        <div id="three-status"></div>
+        <div id="browser-info"></div>
+    </div>
+    
+    <div id="container"></div>
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r158/three.min.js"></script>
+    
+    <script>
+        function updateStatus(id, message, isSuccess = true) {
+            const element = document.getElementById(id);
+            element.innerHTML = (isSuccess ? '✅ ' : '❌ ') + message;
+        }
+
+        // 1. 检测浏览器信息
+        const browserInfo = `${navigator.userAgent.split(' ').pop()} (${navigator.platform})`;
+        updateStatus('browser-info', `浏览器: ${browserInfo}`);
+
+        // 2. 检测WebGL支持
+        function checkWebGL() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (gl) {
+                    const renderer = gl.getParameter(gl.RENDERER);
+                    const vendor = gl.getParameter(gl.VENDOR);
+                    updateStatus('webgl-status', `WebGL: ${renderer} (${vendor})`);
+                    return true;
+                } else {
+                    updateStatus('webgl-status', 'WebGL不支持', false);
+                    return false;
+                }
+            } catch (e) {
+                updateStatus('webgl-status', `WebGL错误: ${e.message}`, false);
+                return false;
+            }
+        }
+
+        // 3. 检测Three.js
+        function checkThreeJS() {
+            if (typeof THREE !== 'undefined') {
+                updateStatus('three-status', `Three.js ${THREE.REVISION} 加载成功`);
+                
+                // 创建一个简单的3D场景测试
+                try {
+                    const scene = new THREE.Scene();
+                    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                    const renderer = new THREE.WebGLRenderer();
+                    
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    document.getElementById('container').appendChild(renderer.domElement);
+                    
+                    // 创建一个旋转的立方体
+                    const geometry = new THREE.BoxGeometry(2, 2, 2);
+                    const material = new THREE.MeshBasicMaterial({ 
+                        color: 0x00ff00,
+                        wireframe: true 
+                    });
+                    const cube = new THREE.Mesh(geometry, material);
+                    scene.add(cube);
+                    
+                    camera.position.z = 5;
+                    
+                    function animate() {
+                        requestAnimationFrame(animate);
+                        cube.rotation.x += 0.01;
+                        cube.rotation.y += 0.01;
+                        renderer.render(scene, camera);
+                    }
+                    
+                    animate();
+                    updateStatus('status', '🎉 Three.js完全兼容！绿色线框立方体应该在旋转');
+                    
+                } catch (e) {
+                    updateStatus('status', `Three.js渲染错误: ${e.message}`, false);
+                }
+                
+            } else {
+                updateStatus('three-status', 'Three.js未加载', false);
+                updateStatus('status', 'Three.js加载失败', false);
+            }
+        }
+
+        // 等待页面加载完成
+        window.addEventListener('load', function() {
+            checkWebGL();
+            
+            // 等待Three.js加载
+            setTimeout(checkThreeJS, 1000);
+        });
+
+        // 窗口大小调整
+        window.addEventListener('resize', function() {
+            if (typeof THREE !== 'undefined' && window.camera && window.renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+    </script>
+</body>
+</html>
