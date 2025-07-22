@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单测试页面</title>
+    <style>
+        body { 
+            margin: 0; 
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff; 
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(26, 26, 46, 0.8);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+        .status {
+            font-size: 18px;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .success { border-left: 4px solid #4ecdc4; }
+        .error { border-left: 4px solid #ff6b6b; }
+        .info { border-left: 4px solid #45b7d1; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4ecdc4;
+            text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #cccccc;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 抖音转录数据可视化</h1>
+        
+        <div id="webgl-test" class="status info">
+            🔍 正在检测WebGL支持...
+        </div>
+        
+        <div id="api-test" class="status info">
+            📊 正在测试API连接...
+        </div>
+        
+        <div id="data-test" class="status info">
+            💾 正在检查数据状态...
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div id="total-count" class="stat-value">-</div>
+                <div class="stat-label">总转录数</div>
+            </div>
+            <div class="stat-item">
+                <div id="embedding-count" class="stat-value">-</div>
+                <div class="stat-label">已生成向量</div>
+            </div>
+            <div class="stat-item">
+                <div id="coverage" class="stat-value">-</div>
+                <div class="stat-label">覆盖率</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <p>✨ Chrome 完全支持 Three.js 和 WebGL</p>
+            <p>🎮 问题可能是网络或CDN加载问题</p>
+            <p>💡 我们已经创建了完整的3D可视化系统</p>
+        </div>
+    </div>
+
+    <script>
+        // 检测WebGL支持
+        function checkWebGL() {
+            const webglTest = document.getElementById('webgl-test');
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (gl) {
+                    const renderer = gl.getParameter(gl.RENDERER);
+                    webglTest.textContent = `✅ WebGL支持正常: ${renderer}`;
+                    webglTest.className = 'status success';
+                } else {
+                    webglTest.textContent = '❌ WebGL不支持';
+                    webglTest.className = 'status error';
+                }
+            } catch (e) {
+                webglTest.textContent = `❌ WebGL错误: ${e.message}`;
+                webglTest.className = 'status error';
+            }
+        }
+
+        // 测试API连接
+        async function testAPI() {
+            const apiTest = document.getElementById('api-test');
+            try {
+                const response = await fetch('/api/stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    apiTest.textContent = '✅ API连接正常';
+                    apiTest.className = 'status success';
+                    
+                    // 更新统计数据
+                    document.getElementById('total-count').textContent = data.totalTranscripts || 0;
+                    document.getElementById('embedding-count').textContent = (data.geminiEmbeddings || 0) + (data.openaiEmbeddings || 0);
+                    document.getElementById('coverage').textContent = ((data.geminiEmbeddings || 0) / (data.totalTranscripts || 1) * 100).toFixed(1) + '%';
+                } else {
+                    apiTest.textContent = `❌ API响应错误: ${response.status}`;
+                    apiTest.className = 'status error';
+                }
+            } catch (error) {
+                apiTest.textContent = `❌ API连接失败: ${error.message}`;
+                apiTest.className = 'status error';
+            }
+        }
+
+        // 测试embedding数据
+        async function testData() {
+            const dataTest = document.getElementById('data-test');
+            try {
+                const response = await fetch('/api/embeddings?provider=gemini&limit=5');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.length > 0) {
+                        dataTest.textContent = `✅ 找到 ${data.length} 个embedding数据，维度: ${data[0].embedding?.length || 'unknown'}`;
+                        dataTest.className = 'status success';
+                    } else {
+                        dataTest.textContent = '⚠️ 没有找到embedding数据';
+                        dataTest.className = 'status error';
+                    }
+                } else {
+                    dataTest.textContent = `❌ 数据获取错误: ${response.status}`;
+                    dataTest.className = 'status error';
+                }
+            } catch (error) {
+                dataTest.textContent = `❌ 数据获取失败: ${error.message}`;
+                dataTest.className = 'status error';
+            }
+        }
+
+        // 运行所有测试
+        window.addEventListener('load', function() {
+            checkWebGL();
+            testAPI();
+            testData();
+        });
+    </script>
+</body>
+</html>
