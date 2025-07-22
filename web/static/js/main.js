@@ -61,18 +61,56 @@ class EmbeddingApp {
             });
         }
 
-        // 搜索功能
+        // 搜索功能 - 增强版本
         const searchInput = document.getElementById('search-input');
         const searchBtn = document.getElementById('search-btn');
         
         if (searchInput && searchBtn) {
+            // 防抖动搜索
+            let searchTimeout;
+            const debouncedSearch = (query) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.performSearch(query);
+                }, 300); // 300ms 防抖
+            };
+
+            // 搜索按钮点击
             searchBtn.addEventListener('click', () => {
+                clearTimeout(searchTimeout); // 立即执行搜索
                 this.performSearch(searchInput.value);
             });
             
+            // Enter 键搜索
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
+                    clearTimeout(searchTimeout); // 立即执行搜索
                     this.performSearch(searchInput.value);
+                }
+            });
+
+            // 实时搜索 (可选，用户输入时自动搜索)
+            /*
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                if (query.length >= 2) { // 至少2个字符才开始搜索
+                    debouncedSearch(query);
+                } else if (query.length === 0) {
+                    // 清空搜索时重置高亮
+                    this.hideSearchResults();
+                    if (this.visualizer) {
+                        this.visualizer.resetAllHighlights();
+                    }
+                }
+            });
+            */
+
+            // 输入验证和提示
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value;
+                if (query.length > 200) {
+                    e.target.value = query.substring(0, 200);
+                    this.showTemporaryMessage('搜索查询不能超过200个字符', 2000);
                 }
             });
         }
@@ -244,23 +282,40 @@ class EmbeddingApp {
     }
 
     /**
-     * 执行搜索
+     * 执行搜索 - 增强版本
      */
     async performSearch(query) {
-        if (!query.trim()) {
-            this.showError('请输入搜索关键词');
+        // 输入验证
+        const trimmedQuery = query.trim();
+        if (!trimmedQuery) {
+            this.showTemporaryMessage('请输入搜索关键词', 2000);
+            return;
+        }
+
+        if (trimmedQuery.length < 2) {
+            this.showTemporaryMessage('搜索关键词至少需要2个字符', 2000);
+            return;
+        }
+
+        if (trimmedQuery.length > 200) {
+            this.showTemporaryMessage('搜索关键词不能超过200个字符', 2000);
             return;
         }
 
         if (this.isLoading || !this.visualizer) {
+            if (this.isLoading) {
+                this.showTemporaryMessage('正在处理中，请稍等...', 2000);
+            } else {
+                this.showTemporaryMessage('可视化系统未准备好，请稍等...', 2000);
+            }
             return;
         }
 
-        this.showLoading(`正在搜索 "${query}"...`);
+        this.showLoading(`正在搜索 "${trimmedQuery}"...`);
 
         try {
-            const results = await this.visualizer.searchSimilar(query);
-            this.displaySearchResults(results, query);
+            const results = await this.visualizer.searchSimilar(trimmedQuery);
+            this.displaySearchResults(results, trimmedQuery);
             this.hideLoading();
         } catch (error) {
             console.error('搜索失败:', error);
@@ -430,8 +485,39 @@ class EmbeddingApp {
     }
 
     /**
-     * 销毁应用
+     * 显示临时消息
      */
+    showTemporaryMessage(message, duration = 3000) {
+        // 创建临时消息元素
+        const messageDiv = document.createElement('div');
+        messageDiv.textContent = message;
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 217, 61, 0.9);
+            color: #000;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: opacity 0.3s ease;
+        `;
+        
+        document.body.appendChild(messageDiv);
+        
+        // 自动移除
+        setTimeout(() => {
+            messageDiv.style.opacity = '0';
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 300);
+        }, duration);
+    }
+
     dispose() {
         if (this.visualizer) {
             this.visualizer.dispose();

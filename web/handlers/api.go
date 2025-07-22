@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 
+	"tiktok-whisper/internal/app/embedding/provider"
+	"tiktok-whisper/internal/config"
+
 	_ "github.com/lib/pq"
 )
 
@@ -40,6 +43,17 @@ type UserStats struct {
 	TotalTranscripts  int    `json:"totalTranscripts"`
 	GeminiEmbeddings  int    `json:"geminiEmbeddings"`
 	OpenAIEmbeddings  int    `json:"openaiEmbeddings"`
+}
+
+// SearchResult represents a search result with similarity score
+type SearchResult struct {
+	ID          int     `json:"id"`
+	User        string  `json:"user"`
+	Text        string  `json:"text"`
+	TextPreview string  `json:"textPreview"`
+	Provider    string  `json:"provider"`
+	Similarity  float64 `json:"similarity"`
+	CreatedAt   string  `json:"createdAt,omitempty"`
 }
 
 // SystemStats represents system-wide statistics
@@ -109,23 +123,54 @@ func (h *APIHandler) SearchEmbeddings(w http.ResponseWriter, r *http.Request) {
 		provider = "gemini"
 	}
 
-	_ = r.URL.Query().Get("limit") // TODO: Implement search with limit
-	_ = r.URL.Query().Get("threshold") // TODO: Implement search with threshold
+	limitStr := r.URL.Query().Get("limit")
+	limit := 10 // default limit
+	if limitStr != "" {
+		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	thresholdStr := r.URL.Query().Get("threshold")
+	threshold := 0.1 // default threshold
+	if thresholdStr != "" {
+		if parsed, err := strconv.ParseFloat(thresholdStr, 64); err == nil && parsed >= 0 {
+			threshold = parsed
+		}
+	}
 
 	if query == "" {
 		http.Error(w, "Query parameter 'q' is required", http.StatusBadRequest)
 		return
 	}
 
-	// For now, return mock search results
-	// TODO: Implement actual vector search
-	results := []EmbeddingData{
-		{
-			ID:          1,
-			User:        "薛辉小清新",
-			TextPreview: "搜索结果示例...",
-			Provider:    provider,
-		},
+	// Validate provider
+	if provider != "openai" && provider != "gemini" {
+		http.Error(w, "Provider must be either 'openai' or 'gemini'", http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.Background()
+
+	// Load API keys for embedding generation
+	apiKeys, err := config.GetAPIKeys()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to load API keys: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Generate embedding for the search query
+	targetEmbedding, err := h.generateTextEmbedding(ctx, query, provider, apiKeys)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to generate embedding: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Perform vector similarity search
+	results, err := h.performVectorSearch(ctx, targetEmbedding, provider, limit, threshold)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Search failed: %v", err), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
