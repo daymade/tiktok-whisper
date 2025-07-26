@@ -1,6 +1,16 @@
 # Transcription Embeddings Feature Design
 
+> **⚠️ DEPRECATED DOCUMENT**  
+> **Status**: Archived (2025-07-23)  
+> **Reason**: Superseded by actual implementation in DUAL_EMBEDDING_TDD_PLAN.md and IMPLEMENTATION_SUMMARY.md  
+> **Current Implementation**: Dual embedding system (OpenAI + Gemini) with pgvector is fully operational  
+
 ## Executive Summary
+
+**NOTE: This document represents early design concepts. The actual implementation differs significantly and is documented in:**
+- `DUAL_EMBEDDING_TDD_PLAN.md` - Current architecture and implementation plan
+- `IMPLEMENTATION_SUMMARY.md` - Completed implementation status
+- `../CLAUDE.md` - Current system configuration and usage
 
 This document outlines the design for adding embedding functionality to the tiktok-whisper project. The feature will enable:
 - Automatic generation of embeddings for transcriptions

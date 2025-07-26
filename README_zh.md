@@ -177,10 +177,40 @@ python scripts/python/whisperToText.py --input_dir ./data/youtube/ --output_dir 
 ```
 
 
+## 最新功能 ✨
+
+- [x] **双重嵌入系统**: 支持 OpenAI (1536维) + Gemini (768维) 嵌入
+- [x] **pgvector 集成**: PostgreSQL 向量相似度搜索
+- [x] **3D 可视化**: Three.js 交互式聚类可视化
+- [x] **自然触控板手势**: Jon Ive 级别的触摸交互系统
+- [x] **实时搜索**: 基于向量的相似度搜索和实时结果
+- [x] **批量嵌入生成**: 大规模嵌入处理的 CLI 工具
+
+## 嵌入和向量搜索
+
+生成嵌入并执行相似度搜索：
+
+```shell
+# 为所有转录生成嵌入
+./v2t embed generate
+
+# 搜索相似内容
+./v2t embed search --text "您的搜索查询" --limit 10
+
+# 计算转录之间的相似度
+./v2t embed similarity --id1 123 --id2 456
+
+# 启动 3D 可视化服务器
+go run web-main.go
+# 访问 http://localhost:8080 查看交互式聚类可视化
+```
+
 ## TODO
 
 - [x] 视频时长统计
+- [x] 使用 pgvector 向量化搜索
+- [x] 聚类的 3D 可视化
+- [x] 自然触控板手势支持
 - [ ] 关键词搜索定位到视频
 - [ ] 原始视频跳转链接
 - [ ] 转赞评统计
-- [ ] 使用 pgvector 向量化搜索

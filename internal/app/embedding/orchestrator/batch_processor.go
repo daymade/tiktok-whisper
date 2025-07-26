@@ -149,24 +149,39 @@ func (p *BatchProcessor) ProcessBatch(ctx context.Context, transcriptions []*vec
 	return result, nil
 }
 
-// ProcessAllTranscriptions processes all transcriptions without embeddings
-func (p *BatchProcessor) ProcessAllTranscriptions(ctx context.Context, batchSize int) error {
-	// Get transcriptions without embeddings
-	transcriptions, err := p.storage.GetTranscriptionsWithoutEmbeddings(ctx, "openai", 0)
-	if err != nil {
-		return err
+// ProcessAllTranscriptions processes all transcriptions without embeddings for specified providers
+func (p *BatchProcessor) ProcessAllTranscriptions(ctx context.Context, providers []string, batchSize int) error {
+	var allTranscriptions []*vector.Transcription
+	processedIDs := make(map[int]bool)
+	
+	// Get transcriptions without embeddings for each provider
+	for _, provider := range providers {
+		// Use a large limit to get all available records
+		transcriptions, err := p.storage.GetTranscriptionsWithoutEmbeddings(ctx, provider, 10000)
+		if err != nil {
+			return err
+		}
+		
+		// Add unique transcriptions to the processing list
+		for _, t := range transcriptions {
+			if !processedIDs[t.ID] {
+				allTranscriptions = append(allTranscriptions, t)
+				processedIDs[t.ID] = true
+			}
+		}
 	}
 	
-	if len(transcriptions) == 0 {
+	if len(allTranscriptions) == 0 {
 		p.logger.Info("No transcriptions to process")
 		return nil
 	}
 	
 	p.logger.Info("Starting batch processing", 
-		"totalTranscriptions", len(transcriptions), 
+		"totalTranscriptions", len(allTranscriptions), 
+		"providers", providers,
 		"batchSize", batchSize)
 	
-	_, err = p.ProcessBatch(ctx, transcriptions, batchSize)
+	_, err := p.ProcessBatch(ctx, allTranscriptions, batchSize)
 	return err
 }
 

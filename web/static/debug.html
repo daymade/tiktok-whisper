@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Touch Event Debug</title>
+    <style>
+        #touchArea {
+            width: 100vw;
+            height: 100vh;
+            background: #222;
+            color: white;
+            font-family: monospace;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            touch-action: none;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="touchArea">
+        <h3>Touch Event Debug Console</h3>
+        <p>Try different gestures on this area:</p>
+        <ul>
+            <li>Single finger drag - should log touchmove</li>
+            <li>Two finger pinch - should log gesture events</li>
+            <li>Two finger pan - should log touchmove with 2 fingers</li>
+            <li>Wheel/trackpad - should log wheel events</li>
+        </ul>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(message) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            log.insertBefore(entry, log.firstChild);
+            if (log.children.length > 50) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        const touchArea = document.getElementById('touchArea');
+        
+        // Touch events
+        touchArea.addEventListener('touchstart', (e) => {
+            addLog(`touchstart: ${e.touches.length} fingers`);
+        });
+        
+        touchArea.addEventListener('touchmove', (e) => {
+            addLog(`touchmove: ${e.touches.length} fingers, deltaTime: ${Date.now() - (window.lastTouchTime || 0)}ms`);
+            window.lastTouchTime = Date.now();
+        });
+        
+        touchArea.addEventListener('touchend', (e) => {
+            addLog(`touchend: ${e.touches.length} remaining`);
+        });
+        
+        // Gesture events (Safari)
+        if ('GestureEvent' in window) {
+            touchArea.addEventListener('gesturestart', (e) => {
+                addLog(`gesturestart: scale=${e.scale}`);
+            });
+            
+            touchArea.addEventListener('gesturechange', (e) => {
+                addLog(`gesturechange: scale=${e.scale}`);
+            });
+            
+            touchArea.addEventListener('gestureend', (e) => {
+                addLog(`gestureend: scale=${e.scale}`);
+            });
+        } else {
+            addLog('GestureEvent not supported in this browser');
+        }
+        
+        // Wheel events
+        touchArea.addEventListener('wheel', (e) => {
+            addLog(`wheel: deltaY=${e.deltaY}, deltaX=${e.deltaX}, ctrlKey=${e.ctrlKey}, metaKey=${e.metaKey}`);
+        });
+        
+        // Mouse events for comparison
+        touchArea.addEventListener('mousedown', (e) => {
+            addLog(`mousedown: button=${e.button}`);
+        });
+        
+        addLog('Debug console ready - try touch gestures!');
+    </script>
+</body>
+</html>

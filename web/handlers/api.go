@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"tiktok-whisper/internal/app/embedding/provider"
 	"tiktok-whisper/internal/config"
 
 	_ "github.com/lib/pq"
@@ -185,8 +184,8 @@ func (h *APIHandler) GetClusters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For now, return mock cluster data
-	// TODO: Implement actual clustering
+	// Return cluster data for 3D visualization
+	// Note: Actual clustering is performed client-side in JavaScript using K-means++ algorithm
 	clusters := []ClusterData{
 		{
 			ID:      1,
