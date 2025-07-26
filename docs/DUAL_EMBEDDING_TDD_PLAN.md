@@ -836,7 +836,7 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=postgres
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=passwd
+POSTGRES_PASSWORD=your_password_here
 
 # Processing
 BATCH_SIZE=10

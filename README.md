@@ -148,10 +148,40 @@ pip install -r requirements.txt
 
 For single file or directory transcription, and parallel transcription of multiple subdirectories, follow the provided commands in the documentation.
 
+## Recent Features ✨
+
+- [x] **Dual Embedding System**: OpenAI (1536D) + Gemini (768D) embedding support
+- [x] **pgvector Integration**: Vector similarity search with PostgreSQL
+- [x] **3D Visualization**: Interactive 3D clustering visualization with Three.js
+- [x] **Natural Trackpad Gestures**: Jon Ive-level touch interaction system
+- [x] **Real-time Search**: Vector-based similarity search with live results
+- [x] **Batch Embedding Generation**: CLI tools for large-scale embedding processing
+
+## Embedding & Vector Search
+
+Generate embeddings and perform similarity search:
+
+```shell
+# Generate embeddings for all transcriptions
+./v2t embed generate
+
+# Search for similar content
+./v2t embed search --text "your search query" --limit 10
+
+# Calculate similarity between transcriptions
+./v2t embed similarity --id1 123 --id2 456
+
+# Start 3D visualization server
+go run web-main.go
+# Visit http://localhost:8080 for interactive clustering visualization
+```
+
 ## TODO
 
-- [x] Video duration statistics
+- [x] Video duration statistics  
+- [x] Use pgvector for vectorized search
+- [x] 3D visualization with clustering
+- [x] Natural trackpad gesture support
 - [ ] Keyword search to locate videos
 - [ ] Original video jump link
 - [ ] Like, share, and comment statistics
-- [ ] Use pgvector for vectorized search

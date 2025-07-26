@@ -176,6 +176,97 @@ body::before {
     box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
 }
 
+/* 输入设备指示器 */
+.device-indicator {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    margin-right: 8px;
+}
+
+/* 设备选择器 */
+.device-selector {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #ffffff;
+    padding: 4px 8px;
+    font-size: 11px;
+    min-width: 80px;
+    cursor: pointer;
+}
+
+.device-selector:focus {
+    outline: none;
+    border-color: #4ecdc4;
+    box-shadow: 0 0 8px rgba(78, 205, 196, 0.3);
+}
+
+.device-selector option {
+    background: #1a1a2e;
+    color: #ffffff;
+}
+
+.device-indicator.mouse {
+    background: rgba(78, 205, 196, 0.2);
+    color: #4ecdc4;
+    border-color: #4ecdc4;
+}
+
+.device-indicator.trackpad {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+}
+
+.device-indicator.detecting {
+    background: rgba(255, 217, 61, 0.2);
+    color: #ffd93d;
+    border-color: #ffd93d;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* 敏感度控制 */
+.sensitivity-controls {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.sensitivity-controls.active {
+    opacity: 1;
+}
+
+.sensitivity-controls label {
+    min-width: 100px;
+}
+
+.sensitivity-controls input[type="range"] {
+    flex: 1;
+    margin: 0 8px;
+}
+
+.sensitivity-controls span {
+    min-width: 30px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    padding: 2px 6px;
+}
+
 .search-container {
     display: flex;
     align-items: center;
@@ -249,6 +340,16 @@ button:hover {
     width: 100%;
     height: 100%;
     display: block;
+    
+    /* 防止默认触摸手势与3D导航冲突 */
+    touch-action: none;
+    
+    /* 提高触摸交互性能 */
+    cursor: grab;
+}
+
+#three-canvas:active {
+    cursor: grabbing;
 }
 
 /* Info panel */

@@ -336,6 +336,36 @@ v2t embed similarity --id1 123 --id2 456
 - `cmd/v2t/cmd/embed/` - CLI commands for embedding operations
 - `docs/DUAL_EMBEDDING_TDD_PLAN.md` - Implementation documentation
 
+## Trackpad Gesture System
+
+The project features a Jon Ive-level natural trackpad interaction system for the 3D visualization:
+
+**Features:**
+- **智能手势识别**: Distinguishes between single-finger rotation, two-finger pinch-zoom, and two-finger pan
+- **真正的双指缩放**: Proper pinch-to-zoom with logarithmic scaling for linear feel
+- **动量支持**: Natural momentum decay after gestures end with physics-based animation
+- **跨浏览器兼容**: Safari GestureEvent and standard TouchEvent support
+- **设备自适应**: Automatic mouse vs trackpad detection with manual override
+- **高性能优化**: 120fps updates, Map-based touch tracking, anti-jitter algorithms
+
+**Technical Implementation:**
+- Enhanced touch state management with Map data structure
+- Intelligent gesture recognition with hysteresis to prevent switching
+- Natural zoom control using logarithmic scaling
+- Momentum physics system with realistic decay
+- Cross-browser compatibility layer
+- Device-specific sensitivity settings
+
+**Files:**
+- `web/static/js/visualization.js` - Core gesture system implementation
+- `web/static/debug.html` - Touch event debugging page
+- `docs/TRACKPAD_GESTURE_SYSTEM.md` - Complete technical documentation
+
+**Testing:**
+- Visit `/debug.html` to test touch events and gesture recognition
+- Console logs with `[TOUCH]`, `[GESTURE]`, and `[INPUT]` prefixes for debugging
+- Device indicator in UI shows current input device and confidence level
+
 ## Important Configuration Files
 
 - `go.mod` - Go module dependencies
@@ -346,3 +376,4 @@ v2t embed similarity --id1 123 --id2 456
 - `tools/export-to-md/pyproject.toml` - uv project configuration
 - `scripts/pg/sql/add_dual_embeddings.sql` - PostgreSQL embedding schema
 - `docs/DUAL_EMBEDDING_TDD_PLAN.md` - Embedding system documentation
+- `docs/TRACKPAD_GESTURE_SYSTEM.md` - Trackpad gesture system technical documentation

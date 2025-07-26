@@ -83,6 +83,29 @@
                 <input type="range" id="point-size" min="0.5" max="5" value="2" step="0.1">
                 <span id="point-size-value">2.0</span>
             </div>
+            
+            <!-- 输入设备和敏感度控制 -->
+            <div class="control-group">
+                <label>输入设备:</label>
+                <span id="input-device-indicator" class="device-indicator">检测中...</span>
+                <select id="device-override" class="device-selector" title="手动切换输入设备">
+                    <option value="auto">自动检测</option>
+                    <option value="mouse">鼠标</option>
+                    <option value="trackpad">触控板</option>
+                </select>
+            </div>
+
+            <div class="control-group sensitivity-controls">
+                <label for="mouse-sensitivity">鼠标敏感度:</label>
+                <input type="range" id="mouse-sensitivity" min="0.1" max="3.0" value="1.0" step="0.1">
+                <span id="mouse-sensitivity-value">1.0</span>
+            </div>
+            
+            <div class="control-group sensitivity-controls">
+                <label for="trackpad-sensitivity">触控板敏感度:</label>
+                <input type="range" id="trackpad-sensitivity" min="0.1" max="3.0" value="1.0" step="0.1">
+                <span id="trackpad-sensitivity-value">1.0</span>
+            </div>
 
             <div class="control-group">
                 <button id="reset-view">重置视角</button>

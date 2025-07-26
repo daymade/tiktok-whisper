@@ -128,6 +128,9 @@ class EmbeddingApp {
                 }
             });
         }
+        
+        // 敏感度控制
+        this.setupSensitivityControls();
 
         // 重置视角按钮
         const resetViewBtn = document.getElementById('reset-view');
@@ -517,8 +520,134 @@ class EmbeddingApp {
             }, 300);
         }, duration);
     }
+    
+    /**
+     * 设置敏感度控制
+     */
+    setupSensitivityControls() {
+        // 设备指示器和手动切换
+        this.deviceIndicator = document.getElementById('input-device-indicator');
+        this.deviceOverrideSelect = document.getElementById('device-override');
+        this.deviceOverride = 'auto'; // 'auto', 'mouse', 'trackpad'
+        
+        // 鼠标敏感度控制
+        const mouseSensitivitySlider = document.getElementById('mouse-sensitivity');
+        const mouseSensitivityValue = document.getElementById('mouse-sensitivity-value');
+        const mouseControls = mouseSensitivitySlider ? mouseSensitivitySlider.closest('.control-group') : null;
+        
+        // 触控板敏感度控制
+        const trackpadSensitivitySlider = document.getElementById('trackpad-sensitivity');
+        const trackpadSensitivityValue = document.getElementById('trackpad-sensitivity-value');
+        const trackpadControls = trackpadSensitivitySlider ? trackpadSensitivitySlider.closest('.control-group') : null;
+        
+        // 存储控制元素引用
+        this.sensitivityControls = {
+            mouse: { slider: mouseSensitivitySlider, value: mouseSensitivityValue, group: mouseControls },
+            trackpad: { slider: trackpadSensitivitySlider, value: trackpadSensitivityValue, group: trackpadControls }
+        };
+        
+        // 设置鼠标敏感度控制
+        if (mouseSensitivitySlider && mouseSensitivityValue) {
+            mouseSensitivitySlider.addEventListener('input', (e) => {
+                const sensitivity = parseFloat(e.target.value);
+                mouseSensitivityValue.textContent = sensitivity.toFixed(1);
+                if (this.visualizer) {
+                    this.visualizer.setSensitivityMultiplier('mouse', sensitivity);
+                }
+            });
+        }
+        
+        // 设置触控板敏感度控制
+        if (trackpadSensitivitySlider && trackpadSensitivityValue) {
+            trackpadSensitivitySlider.addEventListener('input', (e) => {
+                const sensitivity = parseFloat(e.target.value);
+                trackpadSensitivityValue.textContent = sensitivity.toFixed(1);
+                if (this.visualizer) {
+                    this.visualizer.setSensitivityMultiplier('trackpad', sensitivity);
+                }
+            });
+        }
+        
+        // 手动设备切换
+        if (this.deviceOverrideSelect) {
+            this.deviceOverrideSelect.addEventListener('change', (e) => {
+                this.deviceOverride = e.target.value;
+                if (this.deviceOverride !== 'auto' && this.visualizer) {
+                    this.visualizer.setDeviceType(this.deviceOverride);
+                }
+                this.updateDeviceIndicator();
+            });
+        }
+        
+        // 定期更新设备检测状态
+        this.deviceDetectionInterval = setInterval(() => {
+            this.updateDeviceIndicator();
+        }, 1000);
+    }
+    
+    /**
+     * 更新设备指示器
+     */
+    updateDeviceIndicator() {
+        if (!this.visualizer || !this.deviceIndicator) return;
+        
+        let currentDevice, confidence;
+        
+        // 检查是否手动覆盖
+        if (this.deviceOverride !== 'auto') {
+            currentDevice = this.deviceOverride;
+            confidence = 1.0;
+        } else {
+            currentDevice = this.visualizer.inputDevice;
+            confidence = this.visualizer.trackpadConfidence;
+            
+            // 如果长时间未检测成功，显示提示
+            if (currentDevice === 'unknown' && this.detectionStartTime && 
+                Date.now() - this.detectionStartTime > 5000) {
+                this.deviceIndicator.textContent = '检测失败 - 请手动选择';
+                this.deviceIndicator.className = 'device-indicator detecting';
+                return;
+            } else if (currentDevice === 'unknown' && !this.detectionStartTime) {
+                this.detectionStartTime = Date.now();
+            } else if (currentDevice !== 'unknown') {
+                this.detectionStartTime = null;
+            }
+        }
+        
+        // 更新指示器文本和样式
+        this.deviceIndicator.className = 'device-indicator';
+        
+        if (currentDevice === 'unknown' || (this.deviceOverride === 'auto' && confidence < 0.3)) {
+            this.deviceIndicator.textContent = '检测中...';
+            this.deviceIndicator.classList.add('detecting');
+        } else if (currentDevice === 'mouse') {
+            this.deviceIndicator.textContent = this.deviceOverride !== 'auto' ? '鼠标 (手动)' : '鼠标';
+            this.deviceIndicator.classList.add('mouse');
+        } else if (currentDevice === 'trackpad') {
+            this.deviceIndicator.textContent = this.deviceOverride !== 'auto' ? '触控板 (手动)' : '触控板';
+            this.deviceIndicator.classList.add('trackpad');
+        }
+        
+        // 高亮当前活跃的敏感度控制
+        Object.keys(this.sensitivityControls).forEach(deviceType => {
+            const controls = this.sensitivityControls[deviceType];
+            if (controls.group) {
+                if (deviceType === currentDevice) {
+                    controls.group.classList.add('active');
+                } else {
+                    controls.group.classList.remove('active');
+                }
+            }
+        });
+    }
 
     dispose() {
+        // 清理设备检测定时器
+        if (this.deviceDetectionInterval) {
+            clearInterval(this.deviceDetectionInterval);
+            this.deviceDetectionInterval = null;
+        }
+        
         if (this.visualizer) {
             this.visualizer.dispose();
             this.visualizer = null;

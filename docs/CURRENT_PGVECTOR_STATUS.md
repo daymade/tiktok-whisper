@@ -37,7 +37,7 @@ You have built excellent infrastructure for vector embeddings with pgvector, inc
 ### 4. **Database Connection**
 **File**: `internal/app/repository/pg/pg.go`
 - ✅ PostgreSQL connection with correct credentials
-- ✅ Connection string: `postgres://postgres:passwd@localhost:5432/postgres`
+- ✅ Connection string: `postgres://postgres:${DB_PASSWORD}@localhost:5432/postgres`
 
 ### 5. **Sample Data Analysis**
 - **Total records**: 1060 transcriptions
