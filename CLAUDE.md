@@ -312,16 +312,26 @@ The project features a dual embedding system for similarity search and duplicate
 # Generate embeddings for all transcriptions
 v2t embed generate
 
+# Generate embeddings for specific user
+v2t embed generate --user "username" --provider gemini
+
+# Check embedding status with user distribution
+v2t embed status
+
 # Find similar transcriptions
 v2t embed search --text "search query" --limit 10
 
 # Calculate similarity between transcriptions
 v2t embed similarity --id1 123 --id2 456
+
+# Find duplicates for specific user
+v2t embed duplicates --user "username" --threshold 0.95
 ```
 
 **Architecture:**
 - **Dual Provider Support**: OpenAI text-embedding-3-small and Gemini text-embedding-004
 - **PostgreSQL Integration**: Uses pgvector extension for efficient similarity search
+- **User-Specific Processing**: Targeted embedding generation with user filtering and statistics
 - **Batch Processing**: Handles large datasets with progress tracking
 - **Error Resilience**: Robust error handling and retry mechanisms
 
