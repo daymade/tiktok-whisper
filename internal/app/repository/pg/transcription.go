@@ -2,7 +2,7 @@ package pg
 
 import (
 	"database/sql"
-	"errors"
+	"fmt"
 	"log"
 	"tiktok-whisper/internal/app/model"
 	"time"
@@ -44,5 +44,34 @@ func (pdb *PostgresDB) RecordToDB(user, inputDir, fileName, mp3FileName string, 
 }
 
 func (pdb *PostgresDB) GetAllByUser(userNickname string) ([]model.Transcription, error) {
-	return nil, errors.New("not implemented")
+	query := `
+		SELECT id, user_nickname, last_conversion_time, mp3_file_name, audio_duration, transcription, error_message
+		FROM transcriptions
+		WHERE has_error = 0
+		  AND user_nickname = $1
+		ORDER BY last_conversion_time DESC`
+
+	rows, err := pdb.db.Query(query, userNickname)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %v", err)
+	}
+	defer rows.Close()
+
+	var transcriptions []model.Transcription
+
+	for rows.Next() {
+		var t model.Transcription
+		err = rows.Scan(&t.ID, &t.User, &t.LastConversionTime, &t.Mp3FileName, &t.AudioDuration, &t.Transcription, &t.ErrorMessage)
+		if err != nil {
+			return nil, fmt.Errorf("db scan failed: %v", err)
+		}
+
+		transcriptions = append(transcriptions, t)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration failed: %v", err)
+	}
+
+	return transcriptions, nil
 }
