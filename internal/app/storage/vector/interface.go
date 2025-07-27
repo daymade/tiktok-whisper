@@ -11,14 +11,18 @@ type VectorStorage interface {
 	// Single embedding operations
 	StoreEmbedding(ctx context.Context, transcriptionID int, provider string, embedding []float32) error
 	GetEmbedding(ctx context.Context, transcriptionID int, provider string) ([]float32, error)
-	
+
 	// Dual embedding operations
 	StoreDualEmbeddings(ctx context.Context, transcriptionID int, openaiEmbedding, geminiEmbedding []float32) error
 	GetDualEmbeddings(ctx context.Context, transcriptionID int) (*DualEmbedding, error)
-	
+
 	// Batch operations
 	GetTranscriptionsWithoutEmbeddings(ctx context.Context, provider string, limit int) ([]*Transcription, error)
-	
+
+	// User-specific operations
+	GetTranscriptionsWithoutEmbeddingsByUser(ctx context.Context, provider string, userNickname string, limit int) ([]*Transcription, error)
+	GetUserEmbeddingStats(ctx context.Context, userNickname string) (*UserEmbeddingStats, error)
+
 	// Lifecycle
 	Close() error
 }
@@ -45,4 +49,16 @@ type EmbeddingStatus struct {
 	Status          string // 'pending', 'processing', 'completed', 'failed'
 	CreatedAt       time.Time
 	Error           string
+}
+
+// UserEmbeddingStats represents embedding statistics for a specific user
+type UserEmbeddingStats struct {
+	UserNickname        string
+	TotalTranscriptions int
+	OpenAIEmbeddings    int
+	GeminiEmbeddings    int
+	PendingOpenAI       int
+	PendingGemini       int
+	FailedOpenAI        int
+	FailedGemini        int
 }

@@ -24,10 +24,10 @@ func NewPgVectorStorage(db *sql.DB) *PgVectorStorage {
 // StoreEmbedding stores a single embedding in the database
 func (s *PgVectorStorage) StoreEmbedding(ctx context.Context, transcriptionID int, provider string, embedding []float32) error {
 	vectorStr := vectorToString(embedding)
-	
+
 	var query string
 	var model string
-	
+
 	switch provider {
 	case "openai":
 		query = `
@@ -52,12 +52,12 @@ func (s *PgVectorStorage) StoreEmbedding(ctx context.Context, transcriptionID in
 	default:
 		return fmt.Errorf("unsupported provider: %s", provider)
 	}
-	
+
 	_, err := s.db.ExecContext(ctx, query, vectorStr, model, transcriptionID)
 	if err != nil {
 		return fmt.Errorf("failed to store %s embedding: %w", provider, err)
 	}
-	
+
 	return nil
 }
 
@@ -65,7 +65,7 @@ func (s *PgVectorStorage) StoreEmbedding(ctx context.Context, transcriptionID in
 func (s *PgVectorStorage) GetEmbedding(ctx context.Context, transcriptionID int, provider string) ([]float32, error) {
 	var query string
 	var vectorStr string
-	
+
 	switch provider {
 	case "openai":
 		query = `SELECT embedding_openai FROM transcriptions WHERE id = $1 AND embedding_openai IS NOT NULL`
@@ -74,7 +74,7 @@ func (s *PgVectorStorage) GetEmbedding(ctx context.Context, transcriptionID int,
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", provider)
 	}
-	
+
 	err := s.db.QueryRowContext(ctx, query, transcriptionID).Scan(&vectorStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -82,7 +82,7 @@ func (s *PgVectorStorage) GetEmbedding(ctx context.Context, transcriptionID int,
 		}
 		return nil, fmt.Errorf("failed to get %s embedding: %w", provider, err)
 	}
-	
+
 	return stringToVector(vectorStr), nil
 }
 
@@ -90,7 +90,7 @@ func (s *PgVectorStorage) GetEmbedding(ctx context.Context, transcriptionID int,
 func (s *PgVectorStorage) StoreDualEmbeddings(ctx context.Context, transcriptionID int, openaiEmbedding, geminiEmbedding []float32) error {
 	openaiStr := vectorToString(openaiEmbedding)
 	geminiStr := vectorToString(geminiEmbedding)
-	
+
 	query := `
 		UPDATE transcriptions 
 		SET embedding_openai = $1,
@@ -104,12 +104,12 @@ func (s *PgVectorStorage) StoreDualEmbeddings(ctx context.Context, transcription
 			embedding_sync_status = 'completed'
 		WHERE id = $3
 	`
-	
+
 	_, err := s.db.ExecContext(ctx, query, openaiStr, geminiStr, transcriptionID)
 	if err != nil {
 		return fmt.Errorf("failed to store dual embeddings: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -120,7 +120,7 @@ func (s *PgVectorStorage) GetDualEmbeddings(ctx context.Context, transcriptionID
 		FROM transcriptions 
 		WHERE id = $1
 	`
-	
+
 	var openaiStr, geminiStr sql.NullString
 	err := s.db.QueryRowContext(ctx, query, transcriptionID).Scan(&openaiStr, &geminiStr)
 	if err != nil {
@@ -129,7 +129,7 @@ func (s *PgVectorStorage) GetDualEmbeddings(ctx context.Context, transcriptionID
 		}
 		return nil, fmt.Errorf("failed to get dual embeddings: %w", err)
 	}
-	
+
 	result := &DualEmbedding{}
 	if openaiStr.Valid {
 		result.OpenAI = stringToVector(openaiStr.String)
@@ -137,14 +137,14 @@ func (s *PgVectorStorage) GetDualEmbeddings(ctx context.Context, transcriptionID
 	if geminiStr.Valid {
 		result.Gemini = stringToVector(geminiStr.String)
 	}
-	
+
 	return result, nil
 }
 
 // GetTranscriptionsWithoutEmbeddings returns transcriptions that don't have embeddings for the specified provider
 func (s *PgVectorStorage) GetTranscriptionsWithoutEmbeddings(ctx context.Context, provider string, limit int) ([]*Transcription, error) {
 	var query string
-	
+
 	switch provider {
 	case "openai":
 		query = `
@@ -167,33 +167,124 @@ func (s *PgVectorStorage) GetTranscriptionsWithoutEmbeddings(ctx context.Context
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", provider)
 	}
-	
+
 	rows, err := s.db.QueryContext(ctx, query, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transcriptions without embeddings: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var transcriptions []*Transcription
 	for rows.Next() {
 		var t Transcription
 		var userNickname sql.NullString
 		var createdAt time.Time
-		
+
 		err := rows.Scan(&t.ID, &userNickname, &t.Mp3FileName, &t.TranscriptionText, &createdAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan transcription: %w", err)
 		}
-		
+
 		if userNickname.Valid {
 			t.User = userNickname.String
 		}
 		t.CreatedAt = createdAt
-		
+
 		transcriptions = append(transcriptions, &t)
 	}
-	
+
 	return transcriptions, nil
+}
+
+// GetTranscriptionsWithoutEmbeddingsByUser returns transcriptions for a specific user that don't have embeddings for the specified provider
+func (s *PgVectorStorage) GetTranscriptionsWithoutEmbeddingsByUser(ctx context.Context, provider string, userNickname string, limit int) ([]*Transcription, error) {
+	var query string
+
+	switch provider {
+	case "openai":
+		query = `
+			SELECT id, user_nickname, mp3_file_name, transcription, last_conversion_time
+			FROM transcriptions 
+			WHERE embedding_openai IS NULL 
+			AND embedding_openai_status = 'pending'
+			AND user_nickname = $1
+			ORDER BY id 
+			LIMIT $2
+		`
+	case "gemini":
+		query = `
+			SELECT id, user_nickname, mp3_file_name, transcription, last_conversion_time
+			FROM transcriptions 
+			WHERE embedding_gemini IS NULL 
+			AND embedding_gemini_status = 'pending'
+			AND user_nickname = $1
+			ORDER BY id 
+			LIMIT $2
+		`
+	default:
+		return nil, fmt.Errorf("unsupported provider: %s", provider)
+	}
+
+	rows, err := s.db.QueryContext(ctx, query, userNickname, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user transcriptions without embeddings: %w", err)
+	}
+	defer rows.Close()
+
+	var transcriptions []*Transcription
+	for rows.Next() {
+		var t Transcription
+		var userNicknameCol sql.NullString
+		var createdAt time.Time
+
+		err := rows.Scan(&t.ID, &userNicknameCol, &t.Mp3FileName, &t.TranscriptionText, &createdAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan transcription: %w", err)
+		}
+
+		if userNicknameCol.Valid {
+			t.User = userNicknameCol.String
+		}
+		t.CreatedAt = createdAt
+
+		transcriptions = append(transcriptions, &t)
+	}
+
+	return transcriptions, nil
+}
+
+// GetUserEmbeddingStats returns embedding statistics for a specific user
+func (s *PgVectorStorage) GetUserEmbeddingStats(ctx context.Context, userNickname string) (*UserEmbeddingStats, error) {
+	query := `
+		SELECT 
+			COUNT(*) as total_transcriptions,
+			COUNT(embedding_openai) as openai_embeddings,
+			COUNT(embedding_gemini) as gemini_embeddings,
+			COUNT(CASE WHEN embedding_openai_status = 'pending' THEN 1 END) as pending_openai,
+			COUNT(CASE WHEN embedding_gemini_status = 'pending' THEN 1 END) as pending_gemini,
+			COUNT(CASE WHEN embedding_openai_status = 'failed' THEN 1 END) as failed_openai,
+			COUNT(CASE WHEN embedding_gemini_status = 'failed' THEN 1 END) as failed_gemini
+		FROM transcriptions 
+		WHERE user_nickname = $1
+	`
+
+	var stats UserEmbeddingStats
+	stats.UserNickname = userNickname
+
+	err := s.db.QueryRowContext(ctx, query, userNickname).Scan(
+		&stats.TotalTranscriptions,
+		&stats.OpenAIEmbeddings,
+		&stats.GeminiEmbeddings,
+		&stats.PendingOpenAI,
+		&stats.PendingGemini,
+		&stats.FailedOpenAI,
+		&stats.FailedGemini,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user embedding stats: %w", err)
+	}
+
+	return &stats, nil
 }
 
 // Close closes the database connection
@@ -206,7 +297,7 @@ func vectorToString(vector []float32) string {
 	if len(vector) == 0 {
 		return "[]"
 	}
-	
+
 	parts := make([]string, len(vector))
 	for i, v := range vector {
 		parts[i] = fmt.Sprintf("%.6f", v)
@@ -219,22 +310,22 @@ func stringToVector(str string) []float32 {
 	if str == "" || str == "[]" {
 		return nil
 	}
-	
+
 	// Remove brackets
 	str = strings.Trim(str, "[]")
 	if str == "" {
 		return nil
 	}
-	
+
 	// Split by comma and convert to float32
 	parts := strings.Split(str, ",")
 	vector := make([]float32, len(parts))
-	
+
 	for i, part := range parts {
 		var f float32
 		fmt.Sscanf(strings.TrimSpace(part), "%f", &f)
 		vector[i] = f
 	}
-	
+
 	return vector
 }

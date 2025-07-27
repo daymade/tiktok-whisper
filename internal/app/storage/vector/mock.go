@@ -28,7 +28,7 @@ func NewMockVectorStorage() *MockVectorStorage {
 func (s *MockVectorStorage) StoreEmbedding(ctx context.Context, transcriptionID int, provider string, embedding []float32) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	key := fmt.Sprintf("%d-%s", transcriptionID, provider)
 	s.embeddings[key] = embedding
 	return nil
@@ -38,7 +38,7 @@ func (s *MockVectorStorage) StoreEmbedding(ctx context.Context, transcriptionID 
 func (s *MockVectorStorage) GetEmbedding(ctx context.Context, transcriptionID int, provider string) ([]float32, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	key := fmt.Sprintf("%d-%s", transcriptionID, provider)
 	embedding, exists := s.embeddings[key]
 	if !exists {
@@ -51,10 +51,10 @@ func (s *MockVectorStorage) GetEmbedding(ctx context.Context, transcriptionID in
 func (s *MockVectorStorage) StoreDualEmbeddings(ctx context.Context, transcriptionID int, openaiEmbedding, geminiEmbedding []float32) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	openaiKey := fmt.Sprintf("%d-openai", transcriptionID)
 	geminiKey := fmt.Sprintf("%d-gemini", transcriptionID)
-	
+
 	s.embeddings[openaiKey] = openaiEmbedding
 	s.embeddings[geminiKey] = geminiEmbedding
 	return nil
@@ -64,17 +64,17 @@ func (s *MockVectorStorage) StoreDualEmbeddings(ctx context.Context, transcripti
 func (s *MockVectorStorage) GetDualEmbeddings(ctx context.Context, transcriptionID int) (*DualEmbedding, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	openaiKey := fmt.Sprintf("%d-openai", transcriptionID)
 	geminiKey := fmt.Sprintf("%d-gemini", transcriptionID)
-	
+
 	openaiEmbedding, openaiExists := s.embeddings[openaiKey]
 	geminiEmbedding, geminiExists := s.embeddings[geminiKey]
-	
+
 	if !openaiExists && !geminiExists {
 		return nil, errors.New("no embeddings found")
 	}
-	
+
 	return &DualEmbedding{
 		OpenAI: openaiEmbedding,
 		Gemini: geminiEmbedding,
@@ -85,22 +85,22 @@ func (s *MockVectorStorage) GetDualEmbeddings(ctx context.Context, transcription
 func (s *MockVectorStorage) GetTranscriptionsWithoutEmbeddings(ctx context.Context, provider string, limit int) ([]*Transcription, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	var result []*Transcription
 	count := 0
-	
+
 	for id, transcription := range s.transcriptions {
 		if count >= limit {
 			break
 		}
-		
+
 		key := fmt.Sprintf("%d-%s", id, provider)
 		if _, exists := s.embeddings[key]; !exists {
 			result = append(result, transcription)
 			count++
 		}
 	}
-	
+
 	return result, nil
 }
 
@@ -108,11 +108,90 @@ func (s *MockVectorStorage) GetTranscriptionsWithoutEmbeddings(ctx context.Conte
 func (s *MockVectorStorage) AddMockTranscription(id int, text string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	s.transcriptions[id] = &Transcription{
 		ID:                id,
 		User:              "test_user",
 		Mp3FileName:       fmt.Sprintf("test_%d.mp3", id),
+		TranscriptionText: text,
+		CreatedAt:         time.Now(),
+	}
+}
+
+// GetTranscriptionsWithoutEmbeddingsByUser returns transcriptions for a specific user that don't have embeddings for the specified provider
+func (s *MockVectorStorage) GetTranscriptionsWithoutEmbeddingsByUser(ctx context.Context, provider string, userNickname string, limit int) ([]*Transcription, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var result []*Transcription
+	count := 0
+
+	for id, transcription := range s.transcriptions {
+		if count >= limit {
+			break
+		}
+
+		// Check if transcription belongs to the user
+		if transcription.User != userNickname {
+			continue
+		}
+
+		key := fmt.Sprintf("%d-%s", id, provider)
+		if _, exists := s.embeddings[key]; !exists {
+			result = append(result, transcription)
+			count++
+		}
+	}
+
+	return result, nil
+}
+
+// GetUserEmbeddingStats returns embedding statistics for a specific user
+func (s *MockVectorStorage) GetUserEmbeddingStats(ctx context.Context, userNickname string) (*UserEmbeddingStats, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	stats := &UserEmbeddingStats{
+		UserNickname: userNickname,
+	}
+
+	// Count transcriptions and embeddings for the user
+	for id, transcription := range s.transcriptions {
+		if transcription.User != userNickname {
+			continue
+		}
+
+		stats.TotalTranscriptions++
+
+		// Check OpenAI embeddings
+		openaiKey := fmt.Sprintf("%d-openai", id)
+		if _, exists := s.embeddings[openaiKey]; exists {
+			stats.OpenAIEmbeddings++
+		} else {
+			stats.PendingOpenAI++
+		}
+
+		// Check Gemini embeddings
+		geminiKey := fmt.Sprintf("%d-gemini", id)
+		if _, exists := s.embeddings[geminiKey]; exists {
+			stats.GeminiEmbeddings++
+		} else {
+			stats.PendingGemini++
+		}
+	}
+
+	return stats, nil
+}
+
+// AddMockUserTranscription adds a mock transcription for a specific user for testing
+func (s *MockVectorStorage) AddMockUserTranscription(id int, userNickname string, text string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.transcriptions[id] = &Transcription{
+		ID:                id,
+		User:              userNickname,
+		Mp3FileName:       fmt.Sprintf("test_%s_%d.mp3", userNickname, id),
 		TranscriptionText: text,
 		CreatedAt:         time.Now(),
 	}
