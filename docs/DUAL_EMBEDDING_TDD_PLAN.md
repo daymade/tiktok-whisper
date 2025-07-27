@@ -726,22 +726,25 @@ v2t embed generate --provider gemini --user "username"
 # Generate using both providers
 v2t embed generate --provider both --all
 
+# User-specific embedding generation (✅ IMPLEMENTED)
+v2t embed generate --user "username" --provider gemini --batch-size 10
+v2t embed generate --user "username" --provider both
+
+# Check embedding status with user distribution (✅ IMPLEMENTED)
+v2t embed status
+
+# Search for similar transcriptions (✅ IMPLEMENTED)
+v2t embed search --text "search query" --limit 10 --provider gemini
+
+# Calculate similarity between transcriptions (✅ IMPLEMENTED)
+v2t embed similarity --id1 123 --id2 456 --provider gemini
+
+# Find duplicates with user filtering (✅ IMPLEMENTED)
+v2t embed duplicates --user "username" --threshold 0.95 --provider gemini
+
 # Compare embeddings from different providers
 v2t embed compare --id 123
 v2t embed compare --provider1 openai --provider2 gemini --top 10
-
-# Find similar using specific provider
-v2t similar find --id 123 --provider openai --top 10
-v2t similar find --id 123 --provider gemini --top 10
-
-# A/B testing commands
-v2t embed ab-test --sample-size 100
-v2t embed ab-test results --test-id abc123
-
-# Provider management
-v2t provider list
-v2t provider status
-v2t provider set-primary --name openai
 ```
 
 ## 🏗️ Project Structure Following SOLID

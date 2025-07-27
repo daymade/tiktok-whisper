@@ -152,6 +152,7 @@ For single file or directory transcription, and parallel transcription of multip
 
 - [x] **Dual Embedding System**: OpenAI (1536D) + Gemini (768D) embedding support
 - [x] **pgvector Integration**: Vector similarity search with PostgreSQL
+- [x] **User-Specific Processing**: Generate embeddings for specific users with targeted batch processing
 - [x] **3D Visualization**: Interactive 3D clustering visualization with Three.js
 - [x] **Natural Trackpad Gestures**: Jon Ive-level touch interaction system
 - [x] **Real-time Search**: Vector-based similarity search with live results
@@ -165,11 +166,20 @@ Generate embeddings and perform similarity search:
 # Generate embeddings for all transcriptions
 ./v2t embed generate
 
+# Generate embeddings for specific user
+./v2t embed generate --user "username" --provider gemini
+
+# Check embedding status and user distribution
+./v2t embed status
+
 # Search for similar content
 ./v2t embed search --text "your search query" --limit 10
 
 # Calculate similarity between transcriptions
 ./v2t embed similarity --id1 123 --id2 456
+
+# Find potential duplicates for specific user
+./v2t embed duplicates --user "username" --threshold 0.95
 
 # Start 3D visualization server
 go run web-main.go
