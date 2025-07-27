@@ -32,6 +32,7 @@ echo "GEMINI_API_KEY=AIza-your-gemini-key-here" >> .env
 # Option 2: Set system environment variables
 export OPENAI_API_KEY="sk-your-openai-key-here"
 export GEMINI_API_KEY="AIza-your-gemini-key-here"
+export DB_PASSWORD="passwd"  # Required for pgvector database connection
 ```
 
 **Fail-fast validation:**
@@ -50,6 +51,9 @@ go build -o v2t ./cmd/v2t/main.go
 
 # Build with CGO enabled (required for SQLite)
 CGO_ENABLED=1 go build -o v2t ./cmd/v2t/main.go
+
+# Run web server with database connection
+CGO_ENABLED=1 DB_PASSWORD=passwd go run ./cmd/v2t/main.go web --port :8081
 
 # Windows build
 go build -o v2t.exe .\cmd\v2t\main.go
@@ -167,20 +171,20 @@ type TranscriptionDAO interface {
 - Host: localhost
 - Port: 5432 (mapped from Docker)
 - Username: postgres
-- Password: (no password required)
+- Password: `passwd` (required for application connections)
 - Database: postgres
 - Main table: `transcriptions`
 
 **Manual Database Access Commands:**
 ```bash
-# Connect using temporary Docker container
-docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres
+# Connect using temporary Docker container (password: passwd)
+PGPASSWORD=passwd docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres
 
 # View table structure
-docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres -c "\d transcriptions"
+PGPASSWORD=passwd docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres -c "\d transcriptions"
 
 # Check data statistics
-docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres -c "
+PGPASSWORD=passwd docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres -c "
 SELECT COUNT(*) as total_records, 
 COUNT(embedding_openai) as openai_embeddings, 
 COUNT(embedding_gemini) as gemini_embeddings,
@@ -188,7 +192,7 @@ COUNT(CASE WHEN embedding_openai IS NOT NULL OR embedding_gemini IS NOT NULL THE
 FROM transcriptions;"
 
 # View embedding status distribution
-docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres -c "
+PGPASSWORD=passwd docker run --rm --network container:mypgvector postgres:15-alpine psql -h localhost -U postgres -d postgres -c "
 SELECT 
   embedding_openai_status,
   COUNT(*) as openai_count,
