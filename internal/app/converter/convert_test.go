@@ -133,14 +133,14 @@ func TestConverter_Close(t *testing.T) {
 func TestConverter_ConvertAudios(t *testing.T) {
 	// Create temporary test files
 	tempDir := t.TempDir()
-	
+
 	// Create test audio files
 	testFiles := []string{
 		filepath.Join(tempDir, "test1.mp3"),
 		filepath.Join(tempDir, "test2.mp3"),
 		filepath.Join(tempDir, "test3.mp3"),
 	}
-	
+
 	for _, file := range testFiles {
 		err := os.WriteFile(file, []byte("fake audio content"), 0644)
 		require.NoError(t, err)
@@ -149,15 +149,15 @@ func TestConverter_ConvertAudios(t *testing.T) {
 	outputDir := t.TempDir()
 
 	tests := []struct {
-		name               string
-		audioFiles         []string
-		outputDirectory    string
-		parallel           int
-		setupTranscriber   func() *testutil.MockTranscriber
-		setupDAO           func() *testutil.MockTranscriptionDAO
-		expectedError      error
-		validateOutput     bool
-		expectedCallCount  int
+		name              string
+		audioFiles        []string
+		outputDirectory   string
+		parallel          int
+		setupTranscriber  func() *testutil.MockTranscriber
+		setupDAO          func() *testutil.MockTranscriptionDAO
+		expectedError     error
+		validateOutput    bool
+		expectedCallCount int
 	}{
 		{
 			name:            "successful_conversion_sequential",
@@ -260,10 +260,10 @@ func TestConverter_ConvertAudios(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-			
+
 			// Wait a bit to ensure all goroutines complete
 			time.Sleep(100 * time.Millisecond)
-			
+
 			// Validate transcription call count
 			assert.Equal(t, tt.expectedCallCount, transcriber.GetCallCount())
 
@@ -273,7 +273,7 @@ func TestConverter_ConvertAudios(t *testing.T) {
 					fileName := filepath.Base(audioFile)
 					nameWithoutExt := fileName[:len(fileName)-len(filepath.Ext(fileName))]
 					expectedOutputFile := filepath.Join(tt.outputDirectory, nameWithoutExt+".txt")
-					
+
 					// Check if output file exists (for successful transcriptions only)
 					// Note: simplified validation since mock API is simpler
 					if tt.expectedCallCount > 0 {
@@ -290,7 +290,7 @@ func TestConverter_ConvertAudios(t *testing.T) {
 // TestConverter_ConvertVideos tests the ConvertVideos method
 // Note: These tests are commented out because they require FFmpeg integration
 // and valid video files. The core logic is tested through other conversion methods.
-/* 
+/*
 func TestConverter_ConvertVideos(t *testing.T) {
 	// Video conversion tests require FFmpeg and valid video files
 	// Skipping for unit test simplicity - integration tests would cover this
@@ -302,7 +302,7 @@ func TestConverter_ConvertVideos(t *testing.T) {
 func TestConverter_ConvertAudioDir(t *testing.T) {
 	// Create temporary directory with test files
 	tempDir := t.TempDir()
-	
+
 	// Create test audio files
 	testFiles := []string{
 		"audio1.mp3",
@@ -310,7 +310,7 @@ func TestConverter_ConvertAudioDir(t *testing.T) {
 		"audio3.wav",
 		"document.txt", // Non-audio file
 	}
-	
+
 	for _, fileName := range testFiles {
 		filePath := filepath.Join(tempDir, fileName)
 		err := os.WriteFile(filePath, []byte("fake content"), 0644)
@@ -320,16 +320,16 @@ func TestConverter_ConvertAudioDir(t *testing.T) {
 	outputDir := t.TempDir()
 
 	tests := []struct {
-		name               string
-		directory          string
-		extension          string
-		outputDirectory    string
-		convertCount       int
-		parallel           int
-		setupTranscriber   func() *testutil.MockTranscriber
-		setupDAO           func() *testutil.MockTranscriptionDAO
-		expectedError      error
-		expectedFileCount  int
+		name              string
+		directory         string
+		extension         string
+		outputDirectory   string
+		convertCount      int
+		parallel          int
+		setupTranscriber  func() *testutil.MockTranscriber
+		setupDAO          func() *testutil.MockTranscriptionDAO
+		expectedError     error
+		expectedFileCount int
 	}{
 		{
 			name:            "successful_directory_conversion_mp3",
@@ -458,10 +458,10 @@ func TestConverter_ConvertAudioDir(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-			
+
 			// Wait for async operations to complete
 			time.Sleep(100 * time.Millisecond)
-			
+
 			// Verify transcription call count
 			assert.Equal(t, tt.expectedFileCount, transcriber.GetCallCount())
 		})
@@ -470,9 +470,9 @@ func TestConverter_ConvertAudioDir(t *testing.T) {
 
 // TestConverter_ConvertVideoDir tests the ConvertVideoDir method
 // Note: These tests are commented out because they require FFmpeg integration
-/* 
+/*
 func TestConverter_ConvertVideoDir(t *testing.T) {
-	// Video conversion tests require FFmpeg and valid video files  
+	// Video conversion tests require FFmpeg and valid video files
 	// Skipping for unit test simplicity - integration tests would cover this
 	t.Skip("Video conversion tests require FFmpeg integration - covered by integration tests")
 }
@@ -554,9 +554,9 @@ func TestConverter_filterUnProcessedFiles(t *testing.T) {
 			expectedFiles: []string{},
 		},
 		{
-			name:          "empty_file_list",
-			fileInfos:     []model.FileInfo{},
-			convertCount:  10,
+			name:         "empty_file_list",
+			fileInfos:    []model.FileInfo{},
+			convertCount: 10,
 			setupDAO: func() *testutil.MockTranscriptionDAO {
 				return testutil.NewMockTranscriptionDAO()
 			},
@@ -574,7 +574,7 @@ func TestConverter_filterUnProcessedFiles(t *testing.T) {
 			result := converter.filterUnProcessedFiles(tt.fileInfos, tt.convertCount)
 
 			assert.Equal(t, tt.expectedCount, len(result))
-			
+
 			if tt.expectedCount > 0 {
 				for i, file := range result {
 					if i < len(tt.expectedFiles) {
@@ -590,7 +590,7 @@ func TestConverter_filterUnProcessedFiles(t *testing.T) {
 func TestConverter_ConcurrentSafety(t *testing.T) {
 	// Create temporary test files
 	tempDir := t.TempDir()
-	
+
 	testFiles := make([]string, 10)
 	for i := 0; i < 10; i++ {
 		fileName := fmt.Sprintf("test%d.mp3", i)
@@ -725,13 +725,13 @@ func TestConverter_ErrorHandling(t *testing.T) {
 // TestConverter_ProgressTracking tests call tracking and history functionality
 func TestConverter_ProgressTracking(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	testFiles := []string{
 		filepath.Join(tempDir, "file1.mp3"),
 		filepath.Join(tempDir, "file2.mp3"),
 		filepath.Join(tempDir, "file3.mp3"),
 	}
-	
+
 	for _, file := range testFiles {
 		err := os.WriteFile(file, []byte("fake content"), 0644)
 		require.NoError(t, err)
@@ -755,7 +755,7 @@ func TestConverter_ProgressTracking(t *testing.T) {
 
 	// Verify progress tracking
 	assert.Equal(t, 3, transcriber.GetCallCount())
-	
+
 	// Basic validation that transcriber was used
 	// Note: The simpler mock doesn't track detailed call history
 }
@@ -763,7 +763,7 @@ func TestConverter_ProgressTracking(t *testing.T) {
 // BenchmarkConverter_ConvertAudios benchmarks the conversion performance
 func BenchmarkConverter_ConvertAudios(b *testing.B) {
 	tempDir := b.TempDir()
-	
+
 	// Create test files
 	testFiles := make([]string, 10)
 	for i := 0; i < 10; i++ {

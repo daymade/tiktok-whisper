@@ -32,11 +32,11 @@ func TestEndToEndWorkflow(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		useLocalAPI    bool
-		useRemoteAPI   bool
-		expectSuccess  bool
-		skipCondition  func(t *testing.T) bool
+		name          string
+		useLocalAPI   bool
+		useRemoteAPI  bool
+		expectSuccess bool
+		skipCondition func(t *testing.T) bool
 	}{
 		{
 			name:          "RemoteAPIWorkflow",
@@ -47,8 +47,8 @@ func TestEndToEndWorkflow(t *testing.T) {
 			},
 		},
 		{
-			name:         "LocalAPIWorkflow",
-			useLocalAPI:  true,
+			name:          "LocalAPIWorkflow",
+			useLocalAPI:   true,
 			expectSuccess: true,
 			skipCondition: func(t *testing.T) bool {
 				return !isWhisperCppAvailable()
@@ -77,7 +77,7 @@ func testEndToEndWorkflow(t *testing.T, useLocal, useRemote, expectSuccess bool)
 	// Setup test environment
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "test.db")
-	
+
 	// Create database
 	dao := sqlite.NewSQLiteDB(dbPath)
 	defer dao.Close()
@@ -115,17 +115,17 @@ func testEndToEndWorkflow(t *testing.T, useLocal, useRemote, expectSuccess bool)
 
 	if expectSuccess {
 		assert.NoError(t, err, "End-to-end conversion should succeed")
-		
+
 		// Verify database record
 		id, err := dao.CheckIfFileProcessed(fileName)
 		assert.NoError(t, err, "File should be marked as processed")
 		assert.Greater(t, id, 0, "Should have valid record ID")
-		
+
 		// Verify transcription data
 		transcriptions, err := dao.GetAllByUser(user)
 		assert.NoError(t, err, "Should retrieve user transcriptions")
 		assert.Len(t, transcriptions, 1, "Should have one transcription")
-		
+
 		transcription := transcriptions[0]
 		assert.Equal(t, user, transcription.User)
 		assert.Equal(t, fileName, transcription.Mp3FileName)
@@ -145,22 +145,22 @@ func TestWorkflowWithDatabaseFailures(t *testing.T) {
 	// Create a read-only database to simulate write failures
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "readonly.db")
-	
+
 	// Create database first
 	dao := sqlite.NewSQLiteDB(dbPath)
 	dao.Close()
-	
+
 	// Make database file read-only
 	err := os.Chmod(dbPath, 0444)
 	require.NoError(t, err)
-	
+
 	// Try to use read-only database
 	readonlyDAO := sqlite.NewSQLiteDB(dbPath)
 	defer readonlyDAO.Close()
 
 	// Create mock transcriber
 	transcriber := testutil.NewMockTranscriberWithDefaults()
-	
+
 	// Create converter with read-only database
 	conv := converter.NewConverter(transcriber, readonlyDAO)
 
@@ -174,7 +174,7 @@ func TestWorkflowWithDatabaseFailures(t *testing.T) {
 
 	// Execute conversion - should handle database write failure gracefully
 	err = simulateFileConversion(conv, readonlyDAO, transcriber, user, inputDir, fileName, testAudioFile)
-	
+
 	// The exact behavior depends on implementation
 	// This test documents the current behavior
 	t.Logf("Conversion with read-only database result: %v", err)
@@ -277,7 +277,7 @@ func TestWorkflowWithAPIFailures(t *testing.T) {
 				if tt.errorContains != "" {
 					assert.Contains(t, strings.ToLower(err.Error()), strings.ToLower(tt.errorContains))
 				}
-				
+
 				// Check if error was recorded in database
 				transcriptions, dbErr := dao.GetAllByUser(user)
 				if dbErr == nil && len(transcriptions) > 0 {
@@ -309,11 +309,11 @@ func TestWorkflowWithFileSystemFailures(t *testing.T) {
 			name: "UnreadableFile",
 			setupFunc: func(t *testing.T) (string, string, string) {
 				testFile := testutil.CreateTestAudioFile(t, "unreadable.wav")
-				
+
 				// Make file unreadable
 				err := os.Chmod(testFile, 0000)
 				require.NoError(t, err)
-				
+
 				return "fs_failure_user", filepath.Dir(testFile), filepath.Base(testFile)
 			},
 			expectError: true,
@@ -424,7 +424,7 @@ func TestFullWorkflowIntegration(t *testing.T) {
 		assert.NotEmpty(t, transcription.Transcription, "Transcription %d should not be empty", i+1)
 		assert.Empty(t, transcription.ErrorMessage, "Transcription %d should not have errors", i+1)
 		assert.Greater(t, transcription.AudioDuration, 0.0, "Transcription %d should have valid duration", i+1)
-		
+
 		t.Logf("Transcription %d: %s", i+1, transcription.Transcription)
 	}
 }
@@ -436,7 +436,7 @@ func TestConcurrentWorkflow(t *testing.T) {
 	}
 
 	numFiles := 5
-	
+
 	// Setup database
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "concurrent_test.db")
@@ -457,7 +457,7 @@ func TestConcurrentWorkflow(t *testing.T) {
 	}
 
 	user := "concurrent_user"
-	
+
 	// Process files concurrently
 	results := make(chan error, numFiles)
 	start := time.Now()
@@ -474,7 +474,7 @@ func TestConcurrentWorkflow(t *testing.T) {
 	// Collect results
 	successCount := 0
 	errorCount := 0
-	
+
 	for i := 0; i < numFiles; i++ {
 		err := <-results
 		if err != nil {
@@ -486,7 +486,7 @@ func TestConcurrentWorkflow(t *testing.T) {
 	}
 
 	duration := time.Since(start)
-	
+
 	t.Logf("Concurrent processing completed in %v", duration)
 	t.Logf("Success: %d, Errors: %d", successCount, errorCount)
 
@@ -520,7 +520,7 @@ func TestWorkflowRecovery(t *testing.T) {
 	successFile := testutil.CreateTestAudioFile(t, "success.wav")
 	failureFile := testutil.CreateTestAudioFile(t, "failure.wav")
 	recoveryFile := testutil.CreateTestAudioFile(t, "recovery.wav")
-	
+
 	defer func() {
 		testutil.CleanupFile(t, successFile)
 		testutil.CleanupFile(t, failureFile)
@@ -549,11 +549,11 @@ func TestWorkflowRecovery(t *testing.T) {
 	// Verify database state
 	transcriptions, err := dao.GetAllByUser(user)
 	assert.NoError(t, err)
-	
+
 	// Should have records for all files, with appropriate error states
 	successCount := 0
 	errorCount := 0
-	
+
 	for _, transcription := range transcriptions {
 		if transcription.ErrorMessage == "" {
 			successCount++
@@ -592,13 +592,13 @@ func simulateFileConversion(conv *converter.Converter, dao repository.Transcript
 func isWhisperCppAvailable() bool {
 	binaryPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/main"
 	modelPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
-	
+
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 		return false
 	}
 	if _, err := os.Stat(modelPath); os.IsNotExist(err) {
 		return false
 	}
-	
+
 	return true
 }

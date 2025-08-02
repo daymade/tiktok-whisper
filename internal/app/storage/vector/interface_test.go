@@ -176,14 +176,14 @@ func (suite *MockVectorTestSuite) TestConcurrentAccess() {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			
+
 			transcriptionID := (id % numTranscriptions) + 1
 			provider := "openai"
 			if id%2 == 0 {
 				provider = "gemini"
 			}
 			embedding := []float32{float32(id), float32(id + 1), float32(id + 2)}
-			
+
 			err := suite.storage.StoreEmbedding(suite.ctx, transcriptionID, provider, embedding)
 			assert.NoError(suite.T(), err)
 		}(i)
@@ -194,13 +194,13 @@ func (suite *MockVectorTestSuite) TestConcurrentAccess() {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			
+
 			transcriptionID := (id % numTranscriptions) + 1
 			provider := "openai"
 			if id%2 == 0 {
 				provider = "gemini"
 			}
-			
+
 			// Try to read - may or may not exist yet
 			_, _ = suite.storage.GetEmbedding(suite.ctx, transcriptionID, provider)
 		}(i)
@@ -353,31 +353,31 @@ func TestVectorStorageInterface(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			
+
 			// Test all interface methods
 			embedding := []float32{0.1, 0.2, 0.3}
-			
+
 			// StoreEmbedding
 			err := tt.storage.StoreEmbedding(ctx, 1, "openai", embedding)
 			assert.NoError(t, err)
-			
+
 			// GetEmbedding
 			_, err = tt.storage.GetEmbedding(ctx, 1, "openai")
 			// Error is ok if not found
 			_ = err
-			
+
 			// StoreDualEmbeddings
 			err = tt.storage.StoreDualEmbeddings(ctx, 1, embedding, embedding)
 			assert.NoError(t, err)
-			
+
 			// GetDualEmbeddings
 			_, err = tt.storage.GetDualEmbeddings(ctx, 1)
 			_ = err
-			
+
 			// GetTranscriptionsWithoutEmbeddings
 			_, err = tt.storage.GetTranscriptionsWithoutEmbeddings(ctx, "openai", 10)
 			_ = err
-			
+
 			// Close
 			err = tt.storage.Close()
 			assert.NoError(t, err)

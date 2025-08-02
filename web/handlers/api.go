@@ -27,21 +27,21 @@ func NewAPIHandler(db *sql.DB) *APIHandler {
 
 // EmbeddingData represents an embedding with metadata
 type EmbeddingData struct {
-	ID           int       `json:"id"`
-	User         string    `json:"user"`
-	Text         string    `json:"text"`
-	TextPreview  string    `json:"textPreview"`
-	Provider     string    `json:"provider"`
-	Embedding    []float32 `json:"embedding"`
-	CreatedAt    string    `json:"createdAt,omitempty"`
+	ID          int       `json:"id"`
+	User        string    `json:"user"`
+	Text        string    `json:"text"`
+	TextPreview string    `json:"textPreview"`
+	Provider    string    `json:"provider"`
+	Embedding   []float32 `json:"embedding"`
+	CreatedAt   string    `json:"createdAt,omitempty"`
 }
 
 // UserStats represents user statistics
 type UserStats struct {
-	User              string `json:"user"`
-	TotalTranscripts  int    `json:"totalTranscripts"`
-	GeminiEmbeddings  int    `json:"geminiEmbeddings"`
-	OpenAIEmbeddings  int    `json:"openaiEmbeddings"`
+	User             string `json:"user"`
+	TotalTranscripts int    `json:"totalTranscripts"`
+	GeminiEmbeddings int    `json:"geminiEmbeddings"`
+	OpenAIEmbeddings int    `json:"openaiEmbeddings"`
 }
 
 // SearchResult represents a search result with similarity score
@@ -66,14 +66,14 @@ type SystemStats struct {
 
 // ClusterData represents a cluster of embeddings
 type ClusterData struct {
-	ID          int     `json:"id"`
-	CenterX     float64 `json:"centerX"`
-	CenterY     float64 `json:"centerY"`
-	CenterZ     float64 `json:"centerZ,omitempty"`
-	Size        int     `json:"size"`
-	Label       string  `json:"label"`
-	Color       string  `json:"color"`
-	Embeddings  []int   `json:"embeddings"`
+	ID         int     `json:"id"`
+	CenterX    float64 `json:"centerX"`
+	CenterY    float64 `json:"centerY"`
+	CenterZ    float64 `json:"centerZ,omitempty"`
+	Size       int     `json:"size"`
+	Label      string  `json:"label"`
+	Color      string  `json:"color"`
+	Embeddings []int   `json:"embeddings"`
 }
 
 // GetEmbeddings returns all embeddings with metadata
@@ -188,23 +188,23 @@ func (h *APIHandler) GetClusters(w http.ResponseWriter, r *http.Request) {
 	// Note: Actual clustering is performed client-side in JavaScript using K-means++ algorithm
 	clusters := []ClusterData{
 		{
-			ID:      1,
-			CenterX: 0.0,
-			CenterY: 0.0,
-			CenterZ: 0.0,
-			Size:    25,
-			Label:   "抖音创业",
-			Color:   "#ff6b6b",
+			ID:         1,
+			CenterX:    0.0,
+			CenterY:    0.0,
+			CenterZ:    0.0,
+			Size:       25,
+			Label:      "抖音创业",
+			Color:      "#ff6b6b",
 			Embeddings: []int{1, 2, 3, 4, 5},
 		},
 		{
-			ID:      2,
-			CenterX: 1.0,
-			CenterY: 1.0,
-			CenterZ: 0.5,
-			Size:    15,
-			Label:   "营销策略",
-			Color:   "#4ecdc4",
+			ID:         2,
+			CenterX:    1.0,
+			CenterY:    1.0,
+			CenterZ:    0.5,
+			Size:       15,
+			Label:      "营销策略",
+			Color:      "#4ecdc4",
 			Embeddings: []int{6, 7, 8, 9, 10},
 		},
 	}
@@ -257,7 +257,7 @@ func (h *APIHandler) getEmbeddingsFromDB(ctx context.Context, provider string, l
 	// Query PostgreSQL with pgvector - get real embeddings
 	var query string
 	var embeddingColumn string
-	
+
 	switch provider {
 	case "openai":
 		embeddingColumn = "embedding_openai"
@@ -266,7 +266,7 @@ func (h *APIHandler) getEmbeddingsFromDB(ctx context.Context, provider string, l
 	default:
 		embeddingColumn = "embedding_gemini" // Default to Gemini
 	}
-	
+
 	query = fmt.Sprintf(`
 		SELECT 
 			id, 
@@ -341,7 +341,7 @@ func generateMockEmbedding(text string, provider string, id int) []float32 {
 		norm += val * val
 	}
 	norm = float32(math.Sqrt(float64(norm)))
-	
+
 	if norm > 0 {
 		for i := range embedding {
 			embedding[i] /= norm
@@ -379,7 +379,7 @@ func (h *APIHandler) getUsersFromDB(ctx context.Context) ([]UserStats, error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		users = append(users, user)
 	}
 
@@ -435,7 +435,7 @@ func (h *APIHandler) parseVectorString(str string) []float32 {
 		if part == "" {
 			continue
 		}
-		
+
 		var f float32
 		n, err := fmt.Sscanf(part, "%f", &f)
 		if err == nil && n == 1 {

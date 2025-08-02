@@ -286,9 +286,9 @@ func testCorruptedDataErrors(t *testing.T, suite ErrorScenarioTestSuite) {
 			// Test with potentially problematic Unicode characters
 			malformedTexts := []string{
 				string([]byte{0xFF, 0xFE, 0xFD}), // Invalid UTF-8 sequence
-				"\x00\x01\x02\x03",              // Control characters
+				"\x00\x01\x02\x03",               // Control characters
 				"Text with \uFFFD replacement",   // Unicode replacement character
-				"🎵\U0001F3B5🎶\U0001F3B6",      // Mixed emoji
+				"🎵\U0001F3B5🎶\U0001F3B6",         // Mixed emoji
 			}
 
 			for i, text := range malformedTexts {
@@ -432,7 +432,7 @@ func testResourceExhaustionErrors(t *testing.T, suite ErrorScenarioTestSuite) {
 			}
 
 			benchmark.Stop()
-			
+
 			// Check if memory usage is reasonable
 			benchmark.AssertMemoryUsageLessThan(t, 100*1024*1024) // 100MB
 

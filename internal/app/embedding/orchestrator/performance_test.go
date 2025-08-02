@@ -52,7 +52,7 @@ func TestEmbeddingOrchestrator_ConcurrencyPerformance(t *testing.T) {
 	mockOpenAI.On("GenerateEmbedding", mock.Anything, mock.Anything).Return(func(ctx context.Context, text string) ([]float32, error) {
 		current := atomic.AddInt64(&currentConcurrent, 1)
 		atomic.AddInt64(&totalCalls, 1)
-		
+
 		// Update max concurrent if necessary
 		for {
 			max := atomic.LoadInt64(&maxConcurrent)
@@ -69,7 +69,7 @@ func TestEmbeddingOrchestrator_ConcurrencyPerformance(t *testing.T) {
 	mockGemini.On("GenerateEmbedding", mock.Anything, mock.Anything).Return(func(ctx context.Context, text string) ([]float32, error) {
 		current := atomic.AddInt64(&currentConcurrent, 1)
 		atomic.AddInt64(&totalCalls, 1)
-		
+
 		// Update max concurrent if necessary
 		for {
 			max := atomic.LoadInt64(&maxConcurrent)
@@ -135,15 +135,15 @@ func TestEmbeddingOrchestrator_ConcurrencyPerformance(t *testing.T) {
 	t.Logf("Total calls made: %d", totalCallsMade)
 
 	// Concurrent processing should be significantly faster
-	assert.Less(t, concurrentDuration, sequentialDuration*8/10, 
+	assert.Less(t, concurrentDuration, sequentialDuration*8/10,
 		"Concurrent processing should be at least 20%% faster")
 
 	// Should achieve reasonable concurrency
-	assert.Greater(t, maxConcurrentReached, int64(4), 
+	assert.Greater(t, maxConcurrentReached, int64(4),
 		"Should achieve reasonable concurrency (expected > 4)")
 
 	// Should process all requests
-	assert.Equal(t, int64(numRequests*2), totalCallsMade, 
+	assert.Equal(t, int64(numRequests*2), totalCallsMade,
 		"Should have made calls for all requests to both providers")
 
 	mockOpenAI.AssertExpectations(t)
@@ -189,17 +189,17 @@ func TestBatchProcessor_ThroughputPerformance(t *testing.T) {
 			for i := 0; i < totalItems; i++ {
 				mockOrchestrator.On("ProcessTranscription", mock.Anything, i+1, mock.Anything).Return(func(ctx context.Context, id int, text string) error {
 					start := time.Now()
-					
+
 					// Simulate processing time
 					time.Sleep(10 * time.Millisecond)
-					
+
 					duration := time.Since(start)
-					
+
 					mu.Lock()
 					processedCount++
 					totalDuration += duration
 					mu.Unlock()
-					
+
 					return nil
 				})
 			}
@@ -220,13 +220,13 @@ func TestBatchProcessor_ThroughputPerformance(t *testing.T) {
 			mu.Unlock()
 
 			t.Logf("Batch size: %d, Wall clock: %v, Avg processing: %v, Throughput: %.2f items/sec",
-				batchSize, wallClockTime, avgProcessingTime, 
+				batchSize, wallClockTime, avgProcessingTime,
 				float64(totalItems)/wallClockTime.Seconds())
 
 			// Performance expectations
-			assert.Less(t, wallClockTime, 5*time.Second, 
+			assert.Less(t, wallClockTime, 5*time.Second,
 				"Should complete within reasonable time")
-			assert.Equal(t, int64(totalItems), processedCount, 
+			assert.Equal(t, int64(totalItems), processedCount,
 				"Should have processed all items")
 
 			mockOrchestrator.AssertExpectations(t)
@@ -286,7 +286,7 @@ func TestEmbeddingOrchestrator_MemoryUsage(t *testing.T) {
 			runtime.GC()
 			var memStats runtime.MemStats
 			runtime.ReadMemStats(&memStats)
-			
+
 			memoryIncrease := memStats.Alloc - baselineMemStats.Alloc
 			t.Logf("After %d transcriptions: Memory increase: %d bytes", i+1, memoryIncrease)
 		}
@@ -418,15 +418,15 @@ func TestEmbeddingOrchestrator_ScalabilityLimits(t *testing.T) {
 			// Track resource usage
 			var (
 				totalProcessingTime time.Duration
-				maxGoroutines      int
-				mu                 sync.Mutex
+				maxGoroutines       int
+				mu                  sync.Mutex
 			)
 
 			// Setup mocks
 			for i := 0; i < scale; i++ {
 				mockOpenAI.On("GenerateEmbedding", mock.Anything, mock.Anything).Return(func(ctx context.Context, text string) ([]float32, error) {
 					start := time.Now()
-					
+
 					// Track goroutine count
 					goroutines := runtime.NumGoroutine()
 					mu.Lock()
@@ -436,23 +436,23 @@ func TestEmbeddingOrchestrator_ScalabilityLimits(t *testing.T) {
 					mu.Unlock()
 
 					time.Sleep(20 * time.Millisecond) // Simulate processing
-					
+
 					mu.Lock()
 					totalProcessingTime += time.Since(start)
 					mu.Unlock()
-					
+
 					return make([]float32, 1536), nil
 				})
 
 				mockGemini.On("GenerateEmbedding", mock.Anything, mock.Anything).Return(func(ctx context.Context, text string) ([]float32, error) {
 					start := time.Now()
-					
+
 					time.Sleep(20 * time.Millisecond) // Simulate processing
-					
+
 					mu.Lock()
 					totalProcessingTime += time.Since(start)
 					mu.Unlock()
-					
+
 					return make([]float32, 768), nil
 				})
 
@@ -485,11 +485,11 @@ func TestEmbeddingOrchestrator_ScalabilityLimits(t *testing.T) {
 				scale, wallClockTime, avgProcessingTime, throughput, maxGoroutines)
 
 			// Performance assertions
-			assert.Less(t, wallClockTime, 10*time.Second, 
+			assert.Less(t, wallClockTime, 10*time.Second,
 				"Should complete within reasonable time even at scale")
-			assert.Greater(t, throughput, 5.0, 
+			assert.Greater(t, throughput, 5.0,
 				"Should maintain reasonable throughput")
-			assert.Less(t, maxGoroutines, scale*3, 
+			assert.Less(t, maxGoroutines, scale*3,
 				"Should not create excessive goroutines")
 
 			mockOpenAI.AssertExpectations(t)
@@ -559,17 +559,17 @@ func TestBatchProcessor_LoadBalancing(t *testing.T) {
 	mu.Lock()
 	var totalProcessingTime time.Duration
 	var earliestStart, latestEnd time.Time
-	
+
 	for id, startTime := range startTimes {
 		if earliestStart.IsZero() || startTime.Before(earliestStart) {
 			earliestStart = startTime
 		}
-		
+
 		endTime := startTime.Add(processingTimes[id])
 		if latestEnd.IsZero() || endTime.After(latestEnd) {
 			latestEnd = endTime
 		}
-		
+
 		totalProcessingTime += processingTimes[id]
 	}
 	mu.Unlock()
@@ -584,9 +584,9 @@ func TestBatchProcessor_LoadBalancing(t *testing.T) {
 	t.Logf("Parallelization efficiency: %.2f", parallelizationEfficiency)
 
 	// Load balancing assertions
-	assert.Greater(t, parallelizationEfficiency, 0.6, 
+	assert.Greater(t, parallelizationEfficiency, 0.6,
 		"Should achieve reasonable parallelization efficiency")
-	assert.Less(t, actualSpan, theoreticalSequentialTime/2, 
+	assert.Less(t, actualSpan, theoreticalSequentialTime/2,
 		"Parallel processing should be significantly faster than sequential")
 
 	mockOrchestrator.AssertExpectations(t)

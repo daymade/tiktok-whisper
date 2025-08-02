@@ -155,7 +155,7 @@ func testOpenAIRealAPI(t *testing.T, apiKey string) {
 		defer testutil.CleanupFile(t, testFile)
 
 		result, err := transcriber.Transcript(testFile)
-		
+
 		// Real API should work with our test file
 		assert.NoError(t, err)
 		assert.NotEmpty(t, result)
@@ -167,7 +167,7 @@ func testOpenAIRealAPI(t *testing.T, apiKey string) {
 		defer testutil.CleanupFile(t, corruptedFile)
 
 		_, err := transcriber.Transcript(corruptedFile)
-		
+
 		// Should fail with invalid file
 		assert.Error(t, err)
 		t.Logf("Expected error for corrupted file: %v", err)
@@ -175,7 +175,7 @@ func testOpenAIRealAPI(t *testing.T, apiKey string) {
 
 	t.Run("RealAPINonExistentFile", func(t *testing.T) {
 		_, err := transcriber.Transcript("/nonexistent/file.wav")
-		
+
 		// Should fail with file not found
 		assert.Error(t, err)
 		assert.Contains(t, strings.ToLower(err.Error()), "no such file")
@@ -261,11 +261,11 @@ func TestAPIRetryMechanism(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                string
-		failureCount        int
-		expectedCallCount   int
-		finalResponse       string
-		expectSuccess       bool
+		name              string
+		failureCount      int
+		expectedCallCount int
+		finalResponse     string
+		expectSuccess     bool
 	}{
 		{
 			name:              "SuccessOnFirstTry",
@@ -302,7 +302,7 @@ func TestAPIRetryMechanism(t *testing.T) {
 			callCount := 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				callCount++
-				
+
 				if callCount <= tt.failureCount {
 					// Simulate transient failure
 					w.WriteHeader(http.StatusServiceUnavailable)
@@ -356,7 +356,7 @@ func TestConcurrentAPIRequests(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Add small delay to simulate real API latency
 		time.Sleep(responseDelay)
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"text": "Concurrent transcription response"}`))
@@ -376,7 +376,7 @@ func TestConcurrentAPIRequests(t *testing.T) {
 			transcriber := whisper.NewRemoteTranscriber(client)
 			testFile := testutil.CreateTestAudioFile(t, fmt.Sprintf("concurrent_test_%d.wav", id))
 			defer testutil.CleanupFile(t, testFile)
-			
+
 			_, err := transcriber.Transcript(testFile)
 			results <- err
 		}(i)
@@ -385,7 +385,7 @@ func TestConcurrentAPIRequests(t *testing.T) {
 	// Collect results
 	successCount := 0
 	errorCount := 0
-	
+
 	for i := 0; i < numRequests; i++ {
 		err := <-results
 		if err != nil {
@@ -396,14 +396,14 @@ func TestConcurrentAPIRequests(t *testing.T) {
 	}
 
 	duration := time.Since(start)
-	
+
 	t.Logf("Concurrent requests completed in %v", duration)
 	t.Logf("Success: %d, Errors: %d", successCount, errorCount)
-	
+
 	// All requests should succeed
 	assert.Equal(t, numRequests, successCount)
 	assert.Equal(t, 0, errorCount)
-	
+
 	// Should be faster than sequential execution
 	maxExpectedDuration := time.Duration(numRequests) * responseDelay
 	assert.Less(t, duration, maxExpectedDuration, "Concurrent requests should be faster than sequential")

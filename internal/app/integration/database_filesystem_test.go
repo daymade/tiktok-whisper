@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"tiktok-whisper/internal/app/model"
 	"tiktok-whisper/internal/app/repository"
 	"tiktok-whisper/internal/app/repository/pg"
@@ -109,7 +109,7 @@ func TestPostgreSQLConnectivityResilience(t *testing.T) {
 func testDatabaseOperations(t *testing.T, dao repository.TranscriptionDAO) {
 	user := "test_db_ops_user"
 	fileName := "test_db_ops.mp3"
-	
+
 	// Test file check (should not exist initially)
 	_, err := dao.CheckIfFileProcessed(fileName)
 	assert.Error(t, err, "File should not exist initially")
@@ -137,7 +137,7 @@ func testDatabaseOperations(t *testing.T, dao repository.TranscriptionDAO) {
 	transcriptions, err := dao.GetAllByUser(user)
 	assert.NoError(t, err, "Should retrieve transcriptions")
 	assert.Len(t, transcriptions, 1, "Should have one transcription")
-	
+
 	transcription := transcriptions[0]
 	assert.Equal(t, user, transcription.User)
 	assert.Equal(t, fileName, transcription.Mp3FileName)
@@ -153,14 +153,14 @@ func TestDatabaseConnectionPooling(t *testing.T) {
 	// Test with SQLite (simpler setup)
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "pooling_test.db")
-	
+
 	dao := sqlite.NewSQLiteDB(dbPath)
 	defer dao.Close()
 
 	// Test concurrent database operations
 	numGoroutines := 10
 	numOperations := 5
-	
+
 	var wg sync.WaitGroup
 	errors := make(chan error, numGoroutines*numOperations)
 
@@ -168,11 +168,11 @@ func TestDatabaseConnectionPooling(t *testing.T) {
 		wg.Add(1)
 		go func(goroutineID int) {
 			defer wg.Done()
-			
+
 			for j := 0; j < numOperations; j++ {
 				user := fmt.Sprintf("pool_user_%d", goroutineID)
 				fileName := fmt.Sprintf("pool_file_%d_%d.mp3", goroutineID, j)
-				
+
 				// Record to database
 				dao.RecordToDB(
 					user,
@@ -185,7 +185,7 @@ func TestDatabaseConnectionPooling(t *testing.T) {
 					0,
 					"",
 				)
-				
+
 				// Check if file exists
 				_, err := dao.CheckIfFileProcessed(fileName)
 				if err != nil {
@@ -210,7 +210,7 @@ func TestDatabaseConnectionPooling(t *testing.T) {
 	// Verify all records were inserted
 	totalExpected := numGoroutines * numOperations
 	allTranscriptions := make([]model.Transcription, 0)
-	
+
 	for i := 0; i < numGoroutines; i++ {
 		user := fmt.Sprintf("pool_user_%d", i)
 		transcriptions, err := dao.GetAllByUser(user)
@@ -229,16 +229,16 @@ func TestDatabaseTransactionHandling(t *testing.T) {
 
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "transaction_test.db")
-	
+
 	dao := sqlite.NewSQLiteDB(dbPath)
 	defer dao.Close()
 
 	// Test normal operation
 	user := "transaction_user"
 	fileName := "transaction_test.mp3"
-	
+
 	dao.RecordToDB(user, "/test", fileName, fileName, 100, "Transaction test", time.Now(), 0, "")
-	
+
 	// Verify record exists
 	id, err := dao.CheckIfFileProcessed(fileName)
 	assert.NoError(t, err)
@@ -247,12 +247,12 @@ func TestDatabaseTransactionHandling(t *testing.T) {
 	// Test error handling
 	errorFileName := "error_test.mp3"
 	dao.RecordToDB(user, "/test", errorFileName, errorFileName, 100, "Error test", time.Now(), 1, "Simulated error")
-	
+
 	// Verify error record exists
 	transcriptions, err := dao.GetAllByUser(user)
 	assert.NoError(t, err)
 	assert.Len(t, transcriptions, 2)
-	
+
 	// Find error record
 	var errorRecord *model.Transcription
 	for _, t := range transcriptions {
@@ -261,7 +261,7 @@ func TestDatabaseTransactionHandling(t *testing.T) {
 			break
 		}
 	}
-	
+
 	require.NotNil(t, errorRecord, "Error record should exist")
 	assert.NotEmpty(t, errorRecord.ErrorMessage)
 }
@@ -281,11 +281,11 @@ func TestFileSystemOperationFailures(t *testing.T) {
 				subDir := filepath.Join(dir, "readonly")
 				err := os.Mkdir(subDir, 0755)
 				require.NoError(t, err)
-				
+
 				// Make directory read-only
 				err = os.Chmod(subDir, 0444)
 				require.NoError(t, err)
-				
+
 				return subDir
 			},
 			expectError: true,
@@ -343,7 +343,7 @@ func TestFileSystemOperationFailures(t *testing.T) {
 			if err == nil {
 				_, readErr := os.ReadFile(testFilePath)
 				assert.NoError(t, readErr, "Should be able to read written file")
-				
+
 				// Cleanup
 				os.Remove(testFilePath)
 			}
@@ -359,7 +359,7 @@ func TestFileSystemConcurrentAccess(t *testing.T) {
 
 	tempDir := t.TempDir()
 	numGoroutines := 10
-	
+
 	var wg sync.WaitGroup
 	errors := make(chan error, numGoroutines)
 
@@ -368,29 +368,29 @@ func TestFileSystemConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			
+
 			fileName := filepath.Join(tempDir, fmt.Sprintf("concurrent_%d.txt", id))
 			content := fmt.Sprintf("Content from goroutine %d", id)
-			
+
 			// Write file
 			err := os.WriteFile(fileName, []byte(content), 0644)
 			if err != nil {
 				errors <- fmt.Errorf("write error in goroutine %d: %w", id, err)
 				return
 			}
-			
+
 			// Read file back
 			readContent, err := os.ReadFile(fileName)
 			if err != nil {
 				errors <- fmt.Errorf("read error in goroutine %d: %w", id, err)
 				return
 			}
-			
+
 			if string(readContent) != content {
 				errors <- fmt.Errorf("content mismatch in goroutine %d", id)
 				return
 			}
-			
+
 			// Delete file
 			err = os.Remove(fileName)
 			if err != nil {
@@ -416,21 +416,21 @@ func TestFileSystemConcurrentAccess(t *testing.T) {
 // TestResourceCleanupVerification tests that resources are properly cleaned up
 func TestResourceCleanupVerification(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Test database cleanup
 	t.Run("DatabaseCleanup", func(t *testing.T) {
 		dbPath := filepath.Join(tempDir, "cleanup_test.db")
-		
+
 		dao := sqlite.NewSQLiteDB(dbPath)
 		// Note: NewSQLiteDB may panic on error rather than returning error
-		
+
 		// Use the database
 		dao.RecordToDB("cleanup_user", "/test", "cleanup.mp3", "cleanup.mp3", 100, "cleanup test", time.Now(), 0, "")
-		
+
 		// Close and verify file exists
 		err := dao.Close()
 		assert.NoError(t, err, "Database should close without error")
-		
+
 		_, err = os.Stat(dbPath)
 		assert.NoError(t, err, "Database file should exist after close")
 	})
@@ -438,22 +438,22 @@ func TestResourceCleanupVerification(t *testing.T) {
 	// Test file cleanup
 	t.Run("FileCleanup", func(t *testing.T) {
 		testFiles := make([]string, 5)
-		
+
 		// Create test files
 		for i := 0; i < 5; i++ {
 			testFiles[i] = testutil.CreateTestAudioFile(t, fmt.Sprintf("cleanup_test_%d.wav", i))
 		}
-		
+
 		// Verify files exist
 		for i, file := range testFiles {
 			_, err := os.Stat(file)
 			assert.NoError(t, err, "Test file %d should exist", i)
 		}
-		
+
 		// Cleanup files
 		for i, file := range testFiles {
 			testutil.CleanupFile(t, file)
-			
+
 			// Verify file is gone (may not work immediately due to OS caching)
 			time.Sleep(10 * time.Millisecond)
 			_, err := os.Stat(file)
@@ -467,24 +467,24 @@ func TestResourceCleanupVerification(t *testing.T) {
 	t.Run("TempDirCleanup", func(t *testing.T) {
 		// The test temp directory should be cleaned up automatically
 		// This test verifies that we can create and use temp directories properly
-		
+
 		subTempDir := filepath.Join(tempDir, "subtemp")
 		err := os.Mkdir(subTempDir, 0755)
 		// Note: NewSQLiteDB may panic on error rather than returning error
-		
+
 		// Create files in subdirectory
 		testFile := filepath.Join(subTempDir, "temp_test.txt")
 		err = os.WriteFile(testFile, []byte("temporary content"), 0644)
 		// Note: NewSQLiteDB may panic on error rather than returning error
-		
+
 		// Verify file exists
 		_, err = os.Stat(testFile)
 		assert.NoError(t, err)
-		
+
 		// Manual cleanup
 		err = os.RemoveAll(subTempDir)
 		assert.NoError(t, err, "Should be able to clean up temp directory")
-		
+
 		// Verify cleanup
 		_, err = os.Stat(subTempDir)
 		assert.True(t, os.IsNotExist(err), "Temp directory should be gone after cleanup")
@@ -499,7 +499,7 @@ func TestDatabaseMigrationResilience(t *testing.T) {
 
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "migration_test.db")
-	
+
 	// Create database with initial schema
 	dao := sqlite.NewSQLiteDB(dbPath)
 	// Note: NewSQLiteDB may panic on error rather than returning error
@@ -507,7 +507,7 @@ func TestDatabaseMigrationResilience(t *testing.T) {
 
 	// Add some data
 	dao.RecordToDB("migration_user", "/test", "migration.mp3", "migration.mp3", 100, "migration test", time.Now(), 0, "")
-	
+
 	// Verify data exists
 	transcriptions, err := dao.GetAllByUser("migration_user")
 	assert.NoError(t, err)
@@ -531,26 +531,26 @@ func TestDatabaseMigrationResilience(t *testing.T) {
 func TestNetworkFileSystemOperations(t *testing.T) {
 	// This test is mostly for documentation as it's hard to test reliably
 	// without specific network file system setup
-	
+
 	t.Skip("Network file system tests require specific infrastructure setup")
-	
+
 	// Example test structure:
 	/*
-	nfsPath := "/mnt/nfs/test"
-	if _, err := os.Stat(nfsPath); os.IsNotExist(err) {
-		t.Skip("NFS mount not available")
-	}
-	
-	// Test file operations on network storage
-	testFile := filepath.Join(nfsPath, "nfs_test.txt")
-	err := os.WriteFile(testFile, []byte("nfs test"), 0644)
-	assert.NoError(t, err, "Should be able to write to NFS")
-	
-	content, err := os.ReadFile(testFile)
-	assert.NoError(t, err, "Should be able to read from NFS")
-	assert.Equal(t, "nfs test", string(content))
-	
-	err = os.Remove(testFile)
-	assert.NoError(t, err, "Should be able to delete from NFS")
+		nfsPath := "/mnt/nfs/test"
+		if _, err := os.Stat(nfsPath); os.IsNotExist(err) {
+			t.Skip("NFS mount not available")
+		}
+
+		// Test file operations on network storage
+		testFile := filepath.Join(nfsPath, "nfs_test.txt")
+		err := os.WriteFile(testFile, []byte("nfs test"), 0644)
+		assert.NoError(t, err, "Should be able to write to NFS")
+
+		content, err := os.ReadFile(testFile)
+		assert.NoError(t, err, "Should be able to read from NFS")
+		assert.Equal(t, "nfs test", string(content))
+
+		err = os.Remove(testFile)
+		assert.NoError(t, err, "Should be able to delete from NFS")
 	*/
 }

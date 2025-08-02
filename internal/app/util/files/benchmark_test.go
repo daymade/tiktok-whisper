@@ -44,7 +44,7 @@ func BenchmarkGetAllFiles(b *testing.B) {
 
 	// Create test files with different counts
 	fileCounts := []int{10, 100, 1000}
-	
+
 	for _, count := range fileCounts {
 		benchDir := filepath.Join(tempDir, fmt.Sprintf("files_%d", count))
 		os.MkdirAll(benchDir, 0755)
@@ -62,7 +62,7 @@ func BenchmarkGetAllFiles(b *testing.B) {
 			case 3:
 				ext = "txt"
 			}
-			
+
 			fileName := fmt.Sprintf("file_%04d.%s", i, ext)
 			filePath := filepath.Join(benchDir, fileName)
 			ioutil.WriteFile(filePath, []byte("test content"), 0644)
@@ -200,7 +200,7 @@ func BenchmarkFindGoModRoot(b *testing.B) {
 
 	// Create deep directory structure
 	depths := []int{1, 5, 10, 20}
-	
+
 	for _, depth := range depths {
 		deepPath := tempDir
 		for i := 0; i < depth; i++ {
@@ -381,7 +381,7 @@ func BenchmarkFileSystemStress(b *testing.B) {
 func BenchmarkFileSystemTypes(b *testing.B) {
 	// This benchmark tests performance on different mount points
 	// Results may vary significantly based on the underlying filesystem
-	
+
 	testDirs := []struct {
 		name string
 		path string
@@ -445,11 +445,11 @@ func BenchmarkConcurrencyLevels(b *testing.B) {
 				for pb.Next() {
 					wg.Add(1)
 					sem <- struct{}{}
-					
+
 					go func(index int) {
 						defer wg.Done()
 						defer func() { <-sem }()
-						
+
 						filePath := filepath.Join(tempDir, fmt.Sprintf("concurrent_%d_%d.txt", level, index))
 						WriteToFile(fmt.Sprintf("Content %d", index), filePath)
 					}(i)

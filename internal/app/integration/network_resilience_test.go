@@ -23,11 +23,11 @@ import (
 // TestNetworkTimeout tests various timeout scenarios
 func TestNetworkTimeout(t *testing.T) {
 	tests := []struct {
-		name           string
-		serverDelay    time.Duration
-		clientTimeout  time.Duration
-		expectedError  bool
-		errorContains  string
+		name          string
+		serverDelay   time.Duration
+		clientTimeout time.Duration
+		expectedError bool
+		errorContains string
 	}{
 		{
 			name:          "FastResponse",
@@ -74,7 +74,7 @@ func TestNetworkTimeout(t *testing.T) {
 			config.HTTPClient = &http.Client{
 				Timeout: tt.clientTimeout,
 			}
-			
+
 			client := openai.NewClientWithConfig(config)
 			transcriber := whisper.NewRemoteTranscriber(client)
 
@@ -186,7 +186,7 @@ func TestIntermittentConnectivity(t *testing.T) {
 			callCount := 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				callCount++
-				
+
 				// Simulate intermittent failures based on success rate
 				if float64(callCount%10)/10.0 >= tt.successRate {
 					http.Error(w, "Service temporarily unavailable", http.StatusServiceUnavailable)
@@ -300,7 +300,7 @@ func TestRateLimiting(t *testing.T) {
 
 			rateLimitErrors := 0
 			successCount := 0
-			
+
 			// Send requests at the specified rate
 			ticker := time.NewTicker(time.Second / time.Duration(tt.requestsPerSec))
 			defer ticker.Stop()
@@ -322,7 +322,7 @@ func TestRateLimiting(t *testing.T) {
 				}
 			}
 
-			done:
+		done:
 			t.Logf("Success: %d, Rate limit errors: %d", successCount, rateLimitErrors)
 
 			if tt.expectRateLimit {
@@ -448,7 +448,7 @@ func TestConcurrentNetworkFailures(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
-		
+
 		// Fail every third request
 		if callCount%3 == 0 {
 			http.Error(w, "Simulated failure", http.StatusInternalServerError)
@@ -498,7 +498,7 @@ func TestConcurrentNetworkFailures(t *testing.T) {
 	}
 
 	t.Logf("Concurrent requests - Success: %d, Errors: %d", successCount, errorCount)
-	
+
 	// We expect some successes and some failures based on our 1/3 failure rate
 	assert.Greater(t, successCount, 0, "Should have some successful requests")
 	assert.Greater(t, errorCount, 0, "Should have some failed requests")
@@ -509,7 +509,7 @@ func TestConcurrentNetworkFailures(t *testing.T) {
 func TestGracefulDegradation(t *testing.T) {
 	// This test would typically involve testing fallback mechanisms
 	// For now, we'll test that the system properly reports failures
-	
+
 	config := openai.DefaultConfig("test-key")
 	config.BaseURL = "http://localhost:99999" // Unavailable port
 	config.HTTPClient = &http.Client{

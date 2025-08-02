@@ -48,10 +48,10 @@ func (g *GeminiProvider) GenerateEmbedding(ctx context.Context, text string) ([]
 	contents := []*genai.Content{
 		genai.NewContentFromText(text, genai.RoleUser),
 	}
-	
+
 	// Set output dimensionality to 768
 	outputDim := int32(768)
-	
+
 	// Generate embedding with specified output dimensionality
 	result, err := client.Models.EmbedContent(ctx, g.model, contents, &genai.EmbedContentConfig{
 		TaskType:             "RETRIEVAL_DOCUMENT",
@@ -77,19 +77,19 @@ func (g *GeminiProvider) GenerateEmbedding(ctx context.Context, text string) ([]
 // generateMockEmbedding creates a deterministic mock embedding for testing
 func (g *GeminiProvider) generateMockEmbedding(text string) []float32 {
 	embedding := make([]float32, 768)
-	
+
 	// Use a simple hash-like function based on character values
 	hash := 0
 	for i, char := range text {
 		hash = hash*31 + int(char) + i
 	}
-	
+
 	for i := range embedding {
 		// Create different values based on position and text hash
 		value := (hash + i*7) % 256
 		embedding[i] = float32(value) / 256.0
 	}
-	
+
 	return embedding
 }
 

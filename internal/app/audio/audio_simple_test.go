@@ -52,20 +52,20 @@ func TestAudioFileExtensions(t *testing.T) {
 			supported:      false, // Would be treated as no extension
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test output path generation logic
 			outputPath := strings.TrimSuffix(tt.inputFile, filepath.Ext(tt.inputFile)) + "_16khz.wav"
-			
+
 			if outputPath != tt.expectedOutput {
 				t.Errorf("expected output path %s, got %s", tt.expectedOutput, outputPath)
 			}
-			
+
 			// Test format support logic
 			ext := strings.ToLower(filepath.Ext(tt.inputFile))
 			supported := ext == ".mp3" || ext == ".m4a" || ext == ".wav"
-			
+
 			if supported != tt.supported {
 				t.Errorf("expected supported=%v, got %v for extension %s", tt.supported, supported, ext)
 			}
@@ -121,7 +121,7 @@ func TestPathHandling(t *testing.T) {
 			expected: "/path with spaces/audio file_16khz.wav",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test the path transformation logic
@@ -154,12 +154,12 @@ func TestFormatValidation(t *testing.T) {
 		{"Text file", "audio.txt", false},
 		{"Empty extension", "audio.", false},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ext := strings.ToLower(filepath.Ext(tt.filename))
 			supported := ext == ".mp3" || ext == ".m4a" || ext == ".wav"
-			
+
 			if supported != tt.supported {
 				t.Errorf("expected supported=%v for file %s (ext: %s)", tt.supported, tt.filename, ext)
 			}
@@ -170,16 +170,16 @@ func TestFormatValidation(t *testing.T) {
 // TestCommandArgumentConstruction tests FFmpeg command argument construction
 func TestCommandArgumentConstruction(t *testing.T) {
 	tests := []struct {
-		name           string
-		operation      string
-		inputFile      string
-		outputFile     string
-		expectedArgs   []string
+		name         string
+		operation    string
+		inputFile    string
+		outputFile   string
+		expectedArgs []string
 	}{
 		{
-			name:      "Convert to 16kHz WAV",
-			operation: "convert_wav",
-			inputFile: "/test/input.mp3",
+			name:       "Convert to 16kHz WAV",
+			operation:  "convert_wav",
+			inputFile:  "/test/input.mp3",
 			outputFile: "/test/output.wav",
 			expectedArgs: []string{
 				"-i", "/test/input.mp3",
@@ -191,9 +191,9 @@ func TestCommandArgumentConstruction(t *testing.T) {
 			},
 		},
 		{
-			name:      "Convert to MP3",
-			operation: "convert_mp3",
-			inputFile: "/test/input.mp4",
+			name:       "Convert to MP3",
+			operation:  "convert_mp3",
+			inputFile:  "/test/input.mp4",
 			outputFile: "/test/output.mp3",
 			expectedArgs: []string{
 				"-i", "/test/input.mp4",
@@ -225,11 +225,11 @@ func TestCommandArgumentConstruction(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var actualArgs []string
-			
+
 			switch tt.operation {
 			case "convert_wav":
 				actualArgs = []string{
@@ -262,12 +262,12 @@ func TestCommandArgumentConstruction(t *testing.T) {
 					tt.inputFile,
 				}
 			}
-			
+
 			if len(actualArgs) != len(tt.expectedArgs) {
 				t.Errorf("expected %d args, got %d", len(tt.expectedArgs), len(actualArgs))
 				return
 			}
-			
+
 			for i, expectedArg := range tt.expectedArgs {
 				if actualArgs[i] != expectedArg {
 					t.Errorf("arg %d: expected %s, got %s", i, expectedArg, actualArgs[i])
@@ -302,17 +302,17 @@ func TestErrorMessageFormatting(t *testing.T) {
 			expectedFormat: "No such file or directory",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var formattedError string
-			
+
 			if tt.stderr != "" {
 				formattedError = fmt.Sprintf("FFmpeg error: %s, stderr: %s", tt.originalError, tt.stderr)
 			} else {
 				formattedError = tt.originalError
 			}
-			
+
 			if formattedError != tt.expectedFormat {
 				t.Errorf("expected error format %s, got %s", tt.expectedFormat, formattedError)
 			}
@@ -327,13 +327,13 @@ func TestFileExtensionValidation(t *testing.T) {
 		".m4a": true,
 		".wav": true,
 	}
-	
+
 	tests := []struct {
 		extension string
 		supported bool
 	}{
 		{".mp3", true},
-		{".m4a", true}, 
+		{".m4a", true},
 		{".wav", true},
 		{".MP3", true}, // Should handle case insensitive
 		{".M4A", true},
@@ -345,12 +345,12 @@ func TestFileExtensionValidation(t *testing.T) {
 		{"", false},
 		{".txt", false},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run("ext_"+tt.extension, func(t *testing.T) {
 			normalized := strings.ToLower(tt.extension)
 			supported := supportedFormats[normalized]
-			
+
 			if supported != tt.supported {
 				t.Errorf("extension %s: expected supported=%v, got %v", tt.extension, tt.supported, supported)
 			}

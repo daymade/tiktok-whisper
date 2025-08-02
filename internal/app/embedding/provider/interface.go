@@ -7,7 +7,7 @@ import "context"
 type EmbeddingProvider interface {
 	// GenerateEmbedding generates an embedding vector for the given text
 	GenerateEmbedding(ctx context.Context, text string) ([]float32, error)
-	
+
 	// GetProviderInfo returns metadata about the provider
 	GetProviderInfo() ProviderInfo
 }

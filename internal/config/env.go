@@ -86,7 +86,7 @@ func ValidateAPIKeys(apiKeys *APIKeys) error {
 	} else {
 		fmt.Printf("ℹ️  No API keys configured (embedding features will be unavailable)\n")
 	}
-	
+
 	return nil
 }
 

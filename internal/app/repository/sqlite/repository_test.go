@@ -71,11 +71,11 @@ func TestSQLiteDB_CheckIfFileProcessed(t *testing.T) {
 		sqliteDB := &SQLiteDB{db: db}
 
 		tests := []struct {
-			name           string
-			fileName       string
-			expectError    bool
-			expectValidID  bool
-			setupData      func()
+			name          string
+			fileName      string
+			expectError   bool
+			expectValidID bool
+			setupData     func()
 		}{
 			{
 				name:          "existing_processed_file",
@@ -128,16 +128,16 @@ func TestSQLiteDB_RecordToDB(t *testing.T) {
 		sqliteDB := &SQLiteDB{db: db}
 
 		testCases := []struct {
-			name            string
-			user            string
-			inputDir        string
-			fileName        string
-			mp3FileName     string
-			audioDuration   int
-			transcription   string
-			hasError        int
-			errorMessage    string
-			shouldPanic     bool
+			name          string
+			user          string
+			inputDir      string
+			fileName      string
+			mp3FileName   string
+			audioDuration int
+			transcription string
+			hasError      int
+			errorMessage  string
+			shouldPanic   bool
 		}{
 			{
 				name:          "successful_record",

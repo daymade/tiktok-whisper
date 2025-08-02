@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
 	"tiktok-whisper/internal/app/api"
 	"tiktok-whisper/internal/app/api/openai/whisper"
 	"tiktok-whisper/internal/app/repository/pg"
@@ -126,15 +126,15 @@ func (cb *CircuitBreakerTranscriber) Transcript(inputFilePath string) (string, e
 	}
 
 	result, err := cb.transcriber.Transcript(inputFilePath)
-	
+
 	if err != nil {
 		cb.failures++
 		cb.lastFailureTime = time.Now()
-		
+
 		if cb.failures >= cb.failureThreshold {
 			cb.state = CircuitBreakerOpen
 		}
-		
+
 		return "", err
 	}
 
@@ -158,12 +158,12 @@ func TestRetryLogic(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                string
-		maxRetries          int
-		retryDelay          time.Duration
-		backoffFactor       float64
+		name                  string
+		maxRetries            int
+		retryDelay            time.Duration
+		backoffFactor         float64
 		failuresBeforeSuccess int
-		expectSuccess       bool
+		expectSuccess         bool
 	}{
 		{
 			name:                  "SuccessOnFirstTry",
@@ -204,7 +204,7 @@ func TestRetryLogic(t *testing.T) {
 			callCount := 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				callCount++
-				
+
 				if callCount <= tt.failuresBeforeSuccess {
 					w.WriteHeader(http.StatusServiceUnavailable)
 					w.Write([]byte(`{"error": {"message": "Service unavailable"}}`))
@@ -221,7 +221,7 @@ func TestRetryLogic(t *testing.T) {
 			config.BaseURL = server.URL
 			client := openai.NewClientWithConfig(config)
 			baseTranscriber := whisper.NewRemoteTranscriber(client)
-			
+
 			retryTranscriber := NewRetryableTranscriber(
 				baseTranscriber,
 				tt.maxRetries,
@@ -261,12 +261,12 @@ func TestRetryLogic(t *testing.T) {
 func calculateExpectedRetryDuration(initialDelay time.Duration, backoffFactor float64, retries int) time.Duration {
 	totalDelay := time.Duration(0)
 	delay := initialDelay
-	
+
 	for i := 0; i < retries; i++ {
 		totalDelay += delay
 		delay = time.Duration(float64(delay) * backoffFactor)
 	}
-	
+
 	return totalDelay
 }
 
@@ -277,12 +277,12 @@ func TestCircuitBreakerPattern(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                string
-		failureThreshold    int
-		resetTimeout        time.Duration
-		failureCount        int
-		expectCircuitOpen   bool
-		testRecovery        bool
+		name              string
+		failureThreshold  int
+		resetTimeout      time.Duration
+		failureCount      int
+		expectCircuitOpen bool
+		testRecovery      bool
 	}{
 		{
 			name:              "BelowThreshold",
@@ -320,7 +320,7 @@ func TestCircuitBreakerPattern(t *testing.T) {
 			callCount := 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				callCount++
-				
+
 				// Fail for the first failureCount requests
 				if callCount <= tt.failureCount && !tt.testRecovery {
 					w.WriteHeader(http.StatusServiceUnavailable)
@@ -345,7 +345,7 @@ func TestCircuitBreakerPattern(t *testing.T) {
 			config.BaseURL = server.URL
 			client := openai.NewClientWithConfig(config)
 			baseTranscriber := whisper.NewRemoteTranscriber(client)
-			
+
 			circuitBreaker := NewCircuitBreakerTranscriber(
 				baseTranscriber,
 				tt.failureThreshold,
@@ -364,7 +364,7 @@ func TestCircuitBreakerPattern(t *testing.T) {
 			// Check circuit breaker state
 			if tt.expectCircuitOpen {
 				assert.Equal(t, CircuitBreakerOpen, circuitBreaker.GetState())
-				
+
 				// Additional request should fail immediately
 				_, err := circuitBreaker.Transcript(testFile)
 				assert.Error(t, err)
@@ -377,7 +377,7 @@ func TestCircuitBreakerPattern(t *testing.T) {
 			if tt.testRecovery {
 				// Wait for reset timeout
 				time.Sleep(tt.resetTimeout + 100*time.Millisecond)
-				
+
 				// Should transition to half-open and allow one request
 				result, err := circuitBreaker.Transcript(testFile)
 				assert.NoError(t, err)
@@ -414,7 +414,7 @@ func testSQLiteResilience(t *testing.T) {
 		}()
 		invalidDB := sqlite.NewSQLiteDB("/invalid/path/to/database.db")
 		defer invalidDB.Close()
-		
+
 		// Try to perform operations that should fail
 		_, err := invalidDB.CheckIfFileProcessed("test.mp3")
 		assert.Error(t, err, "Should fail with invalid database")
@@ -423,19 +423,19 @@ func testSQLiteResilience(t *testing.T) {
 	// Test with read-only database
 	tempDir := t.TempDir()
 	dbPath := fmt.Sprintf("%s/readonly.db", tempDir)
-	
+
 	// Create a valid database first
 	db := sqlite.NewSQLiteDB(dbPath)
 	db.Close()
-	
+
 	// Make it read-only
 	err := os.Chmod(dbPath, 0444)
 	require.NoError(t, err)
-	
+
 	// Try to open and use read-only database
 	readonlyDB := sqlite.NewSQLiteDB(dbPath)
 	defer readonlyDB.Close()
-	
+
 	// Write operations should fail
 	readonlyDB.RecordToDB("test", "/test", "test.mp3", "test.mp3", 100, "test transcription", time.Now(), 0, "")
 	// Note: This might not fail immediately due to WAL mode, but it's a realistic test
@@ -444,17 +444,17 @@ func testSQLiteResilience(t *testing.T) {
 func testPostgreSQLResilience(t *testing.T) {
 	// Test with invalid connection string
 	invalidConnStr := "postgres://invalid:invalid@nonexistent:5432/invalid?sslmode=disable"
-	
+
 	_, err := pg.NewPostgresDB(invalidConnStr)
 	assert.Error(t, err, "Should fail with invalid PostgreSQL connection")
 
 	// Test connection timeout
 	timeoutConnStr := "postgres://user:pass@192.0.2.1:5432/db?sslmode=disable&connect_timeout=1"
-	
+
 	start := time.Now()
 	_, err = pg.NewPostgresDB(timeoutConnStr)
 	duration := time.Since(start)
-	
+
 	assert.Error(t, err, "Should timeout with unreachable PostgreSQL server")
 	assert.LessOrEqual(t, duration, 5*time.Second, "Should timeout quickly")
 }
@@ -488,13 +488,13 @@ func TestResourceCleanupAfterFailures(t *testing.T) {
 				// Create temporary database
 				tempDir := t.TempDir()
 				dbPath := fmt.Sprintf("%s/cleanup_test.db", tempDir)
-				
+
 				db := sqlite.NewSQLiteDB(dbPath)
-				
+
 				cleanup := func() {
 					db.Close()
 				}
-				
+
 				return cleanup, nil
 			},
 			failureFunc: func() error {
@@ -508,11 +508,11 @@ func TestResourceCleanupAfterFailures(t *testing.T) {
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusInternalServerError)
 				}))
-				
+
 				cleanup := func() {
 					server.Close()
 				}
-				
+
 				return cleanup, nil
 			},
 			failureFunc: func() error {
@@ -528,7 +528,7 @@ func TestResourceCleanupAfterFailures(t *testing.T) {
 			if setupErr != nil {
 				t.Fatalf("Setup failed: %v", setupErr)
 			}
-			
+
 			// Ensure cleanup happens even if test fails
 			defer func() {
 				if cleanup != nil {
@@ -539,7 +539,7 @@ func TestResourceCleanupAfterFailures(t *testing.T) {
 			// Execute function that should fail
 			err := tt.failureFunc()
 			assert.Error(t, err, "Function should fail as expected")
-			
+
 			// Verify cleanup was called (this is implicit in the defer above)
 			// In a real implementation, you might check specific cleanup conditions
 		})
@@ -711,7 +711,7 @@ func TestErrorPropagation(t *testing.T) {
 			_, err := transcriber.Transcript(testFile)
 
 			require.Error(t, err)
-			
+
 			// Check that error contains expected message
 			if tt.expectedError != "" {
 				assert.Contains(t, strings.ToLower(err.Error()), strings.ToLower(tt.expectedError))

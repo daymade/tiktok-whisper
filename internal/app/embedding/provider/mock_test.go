@@ -26,7 +26,7 @@ func TestMockProviderInterface(t *testing.T) {
 	assert.Equal(t, "mock", info.Name)
 	assert.Equal(t, "mock-model", info.Model)
 	assert.Equal(t, 768, info.Dimension)
-	
+
 	// Verify interface methods are implemented
 	_, ok := provider.(EmbeddingProvider)
 	assert.True(t, ok, "MockProvider should implement EmbeddingProvider interface")
@@ -54,7 +54,7 @@ func TestMockProviderConstructor(t *testing.T) {
 			// Assert
 			assert.NotNil(t, provider)
 			assert.Equal(t, tc.dimension, provider.dimension)
-			
+
 			// Verify info reports correct dimension
 			info := provider.GetProviderInfo()
 			assert.Equal(t, tc.dimension, info.Dimension)
@@ -69,10 +69,10 @@ func TestMockProviderDeterministic(t *testing.T) {
 	ctx := context.Background()
 
 	testCases := []struct {
-		name   string
-		text1  string
-		text2  string
-		equal  bool
+		name  string
+		text1 string
+		text2 string
+		equal bool
 	}{
 		{
 			name:  "identical text produces identical embeddings",
@@ -115,7 +115,7 @@ func TestMockProviderDeterministic(t *testing.T) {
 			// Assert
 			assert.NoError(t, err1)
 			assert.NoError(t, err2)
-			
+
 			if tc.equal {
 				assert.Equal(t, embedding1, embedding2)
 			} else {
@@ -151,7 +151,7 @@ func TestMockProviderDimensions(t *testing.T) {
 			// Assert
 			assert.NoError(t, err)
 			assert.Len(t, embedding, tc.dimension)
-			
+
 			// Verify provider info matches
 			info := provider.GetProviderInfo()
 			assert.Equal(t, tc.dimension, info.Dimension)
@@ -164,7 +164,7 @@ func TestMockProviderNormalization(t *testing.T) {
 	// Arrange
 	provider := NewMockProvider(1000)
 	ctx := context.Background()
-	
+
 	// Test various inputs to ensure range is always [-1, 1]
 	testInputs := []string{
 		"a",
@@ -172,7 +172,7 @@ func TestMockProviderNormalization(t *testing.T) {
 		"Very long text with many characters to ensure we test different hash values",
 		strings.Repeat("x", 1000),
 		"\x00\x01\x02\x03\x04\x05", // Binary-like data
-		"￿￾�",              // High unicode values
+		"￿￾�",                      // High unicode values
 	}
 
 	for _, input := range testInputs {
@@ -182,12 +182,12 @@ func TestMockProviderNormalization(t *testing.T) {
 
 			// Assert
 			assert.NoError(t, err)
-			
+
 			var minVal, maxVal float32 = 1.0, -1.0
 			for i, value := range embedding {
 				assert.GreaterOrEqual(t, value, float32(-1.0), "Value at index %d should be >= -1", i)
 				assert.LessOrEqual(t, value, float32(1.0), "Value at index %d should be <= 1", i)
-				
+
 				if value < minVal {
 					minVal = value
 				}
@@ -195,7 +195,7 @@ func TestMockProviderNormalization(t *testing.T) {
 					maxVal = value
 				}
 			}
-			
+
 			// Ensure we have some variance
 			assert.NotEqual(t, minVal, maxVal, "Embedding should have variance")
 		})
@@ -337,11 +337,11 @@ func TestMockProviderHashBasedImplementation(t *testing.T) {
 			// Assert
 			assert.NoError(t, err1)
 			assert.NoError(t, err2)
-			
+
 			// Even small differences should produce very different embeddings
 			// due to SHA256's avalanche effect
 			assert.NotEqual(t, embedding1, embedding2)
-			
+
 			// Calculate similarity (should be low due to hash properties)
 			similarity := cosineSimilarity(embedding1, embedding2)
 			t.Logf("Similarity between '%s' and '%s': %.4f", tc.text1, tc.text2, similarity)
@@ -413,13 +413,13 @@ func TestMockProviderDimensionEdgeCases(t *testing.T) {
 			// Assert
 			assert.NoError(t, err)
 			assert.Len(t, embedding, tc.dimension)
-			
+
 			// Verify values are properly distributed
 			valueMap := make(map[float32]int)
 			for _, val := range embedding {
 				valueMap[val]++
 			}
-			
+
 			// When dimension > hash size, we expect repeated values
 			if tc.dimension > 32 {
 				assert.Less(t, len(valueMap), tc.dimension, "Should have repeated values when dimension > hash size")
@@ -536,7 +536,7 @@ func TestMockProviderStatisticalProperties(t *testing.T) {
 
 			// Mean should be close to 0 (since range is -1 to 1)
 			assert.InDelta(t, 0.0, mean, 0.5, "Mean should be roughly centered")
-			
+
 			// Should have reasonable variance (not all same value)
 			assert.Greater(t, stdDev, 0.1, "Should have reasonable standard deviation")
 		})

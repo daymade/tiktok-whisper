@@ -19,7 +19,7 @@ func BenchmarkPathOperations(b *testing.B) {
 		"C:\\Windows\\Path\\With\\Backslashes\\audio.mp3",
 		"/Users/username/Documents/Projects/Audio/Recordings/2023/January/Session1/audio.mp3",
 	}
-	
+
 	b.Run("TrimSuffix", func(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
@@ -28,7 +28,7 @@ func BenchmarkPathOperations(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("FilePathExt", func(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
@@ -37,7 +37,7 @@ func BenchmarkPathOperations(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("CombineOperations", func(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
@@ -58,7 +58,7 @@ func BenchmarkStringOperations(b *testing.B) {
 		"invalid_duration",
 		"  \t 120.5  \n",
 	}
-	
+
 	b.Run("StringsTrimSpace", func(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
@@ -67,7 +67,7 @@ func BenchmarkStringOperations(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("StringsToLower", func(b *testing.B) {
 		extensions := []string{".MP3", ".WAV", ".M4A", ".FLAC", ".OGG"}
 		b.ResetTimer()
@@ -77,7 +77,7 @@ func BenchmarkStringOperations(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("StringsReplace", func(b *testing.B) {
 		filenames := []string{"audio.mp4", "video.mp4", "test.mp4", "movie.mp4"}
 		b.ResetTimer()
@@ -93,7 +93,7 @@ func BenchmarkStringOperations(b *testing.B) {
 func BenchmarkFormatValidation(b *testing.B) {
 	testFiles := []string{
 		"audio.mp3",
-		"audio.m4a", 
+		"audio.m4a",
 		"audio.wav",
 		"audio.flac",
 		"audio.ogg",
@@ -105,7 +105,7 @@ func BenchmarkFormatValidation(b *testing.B) {
 		"audio",
 		"audio.",
 	}
-	
+
 	b.Run("ExtensionCheck", func(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
@@ -115,14 +115,14 @@ func BenchmarkFormatValidation(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("MapLookup", func(b *testing.B) {
 		supportedFormats := map[string]bool{
 			".mp3": true,
 			".m4a": true,
 			".wav": true,
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			for _, file := range testFiles {
@@ -147,7 +147,7 @@ func BenchmarkDurationParsing(b *testing.B) {
 		"29.5",
 		"7200.0",
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, dur := range durations {
@@ -161,12 +161,12 @@ func BenchmarkRandomWorkload(b *testing.B) {
 	if testing.Short() {
 		b.Skip("skipping randomized benchmark in short mode")
 	}
-	
+
 	rand.Seed(time.Now().UnixNano())
-	
+
 	formats := []string{".mp3", ".wav", ".m4a", ".flac", ".ogg"}
 	operations := []string{"path_transform", "format_check", "duration_parse"}
-	
+
 	// Pre-generate random test data
 	testData := make([]struct {
 		filename  string
@@ -174,7 +174,7 @@ func BenchmarkRandomWorkload(b *testing.B) {
 		operation string
 		duration  string
 	}, 1000)
-	
+
 	for i := range testData {
 		testData[i] = struct {
 			filename  string
@@ -188,12 +188,12 @@ func BenchmarkRandomWorkload(b *testing.B) {
 			duration:  fmt.Sprintf("%.6f", rand.Float64()*3600),
 		}
 	}
-	
+
 	b.Run("RandomOperations", func(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			data := testData[i%len(testData)]
-			
+
 			switch data.operation {
 			case "path_transform":
 				_ = strings.TrimSuffix(data.filename, filepath.Ext(data.filename)) + "_16khz.wav"
@@ -213,7 +213,7 @@ func BenchmarkConcurrentPathOperations(b *testing.B) {
 		"audio1.mp3", "audio2.wav", "audio3.m4a", "audio4.flac",
 		"video1.mp4", "video2.avi", "video3.mkv", "video4.mov",
 	}
-	
+
 	b.Run("Sequential", func(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
@@ -222,7 +222,7 @@ func BenchmarkConcurrentPathOperations(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("Concurrent", func(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
@@ -233,7 +233,7 @@ func BenchmarkConcurrentPathOperations(b *testing.B) {
 					done <- result
 				}(path)
 			}
-			
+
 			// Collect results
 			for range testPaths {
 				<-done
@@ -253,7 +253,7 @@ func BenchmarkMemoryAllocation(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("StringsBuilder", func(b *testing.B) {
 		filenames := []string{"audio1", "audio2", "audio3", "audio4", "audio5"}
 		b.ResetTimer()

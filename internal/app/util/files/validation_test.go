@@ -11,9 +11,9 @@ import (
 
 func TestFileExtensionValidation(t *testing.T) {
 	tests := []struct {
-		name      string
-		filename  string
-		extension string
+		name        string
+		filename    string
+		extension   string
 		shouldMatch bool
 	}{
 		// Audio formats
@@ -26,7 +26,7 @@ func TestFileExtensionValidation(t *testing.T) {
 		{"ogg_file", "audio.ogg", "ogg", true},
 		{"aac_file", "audio.aac", "aac", true},
 		{"wma_file", "audio.wma", "wma", true},
-		
+
 		// Edge cases
 		{"no_extension", "audiofile", "mp3", false},
 		{"multiple_dots", "audio.test.mp3", "mp3", true},
@@ -35,7 +35,7 @@ func TestFileExtensionValidation(t *testing.T) {
 		{"empty_extension", "audio.", "", true},
 		{"hidden_file", ".audio.mp3", "mp3", true},
 		{"extension_only", ".mp3", "mp3", true},
-		
+
 		// Special cases
 		{"space_in_extension", "audio.mp3 ", "mp3", false},
 		{"tab_in_extension", "audio.mp3\t", "mp3", false},
@@ -89,21 +89,21 @@ func TestFileValidationWithSize(t *testing.T) {
 	}{
 		{"empty_file", "empty.mp3", 0, true},
 		{"small_file", "small.mp3", 1, true},
-		{"normal_file", "normal.mp3", 1024 * 1024, true},        // 1MB
-		{"large_file", "large.mp3", 100 * 1024 * 1024, true},   // 100MB
-		{"huge_file", "huge.mp3", 1024 * 1024 * 1024, true},    // 1GB
+		{"normal_file", "normal.mp3", 1024 * 1024, true},     // 1MB
+		{"large_file", "large.mp3", 100 * 1024 * 1024, true}, // 100MB
+		{"huge_file", "huge.mp3", 1024 * 1024 * 1024, true},  // 1GB
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filePath := filepath.Join(tempDir, tt.filename)
-			
+
 			// Create file with specific size
 			file, err := os.Create(filePath)
 			if err != nil {
 				t.Fatalf("Failed to create file: %v", err)
 			}
-			
+
 			if tt.size > 0 {
 				// For large files, just set the size without writing all data
 				file.Truncate(tt.size)
@@ -115,7 +115,7 @@ func TestFileValidationWithSize(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to stat file: %v", err)
 			}
-			
+
 			if info.Size() != tt.size {
 				t.Errorf("File size mismatch: got %d, want %d", info.Size(), tt.size)
 			}
@@ -167,7 +167,7 @@ func TestFilePermissionValidation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filePath := filepath.Join(tempDir, tt.filename)
-			
+
 			// Create file with specific permissions
 			ioutil.WriteFile(filePath, []byte("test"), tt.permissions)
 
@@ -247,9 +247,9 @@ func TestFileNameValidation(t *testing.T) {
 
 	// Test files with various naming patterns
 	testFiles := []struct {
-		name        string
-		filename    string
-		shouldWork  bool
+		name       string
+		filename   string
+		shouldWork bool
 	}{
 		{"normal_name", "normal_audio.mp3", true},
 		{"numbers_in_name", "track01.mp3", true},
@@ -282,7 +282,7 @@ func TestFileNameValidation(t *testing.T) {
 			}
 
 			filePath := filepath.Join(tempDir, tt.filename)
-			
+
 			// Try to create the file
 			err := ioutil.WriteFile(filePath, []byte("test"), 0644)
 			if err != nil {
@@ -396,7 +396,7 @@ func TestFileContentValidation(t *testing.T) {
 			}
 
 			if gotContent != expectedAfterRead {
-				t.Errorf("Content mismatch:\ngot:      %q\nexpected: %q", 
+				t.Errorf("Content mismatch:\ngot:      %q\nexpected: %q",
 					gotContent, expectedAfterRead)
 			}
 
@@ -412,17 +412,17 @@ func TestConcurrentFileOperations(t *testing.T) {
 	// Test concurrent reads and writes
 	t.Run("concurrent_writes", func(t *testing.T) {
 		done := make(chan bool, 10)
-		
+
 		for i := 0; i < 10; i++ {
 			go func(index int) {
 				filename := filepath.Join(tempDir, fmt.Sprintf("concurrent_%d.txt", index))
 				content := fmt.Sprintf("Content for file %d", index)
-				
+
 				err := WriteToFile(content, filename)
 				if err != nil {
 					t.Errorf("Concurrent write failed for file %d: %v", index, err)
 				}
-				
+
 				done <- true
 			}(i)
 		}
@@ -449,7 +449,7 @@ func TestConcurrentFileOperations(t *testing.T) {
 		WriteToFile("Test content for concurrent reads", testFile)
 
 		done := make(chan bool, 10)
-		
+
 		for i := 0; i < 10; i++ {
 			go func() {
 				content, err := ReadOutputFile(testFile)

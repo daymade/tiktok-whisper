@@ -77,18 +77,18 @@ func (suite *IntegrationTestSuite) TestFullWorkflowWithTestData() {
 
 	// This would use testutil.SeedTestData to populate transcriptions
 	// Then test the full embedding workflow
-	
+
 	// 1. Get transcriptions without embeddings
 	transcriptions, err := suite.storage.GetTranscriptionsWithoutEmbeddings(suite.ctx, "openai", 10)
 	suite.NoError(err)
-	
+
 	// 2. Generate and store embeddings for each
 	for _, transcription := range transcriptions {
 		embedding := generateTestEmbedding(1536)
 		err := suite.storage.StoreEmbedding(suite.ctx, transcription.ID, "openai", embedding)
 		suite.NoError(err)
 	}
-	
+
 	// 3. Verify no more transcriptions need embeddings
 	remaining, err := suite.storage.GetTranscriptionsWithoutEmbeddings(suite.ctx, "openai", 10)
 	suite.NoError(err)
@@ -135,7 +135,7 @@ func (suite *IntegrationTestSuite) setupVectorExtension(db *sql.DB) {
 		// If it contains "PostgreSQL", create vector extension
 		if len(dbType) > 10 && dbType[:10] == "PostgreSQL" {
 			_, _ = db.Exec("CREATE EXTENSION IF NOT EXISTS vector")
-			
+
 			// Create vector-enabled schema
 			schema := `
 			ALTER TABLE transcriptions 
@@ -215,7 +215,7 @@ func TestWithSeekedTestDB(t *testing.T) {
 
 		// Should have seeded transcriptions
 		assert.GreaterOrEqual(t, len(transcriptions), 0)
-		
+
 		// Verify transcription structure
 		for _, transcription := range transcriptions {
 			assert.Greater(t, transcription.ID, 0)
@@ -267,7 +267,7 @@ func TestDatabaseTypeCompatibility(t *testing.T) {
 			// Test PostgreSQL-specific features
 			storage := NewPgVectorStorage(db)
 			defer storage.Close()
-			
+
 			// Try to create vector extension (may fail if not available)
 			_, err = db.Exec("CREATE EXTENSION IF NOT EXISTS vector")
 			if err != nil {

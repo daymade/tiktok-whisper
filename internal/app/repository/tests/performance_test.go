@@ -124,7 +124,7 @@ func benchmarkRecordToDB(b *testing.B, suite PerformanceTestSuite, batchSize int
 			user:          fmt.Sprintf("bench_user_%d", i%10), // Cycle through 10 users
 			fileName:      fmt.Sprintf("bench_file_%d.mp3", i),
 			transcription: generateBenchmarkTranscription(500), // 500 char transcription
-			duration:      120 + rand.Intn(3480),              // 2 min to 1 hour
+			duration:      120 + rand.Intn(3480),               // 2 min to 1 hour
 		}
 	}
 
@@ -205,7 +205,7 @@ func benchmarkGetAllByUser(b *testing.B, suite PerformanceTestSuite) {
 	// Seed the database with test data for multiple users
 	usersData := map[string]int{
 		"user_small":  10,   // 10 records
-		"user_medium": 50,   // 50 records  
+		"user_medium": 50,   // 50 records
 		"user_large":  200,  // 200 records
 		"user_xlarge": 1000, // 1000 records
 	}
@@ -455,11 +455,11 @@ func TestPerformanceRegression(t *testing.T) {
 		maxDuration time.Duration
 		maxMemoryMB int64
 	}{
-		"RecordToDB_Single":    {maxDuration: 10 * time.Millisecond, maxMemoryMB: 1},
-		"CheckFile_Single":     {maxDuration: 5 * time.Millisecond, maxMemoryMB: 1},
-		"GetAllByUser_Small":   {maxDuration: 20 * time.Millisecond, maxMemoryMB: 2},
-		"Concurrent_100_Ops":   {maxDuration: 500 * time.Millisecond, maxMemoryMB: 10},
-		"LargeData_100KB":      {maxDuration: 100 * time.Millisecond, maxMemoryMB: 5},
+		"RecordToDB_Single":  {maxDuration: 10 * time.Millisecond, maxMemoryMB: 1},
+		"CheckFile_Single":   {maxDuration: 5 * time.Millisecond, maxMemoryMB: 1},
+		"GetAllByUser_Small": {maxDuration: 20 * time.Millisecond, maxMemoryMB: 2},
+		"Concurrent_100_Ops": {maxDuration: 500 * time.Millisecond, maxMemoryMB: 10},
+		"LargeData_100KB":    {maxDuration: 100 * time.Millisecond, maxMemoryMB: 5},
 	}
 
 	databases := []struct {
@@ -605,7 +605,7 @@ func setupSQLiteBenchmark(b *testing.B) PerformanceTestSuite {
 		db *sql.DB
 	}
 	(*sqliteDBInternal)(sqliteDAO).db = db
-	
+
 	return PerformanceTestSuite{
 		name: "SQLite",
 		dao:  sqliteDAO,
@@ -620,7 +620,7 @@ func setupPostgresBenchmark(b *testing.B) PerformanceTestSuite {
 		db *sql.DB
 	}
 	(*postgresDBInternal)(postgresDAO).db = db
-	
+
 	return PerformanceTestSuite{
 		name: "PostgreSQL",
 		dao:  postgresDAO,
@@ -635,7 +635,7 @@ func setupSQLiteTest(t *testing.T) PerformanceTestSuite {
 		db *sql.DB
 	}
 	(*sqliteDBInternal)(sqliteDAO).db = db
-	
+
 	return PerformanceTestSuite{
 		name: "SQLite",
 		dao:  sqliteDAO,
@@ -650,7 +650,7 @@ func setupPostgresTest(t *testing.T) PerformanceTestSuite {
 		db *sql.DB
 	}
 	(*postgresDBInternal)(postgresDAO).db = db
-	
+
 	return PerformanceTestSuite{
 		name: "PostgreSQL",
 		dao:  postgresDAO,
@@ -663,11 +663,11 @@ func setupPostgresTest(t *testing.T) PerformanceTestSuite {
 // generateBenchmarkTranscription generates a transcription of specified length for benchmarking
 func generateBenchmarkTranscription(length int) string {
 	const baseText = "This is a benchmark transcription text that will be repeated to reach the desired length. It contains various characters including spaces, punctuation, and Unicode: 测试 🎵 áéíóú. "
-	
+
 	if length <= len(baseText) {
 		return baseText[:length]
 	}
-	
+
 	result := ""
 	for len(result) < length {
 		remaining := length - len(result)
@@ -677,7 +677,7 @@ func generateBenchmarkTranscription(length int) string {
 			result += baseText[:remaining]
 		}
 	}
-	
+
 	return result
 }
 
@@ -686,12 +686,12 @@ func isPostgresAvailable() bool {
 	if os := testutil.DefaultPostgresConfig(); os.Host != "" {
 		return true
 	}
-	
+
 	db, err := sql.Open("postgres", "postgres://postgres:postgres@localhost/postgres?sslmode=disable")
 	if err != nil {
 		return false
 	}
 	defer db.Close()
-	
+
 	return db.Ping() == nil
 }

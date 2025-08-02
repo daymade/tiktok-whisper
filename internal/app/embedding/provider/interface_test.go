@@ -26,11 +26,11 @@ func TestEmbeddingProviderInterfaceCompliance(t *testing.T) {
 		t.Run(p.name, func(t *testing.T) {
 			// Verify the provider implements the interface
 			var _ EmbeddingProvider = p.provider
-			
+
 			// Use reflection to verify interface methods
 			providerType := reflect.TypeOf(p.provider)
 			interfaceType := reflect.TypeOf((*EmbeddingProvider)(nil)).Elem()
-			
+
 			assert.True(t, providerType.Implements(interfaceType),
 				"%s should implement EmbeddingProvider interface", p.name)
 		})
@@ -48,21 +48,21 @@ func TestEmbeddingProviderMethodSignatures(t *testing.T) {
 	for _, provider := range providers {
 		providerType := reflect.TypeOf(provider)
 		providerName := providerType.String()
-		
+
 		t.Run(providerName, func(t *testing.T) {
 			// Check GenerateEmbedding method
 			method, ok := providerType.MethodByName("GenerateEmbedding")
 			require.True(t, ok, "%s should have GenerateEmbedding method", providerName)
-			
+
 			// Verify method signature
 			methodType := method.Type
 			assert.Equal(t, 3, methodType.NumIn(), "GenerateEmbedding should have 3 inputs (receiver, context, string)")
 			assert.Equal(t, 2, methodType.NumOut(), "GenerateEmbedding should have 2 outputs ([]float32, error)")
-			
+
 			// Check GetProviderInfo method
 			method, ok = providerType.MethodByName("GetProviderInfo")
 			require.True(t, ok, "%s should have GetProviderInfo method", providerName)
-			
+
 			// Verify method signature
 			methodType = method.Type
 			assert.Equal(t, 1, methodType.NumIn(), "GetProviderInfo should have 1 input (receiver)")
@@ -74,31 +74,31 @@ func TestEmbeddingProviderMethodSignatures(t *testing.T) {
 // Test that provider metadata is valid for all providers
 func TestEmbeddingProviderMetadata(t *testing.T) {
 	testCases := []struct {
-		name             string
-		provider         EmbeddingProvider
-		expectedName     string
-		expectedModel    string
+		name              string
+		provider          EmbeddingProvider
+		expectedName      string
+		expectedModel     string
 		expectedDimension int
 	}{
 		{
-			name:             "MockProvider",
-			provider:         NewMockProvider(768),
-			expectedName:     "mock",
-			expectedModel:    "mock-model",
+			name:              "MockProvider",
+			provider:          NewMockProvider(768),
+			expectedName:      "mock",
+			expectedModel:     "mock-model",
 			expectedDimension: 768,
 		},
 		{
-			name:             "OpenAIProvider",
-			provider:         NewOpenAIProvider("test-key"),
-			expectedName:     "openai",
-			expectedModel:    "text-embedding-ada-002",
+			name:              "OpenAIProvider",
+			provider:          NewOpenAIProvider("test-key"),
+			expectedName:      "openai",
+			expectedModel:     "text-embedding-ada-002",
 			expectedDimension: 1536,
 		},
 		{
-			name:             "GeminiProvider",
-			provider:         NewGeminiProvider(""), // Empty API key for mock
-			expectedName:     "gemini",
-			expectedModel:    "gemini-embedding-001",
+			name:              "GeminiProvider",
+			provider:          NewGeminiProvider(""), // Empty API key for mock
+			expectedName:      "gemini",
+			expectedModel:     "gemini-embedding-001",
 			expectedDimension: 768,
 		},
 	}
@@ -112,7 +112,7 @@ func TestEmbeddingProviderMetadata(t *testing.T) {
 			assert.Equal(t, tc.expectedName, info.Name)
 			assert.Equal(t, tc.expectedModel, info.Model)
 			assert.Equal(t, tc.expectedDimension, info.Dimension)
-			
+
 			// Additional validations
 			assert.NotEmpty(t, info.Name, "Provider name should not be empty")
 			assert.NotEmpty(t, info.Model, "Model name should not be empty")
@@ -143,7 +143,7 @@ func TestEmbeddingProviderBasicGeneration(t *testing.T) {
 			// Assert
 			assert.NoError(t, err)
 			assert.NotNil(t, embedding)
-			
+
 			// Verify dimension matches provider info
 			info := p.provider.GetProviderInfo()
 			assert.Len(t, embedding, info.Dimension)
@@ -245,7 +245,7 @@ func TestProviderFactory(t *testing.T) {
 		// provider, err := NewProvider("openai", "api-key")
 		// assert.NoError(t, err)
 		// assert.IsType(t, &OpenAIProvider{}, provider)
-		
+
 		t.Log("Factory pattern not yet implemented. This test documents expected behavior.")
 	})
 }
@@ -277,7 +277,7 @@ func TestEmbeddingProviderEdgeCases(t *testing.T) {
 		// Note: passing nil context is generally bad practice,
 		// but we test to ensure providers handle it gracefully
 		provider := NewMockProvider(128)
-		
+
 		// This should not panic
 		assert.NotPanics(t, func() {
 			_, _ = provider.GenerateEmbedding(nil, "test")
@@ -289,12 +289,12 @@ func TestEmbeddingProviderEdgeCases(t *testing.T) {
 func ExampleEmbeddingProvider() {
 	// Create a provider
 	provider := NewMockProvider(768)
-	
+
 	// Get provider information
 	info := provider.GetProviderInfo()
 	fmt.Printf("Provider: %s, Model: %s, Dimension: %d\n",
 		info.Name, info.Model, info.Dimension)
-	
+
 	// Generate an embedding
 	ctx := context.Background()
 	embedding, err := provider.GenerateEmbedding(ctx, "Hello, world!")
@@ -302,7 +302,7 @@ func ExampleEmbeddingProvider() {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-	
+
 	fmt.Printf("Generated embedding with %d dimensions\n", len(embedding))
 	// Output:
 	// Provider: mock, Model: mock-model, Dimension: 768

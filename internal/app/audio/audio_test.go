@@ -15,7 +15,7 @@ import (
 func TestMain(m *testing.M) {
 	// Run tests
 	code := m.Run()
-	
+
 	// Exit with test result code
 	os.Exit(code)
 }
@@ -56,16 +56,16 @@ func TestGetAudioDuration(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name:             "invalid duration format",
-			ffprobeOutput:    "not-a-number\n",
-			expectedError:    true,
-			errorContains:    "invalid syntax",
+			name:          "invalid duration format",
+			ffprobeOutput: "not-a-number\n",
+			expectedError: true,
+			errorContains: "invalid syntax",
 		},
 		{
-			name:             "empty output",
-			ffprobeOutput:    "",
-			expectedError:    true,
-			errorContains:    "invalid syntax",
+			name:          "empty output",
+			ffprobeOutput: "",
+			expectedError: true,
+			errorContains: "invalid syntax",
 		},
 		{
 			name:             "whitespace in output",
@@ -92,12 +92,12 @@ func TestGetAudioDuration(t *testing.T) {
 			expectedError:    false, // function doesn't validate negative
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test the parsing logic directly
 			duration, err := parseDurationOutput(tt.ffprobeOutput)
-			
+
 			// Check error
 			if tt.expectedError {
 				if err == nil {
@@ -165,14 +165,14 @@ func TestConvertToMp3(t *testing.T) {
 			expectedError: false, // We'll test the logic, not the actual conversion
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a temporary directory for testing
 			tempDir := t.TempDir()
-			
+
 			outputPath := filepath.Join(tempDir, strings.Replace(tt.fileName, ".mp4", ".mp3", 1))
-			
+
 			// Create the output file if it should exist
 			if tt.fileExists {
 				file, err := os.Create(outputPath)
@@ -181,15 +181,15 @@ func TestConvertToMp3(t *testing.T) {
 				}
 				file.Close()
 			}
-			
+
 			// Test the file existence check logic
 			_, err := os.Stat(outputPath)
 			fileExists := !os.IsNotExist(err)
-			
+
 			if fileExists != tt.fileExists {
 				t.Errorf("expected file exists=%v, got %v", tt.fileExists, fileExists)
 			}
-			
+
 			t.Logf("Test case: %s, File exists: %v", tt.name, fileExists)
 		})
 	}
@@ -277,12 +277,12 @@ func TestIs16kHzWavFile(t *testing.T) {
 			expectedError: false,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test the probe output parsing logic
 			is16kHz, err := parseProbeOutput(tt.probeOutput)
-			
+
 			// Check error
 			if tt.expectedError {
 				if err == nil {
@@ -303,61 +303,61 @@ func TestIs16kHzWavFile(t *testing.T) {
 // TestConvertTo16kHzWav tests the ConvertTo16kHzWav path generation logic
 func TestConvertTo16kHzWav(t *testing.T) {
 	tests := []struct {
-		name           string
-		inputFile      string
-		expectedOutput string
+		name            string
+		inputFile       string
+		expectedOutput  string
 		supportedFormat bool
 	}{
 		{
-			name:           "MP3 file",
-			inputFile:      "/test/audio.mp3",
-			expectedOutput: "/test/audio_16khz.wav",
+			name:            "MP3 file",
+			inputFile:       "/test/audio.mp3",
+			expectedOutput:  "/test/audio_16khz.wav",
 			supportedFormat: true,
 		},
 		{
-			name:           "M4A file",
-			inputFile:      "/test/audio.m4a",
-			expectedOutput: "/test/audio_16khz.wav",
+			name:            "M4A file",
+			inputFile:       "/test/audio.m4a",
+			expectedOutput:  "/test/audio_16khz.wav",
 			supportedFormat: true,
 		},
 		{
-			name:           "WAV file",
-			inputFile:      "/test/audio.wav",
-			expectedOutput: "/test/audio_16khz.wav",
+			name:            "WAV file",
+			inputFile:       "/test/audio.wav",
+			expectedOutput:  "/test/audio_16khz.wav",
 			supportedFormat: true,
 		},
 		{
-			name:           "unsupported OGG file",
-			inputFile:      "/test/audio.ogg",
-			expectedOutput: "/test/audio_16khz.wav",
+			name:            "unsupported OGG file",
+			inputFile:       "/test/audio.ogg",
+			expectedOutput:  "/test/audio_16khz.wav",
 			supportedFormat: false,
 		},
 		{
-			name:           "case insensitive extension",
-			inputFile:      "/test/AUDIO.MP3",
-			expectedOutput: "/test/AUDIO_16khz.wav",
+			name:            "case insensitive extension",
+			inputFile:       "/test/AUDIO.MP3",
+			expectedOutput:  "/test/AUDIO_16khz.wav",
 			supportedFormat: true,
 		},
 		{
-			name:           "path with spaces",
-			inputFile:      "/test/my audio file.mp3",
-			expectedOutput: "/test/my audio file_16khz.wav",
+			name:            "path with spaces",
+			inputFile:       "/test/my audio file.mp3",
+			expectedOutput:  "/test/my audio file_16khz.wav",
 			supportedFormat: true,
 		},
 		{
-			name:           "multiple extensions",
-			inputFile:      "/test/audio.test.mp3",
-			expectedOutput: "/test/audio.test_16khz.wav",
+			name:            "multiple extensions",
+			inputFile:       "/test/audio.test.mp3",
+			expectedOutput:  "/test/audio.test_16khz.wav",
 			supportedFormat: true,
 		},
 		{
-			name:           "no extension",
-			inputFile:      "/test/audiofile",
-			expectedOutput: "/test/audiofile_16khz.wav",
+			name:            "no extension",
+			inputFile:       "/test/audiofile",
+			expectedOutput:  "/test/audiofile_16khz.wav",
 			supportedFormat: false,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test output path generation
@@ -365,7 +365,7 @@ func TestConvertTo16kHzWav(t *testing.T) {
 			if outputPath != tt.expectedOutput {
 				t.Errorf("expected output path %s, got %s", tt.expectedOutput, outputPath)
 			}
-			
+
 			// Test format support logic
 			ext := strings.ToLower(filepath.Ext(tt.inputFile))
 			supported := ext == ".mp3" || ext == ".m4a" || ext == ".wav"
@@ -454,12 +454,12 @@ func TestFFProbeOutputParsing(t *testing.T) {
 			expectedRate:  0,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var output model2.FFProbeOutput
 			err := json.Unmarshal([]byte(tt.jsonInput), &output)
-			
+
 			if tt.expectedError {
 				if err == nil {
 					t.Error("expected error, got nil")
@@ -472,11 +472,11 @@ func TestFFProbeOutputParsing(t *testing.T) {
 					for _, stream := range output.Streams {
 						if stream.CodecType == "audio" {
 							if stream.CodecName != tt.expectedCodec {
-								t.Errorf("expected codec %s, got %s", 
+								t.Errorf("expected codec %s, got %s",
 									tt.expectedCodec, stream.CodecName)
 							}
 							if stream.SampleRate != tt.expectedRate {
-								t.Errorf("expected sample rate %d, got %d", 
+								t.Errorf("expected sample rate %d, got %d",
 									tt.expectedRate, stream.SampleRate)
 							}
 							break

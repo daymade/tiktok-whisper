@@ -28,14 +28,14 @@ func (m *MockProvider) GenerateEmbedding(ctx context.Context, text string) ([]fl
 	// Generate deterministic embedding using SHA256 hash
 	hash := sha256.Sum256([]byte(text))
 	embedding := make([]float32, m.dimension)
-	
+
 	// Convert hash bytes to float32 values in range [-1, 1]
 	for i := 0; i < m.dimension; i++ {
 		byteIndex := i % len(hash)
 		// Convert byte (0-255) to float32 in range [-1, 1]
-		embedding[i] = (float32(hash[byteIndex]) / 255.0) * 2 - 1
+		embedding[i] = (float32(hash[byteIndex])/255.0)*2 - 1
 	}
-	
+
 	return embedding, nil
 }
 

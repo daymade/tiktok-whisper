@@ -190,7 +190,7 @@ func testTransactionIsolation(t *testing.T, suite TransactionTestSuite) {
 
 		t.Run("ReadCommitted", func(t *testing.T) {
 			// Test read committed isolation level behavior
-			
+
 			// Transaction 1: Insert data but don't commit yet
 			tx1, err := suite.db.Begin()
 			if err != nil {
@@ -456,10 +456,10 @@ func testConcurrentTransactions(t *testing.T, suite TransactionTestSuite) {
 						_, err = tx.Exec(`
 							INSERT INTO transcriptions (user, input_dir, file_name, mp3_file_name, audio_duration, transcription, last_conversion_time, has_error, error_message)
 							VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-						`, fmt.Sprintf("concurrent_user_%d", goroutineID), "/test/concurrent", 
-						fmt.Sprintf("concurrent_file_%d_%d.mp3", goroutineID, j),
-						fmt.Sprintf("concurrent_file_%d_%d.mp3", goroutineID, j),
-						120, fmt.Sprintf("Concurrent test %d-%d", goroutineID, j), time.Now(), 0, "")
+						`, fmt.Sprintf("concurrent_user_%d", goroutineID), "/test/concurrent",
+							fmt.Sprintf("concurrent_file_%d_%d.mp3", goroutineID, j),
+							fmt.Sprintf("concurrent_file_%d_%d.mp3", goroutineID, j),
+							120, fmt.Sprintf("Concurrent test %d-%d", goroutineID, j), time.Now(), 0, "")
 
 						if err != nil {
 							errors <- fmt.Errorf("goroutine %d: failed to insert record %d: %v", goroutineID, j, err)
@@ -488,13 +488,13 @@ func testConcurrentTransactions(t *testing.T, suite TransactionTestSuite) {
 			// Verify final record count
 			finalCount := testutil.GetTestDataCount(t, suite.db)
 			expectedCount := numGoroutines * recordsPerGoroutine
-			
+
 			if errorCount > 0 {
 				t.Logf("Some transactions failed (%d errors), so expected count may be less than %d", errorCount, expectedCount)
 			}
 
 			if finalCount < expectedCount-errorCount*recordsPerGoroutine {
-				t.Errorf("Expected at least %d records after concurrent inserts, got %d", 
+				t.Errorf("Expected at least %d records after concurrent inserts, got %d",
 					expectedCount-errorCount*recordsPerGoroutine, finalCount)
 			}
 		})
@@ -868,7 +868,7 @@ func testACIDProperties(t *testing.T, suite TransactionTestSuite) {
 
 		t.Run("Durability", func(t *testing.T) {
 			// Test that committed transactions survive
-			
+
 			// Insert data in transaction
 			tx, err := suite.db.Begin()
 			if err != nil {

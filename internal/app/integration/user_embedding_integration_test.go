@@ -14,7 +14,6 @@ import (
 
 	"tiktok-whisper/internal/app/embedding/orchestrator"
 	"tiktok-whisper/internal/app/embedding/provider"
-	"tiktok-whisper/internal/app/repository/pg"
 	"tiktok-whisper/internal/app/storage/vector"
 	"tiktok-whisper/internal/app/testutil"
 )
@@ -429,8 +428,8 @@ func (m *MockEmbeddingProvider) GenerateEmbedding(ctx context.Context, text stri
 
 func (m *MockEmbeddingProvider) GetProviderInfo() provider.ProviderInfo {
 	return provider.ProviderInfo{
-		Name:          m.ProviderName,
-		EmbeddingSize: m.EmbeddingSize,
-		MaxTokens:     8192,
+		Name:      m.ProviderName,
+		Model:     "mock-model",
+		Dimension: m.EmbeddingSize,
 	}
 }

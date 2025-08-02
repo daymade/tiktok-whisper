@@ -3,6 +3,7 @@ package pg
 import (
 	"database/sql"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -172,16 +173,16 @@ func TestPostgresDB_RecordToDB(t *testing.T) {
 		postgresDB := &PostgresDB{db: db}
 
 		testCases := []struct {
-			name            string
-			user            string
-			inputDir        string
-			fileName        string
-			mp3FileName     string
-			audioDuration   int
-			transcription   string
-			hasError        int
-			errorMessage    string
-			shouldPanic     bool
+			name          string
+			user          string
+			inputDir      string
+			fileName      string
+			mp3FileName   string
+			audioDuration int
+			transcription string
+			hasError      int
+			errorMessage  string
+			shouldPanic   bool
 		}{
 			{
 				name:          "successful_record",
@@ -309,14 +310,124 @@ func TestPostgresDB_GetAllByUser(t *testing.T) {
 	testutil.WithSeekedTestDB(t, func(t *testing.T, db *sql.DB) {
 		postgresDB := &PostgresDB{db: db}
 
-		// Note: PostgreSQL implementation returns "not implemented" error
-		// This test documents the current behavior
-		_, err := postgresDB.GetAllByUser("test_user_1")
-		if err == nil {
-			t.Error("Expected 'not implemented' error but got none")
+		tests := []struct {
+			name             string
+			userNickname     string
+			expectError      bool
+			expectCount      int
+			expectedErrorMsg string
+			setupData        func()
+		}{
+			{
+				name:         "existing_user_with_records",
+				userNickname: "test_user_1",
+				expectError:  false,
+				expectCount:  2, // Based on seeded data - non-error records only
+			},
+			{
+				name:         "existing_user_with_one_record",
+				userNickname: "test_user_2",
+				expectError:  false,
+				expectCount:  1, // Only non-error records
+			},
+			{
+				name:         "non_existing_user",
+				userNickname: "non_existent_user",
+				expectError:  false,
+				expectCount:  0,
+			},
+			{
+				name:         "empty_user_nickname",
+				userNickname: "",
+				expectError:  false,
+				expectCount:  0,
+			},
+			{
+				name:         "user_with_unicode_name",
+				userNickname: "测试用户",
+				expectError:  false,
+				expectCount:  0, // Assuming no seeded data for unicode user
+				setupData: func() {
+					// Insert test data with unicode user
+					_, err := db.Exec(`
+						INSERT INTO transcriptions (user_nickname, input_dir, file_name, mp3_file_name, audio_duration, transcription, last_conversion_time, has_error, error_message)
+						VALUES ($1, '/test/unicode', 'unicode_test.mp3', 'unicode_test.mp3', 120, 'Unicode transcription', now(), 0, '')
+					`, "测试用户")
+					if err != nil {
+						t.Fatalf("Failed to insert unicode test data: %v", err)
+					}
+				},
+			},
+			{
+				name:         "user_with_special_sql_characters",
+				userNickname: "test'; DROP TABLE transcriptions; --",
+				expectError:  false,
+				expectCount:  0,
+				setupData: func() {
+					// Insert test data with SQL injection attempt in username
+					_, err := db.Exec(`
+						INSERT INTO transcriptions (user_nickname, input_dir, file_name, mp3_file_name, audio_duration, transcription, last_conversion_time, has_error, error_message)
+						VALUES ($1, '/test/sql', 'sql_test.mp3', 'sql_test.mp3', 60, 'SQL injection test', now(), 0, '')
+					`, "test'; DROP TABLE transcriptions; --")
+					if err != nil {
+						t.Fatalf("Failed to insert SQL test data: %v", err)
+					}
+				},
+			},
 		}
-		if err.Error() != "not implemented" {
-			t.Errorf("Expected 'not implemented' error, got: %v", err)
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// Setup test data if needed
+				if tt.setupData != nil {
+					tt.setupData()
+				}
+
+				transcriptions, err := postgresDB.GetAllByUser(tt.userNickname)
+
+				// Check error expectations
+				if tt.expectError {
+					if err == nil {
+						t.Errorf("Expected error but got none")
+					}
+					if tt.expectedErrorMsg != "" && !strings.Contains(err.Error(), tt.expectedErrorMsg) {
+						t.Errorf("Expected error to contain '%s', got: %v", tt.expectedErrorMsg, err)
+					}
+					return
+				}
+
+				if err != nil {
+					t.Errorf("Expected no error but got: %v", err)
+					return
+				}
+
+				// Check count expectations
+				if len(transcriptions) < tt.expectCount {
+					t.Errorf("Expected at least %d transcriptions, got %d", tt.expectCount, len(transcriptions))
+				}
+
+				// Verify all returned transcriptions belong to the user and have no errors
+				for i, transcription := range transcriptions {
+					if transcription.User != tt.userNickname {
+						t.Errorf("Expected user %s, got %s at index %d", tt.userNickname, transcription.User, i)
+					}
+					if transcription.ErrorMessage != "" {
+						t.Errorf("Expected empty error message, got %s at index %d", transcription.ErrorMessage, i)
+					}
+					if transcription.ID <= 0 {
+						t.Errorf("Expected valid ID (>0), got %d at index %d", transcription.ID, i)
+					}
+				}
+
+				// Verify ordering (should be DESC by last_conversion_time)
+				if len(transcriptions) > 1 {
+					for i := 1; i < len(transcriptions); i++ {
+						if transcriptions[i-1].LastConversionTime.Before(transcriptions[i].LastConversionTime) {
+							t.Errorf("Expected transcriptions to be ordered by last_conversion_time DESC, but record %d is older than record %d", i-1, i)
+						}
+					}
+				}
+			})
 		}
 	})
 }
