@@ -456,6 +456,10 @@ $RECYCLE.BIN/
 # binary
 v2t
 v2t.exe
+v2t_*
+
+# Test and temporary files
+*.txt
 
 # Server files
 server.pid

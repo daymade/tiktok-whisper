@@ -32,7 +32,7 @@ func LoadEnv() error {
 			if err := godotenv.Load(envPath); err != nil {
 				return fmt.Errorf("error loading %s file: %w", envPath, err)
 			}
-			fmt.Printf("✅ Loaded environment variables from %s\n", envPath)
+			// Environment loaded successfully (silent)
 			break
 		}
 	}
@@ -81,13 +81,25 @@ func ValidateAPIKeys(apiKeys *APIKeys) error {
 		availableKeys = append(availableKeys, "Gemini")
 	}
 
+	// Silent validation - only returns error if needed
+	return nil
+}
+
+// ShowAPIKeyStatus displays API key availability (for verbose operations)
+func ShowAPIKeyStatus(apiKeys *APIKeys) {
+	var availableKeys []string
+	if apiKeys.OpenAI != "" {
+		availableKeys = append(availableKeys, "OpenAI")
+	}
+	if apiKeys.Gemini != "" {
+		availableKeys = append(availableKeys, "Gemini")
+	}
+
 	if len(availableKeys) > 0 {
 		fmt.Printf("✅ API keys available: %s\n", strings.Join(availableKeys, ", "))
 	} else {
 		fmt.Printf("ℹ️  No API keys configured (embedding features will be unavailable)\n")
 	}
-
-	return nil
 }
 
 // RequireAPIKeys validates that at least one API key is available (for embedding operations)
@@ -135,7 +147,7 @@ func InitializeConfig() (*APIKeys, error) {
 		return nil, fmt.Errorf("failed to get API keys: %w", err)
 	}
 
-	// Show available keys without failing
+	// Validate keys silently (no output)
 	ValidateAPIKeys(apiKeys)
 
 	return apiKeys, nil

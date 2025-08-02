@@ -4,6 +4,7 @@ import (
 	"math"
 	"strings"
 	"tiktok-whisper/internal/app"
+	"tiktok-whisper/internal/app/converter"
 
 	"github.com/spf13/cobra"
 )
@@ -16,6 +17,7 @@ var video bool
 var audio bool
 var convertCount int
 var parallel int
+var noProgress bool
 
 var inputFile string
 
@@ -42,17 +44,20 @@ func init() {
 
 	Cmd.Flags().BoolVarP(&audio, "audio", "a", false,
 		"Convert audio to text")
+
+	Cmd.Flags().BoolVar(&noProgress, "no-progress", false,
+		"Disable progress bar display")
 }
 
 // Cmd represents the convert command
 var Cmd = &cobra.Command{
 	Use:   "convert",
-	Short: "Start converting the video files in the specified directory to text",
-	Long: `Start converting the video files in the specified directory to text
+	Short: "Convert video or audio files to text",
+	Long: `Convert video or audio files in a directory to text transcriptions
 
-- Iterate through the mp4 files in the specified directory
-- Convert to mp3 or wav and convert to text
-- Support openai whisper or native whisper.cpp as conversion engine`,
+- Process mp4/mp3 files in the specified directory
+- Convert to appropriate format and transcribe to text
+- Support OpenAI Whisper API or local whisper.cpp engine`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if !video && !audio {
 			cmd.PrintErrf("Please specify the conversion type, -v or -a\n")
@@ -78,8 +83,12 @@ var Cmd = &cobra.Command{
 			return
 		}
 
-		converter := app.InitializeConverter()
-		defer converter.Close()
+		progressConfig := converter.ProgressConfig{
+			Enabled: !noProgress && converter.ShouldShowProgress(false),
+			Writer:  nil, // Use default (stderr)
+		}
+		progressConverter := app.InitializeProgressAwareConverter(progressConfig)
+		defer progressConverter.Close()
 
 		if video {
 			if directory != "" && userNickname == "" {
@@ -93,7 +102,7 @@ var Cmd = &cobra.Command{
 			}
 
 			if directory != "" {
-				err := converter.ConvertVideoDir(
+				err := progressConverter.ConvertVideoDirWithProgress(
 					userNickname,
 					directory,
 					fileExtension,
@@ -101,7 +110,7 @@ var Cmd = &cobra.Command{
 					parallel,
 				)
 				if err != nil {
-					cmd.PrintErrf("ConvertAudioDir error: %v\n", err)
+					cmd.PrintErrf("ConvertVideoDirWithProgress error: %v\n", err)
 					return
 				}
 			} else if inputFile != "" {
@@ -110,9 +119,9 @@ var Cmd = &cobra.Command{
 				}
 
 				// set convert count to int max
-				err := converter.ConvertVideos(strings.Split(inputFile, ","), userNickname, math.MaxInt, parallel)
+				err := progressConverter.ConvertVideosWithProgress(strings.Split(inputFile, ","), userNickname, math.MaxInt, parallel)
 				if err != nil {
-					cmd.PrintErrf("ConvertVideos error: %v\n", err)
+					cmd.PrintErrf("ConvertVideosWithProgress error: %v\n", err)
 					return
 				}
 			}
@@ -126,7 +135,7 @@ var Cmd = &cobra.Command{
 			}
 
 			if directory != "" {
-				err := converter.ConvertAudioDir(
+				err := progressConverter.ConvertAudioDirWithProgress(
 					directory,
 					fileExtension,
 					outputDirectory,
@@ -134,13 +143,13 @@ var Cmd = &cobra.Command{
 					parallel,
 				)
 				if err != nil {
-					cmd.PrintErrf("ConvertAudioDir error: %v\n", err)
+					cmd.PrintErrf("ConvertAudioDirWithProgress error: %v\n", err)
 					return
 				}
 			} else if inputFile != "" {
-				err := converter.ConvertAudios(strings.Split(inputFile, ","), outputDirectory, parallel)
+				err := progressConverter.ConvertAudiosWithProgress(strings.Split(inputFile, ","), outputDirectory, parallel)
 				if err != nil {
-					cmd.PrintErrf("ConvertAudios error: %v\n", err)
+					cmd.PrintErrf("ConvertAudiosWithProgress error: %v\n", err)
 					return
 				}
 			}
