@@ -43,3 +43,8 @@ func InitializeConverter() *converter.Converter {
 	wire.Build(converter.NewConverter, provideLocalTranscriber, provideTranscriptionDAO)
 	return &converter.Converter{}
 }
+
+func InitializeProgressAwareConverter(config converter.ProgressConfig) *converter.ProgressAwareConverter {
+	wire.Build(converter.NewConverter, converter.NewProgressAwareConverter, provideLocalTranscriber, provideTranscriptionDAO)
+	return &converter.ProgressAwareConverter{}
+}

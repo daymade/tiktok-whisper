@@ -28,6 +28,14 @@ func InitializeConverter() *converter.Converter {
 	return converterConverter
 }
 
+func InitializeProgressAwareConverter(config converter.ProgressConfig) *converter.ProgressAwareConverter {
+	transcriber := provideLocalTranscriber()
+	transcriptionDAO := provideTranscriptionDAO()
+	converterConverter := converter.NewConverter(transcriber, transcriptionDAO)
+	progressAwareConverter := converter.NewProgressAwareConverter(converterConverter, config)
+	return progressAwareConverter
+}
+
 // wire.go:
 
 // provideRemoteTranscriber with openai's remote service conversion, must set environment variable OPENAI_API_KEY
