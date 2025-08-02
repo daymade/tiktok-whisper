@@ -76,12 +76,12 @@ func TestLocalTranscriber_Transcript(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	
+
 	// Skip these tests if binary doesn't exist
 	if _, err := os.Stat("/Users/tiansheng/workspace/cpp/whisper.cpp/main"); os.IsNotExist(err) {
 		t.Skip("Skipping integration tests: whisper.cpp binary not found")
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			lt := &LocalTranscriber{
@@ -103,10 +103,10 @@ func TestLocalTranscriber_Transcript(t *testing.T) {
 // TestLocalTranscriber_InvalidBinaryPath tests behavior with invalid binary path
 func TestLocalTranscriber_InvalidBinaryPath(t *testing.T) {
 	lt := NewLocalTranscriber("/non/existent/binary", "/some/model.bin")
-	
+
 	tempFile := createTempAudioFile(t)
 	defer os.Remove(tempFile)
-	
+
 	_, err := lt.Transcript(tempFile)
 	if err == nil {
 		t.Error("Expected error for non-existent binary, got none")
@@ -140,12 +140,12 @@ echo "Mock transcription" > ./1.txt
 `
 	mockBinary := createMockBinary(t, script)
 	defer os.Remove(mockBinary)
-	
+
 	lt := NewLocalTranscriber(mockBinary, "/non/existent/model.bin")
-	
+
 	tempFile := createTempAudioFile(t)
 	defer os.Remove(tempFile)
-	
+
 	_, err := lt.Transcript(tempFile)
 	if err == nil {
 		t.Error("Expected error for non-existent model, got none")
@@ -159,9 +159,9 @@ echo "Should not reach here" > ./1.txt
 `
 	mockBinary := createMockBinary(t, script)
 	defer os.Remove(mockBinary)
-	
+
 	lt := NewLocalTranscriber(mockBinary, "/mock/model.bin")
-	
+
 	_, err := lt.Transcript("/non/existent/audio.mp3")
 	if err == nil {
 		t.Error("Expected error for non-existent file, got none")
@@ -180,12 +180,12 @@ exit 1
 `
 	mockBinary := createMockBinary(t, script)
 	defer os.Remove(mockBinary)
-	
+
 	lt := NewLocalTranscriber(mockBinary, "/mock/model.bin")
-	
+
 	tempFile := createTempAudioFile(t)
 	defer os.Remove(tempFile)
-	
+
 	_, err := lt.Transcript(tempFile)
 	if err == nil {
 		t.Error("Expected error when output file not created, got none")
@@ -203,12 +203,12 @@ touch ./1.txt
 	mockBinary := createMockBinary(t, script)
 	defer os.Remove(mockBinary)
 	defer os.Remove("./1.txt")
-	
+
 	lt := NewLocalTranscriber(mockBinary, "/mock/model.bin")
-	
+
 	tempFile := createTempAudioFile(t)
 	defer os.Remove(tempFile)
-	
+
 	result, err := lt.Transcript(tempFile)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -231,12 +231,12 @@ done > ./1.txt
 	mockBinary := createMockBinary(t, script)
 	defer os.Remove(mockBinary)
 	defer os.Remove("./1.txt")
-	
+
 	lt := NewLocalTranscriber(mockBinary, "/mock/model.bin")
-	
+
 	tempFile := createTempAudioFile(t)
 	defer os.Remove(tempFile)
-	
+
 	result, err := lt.Transcript(tempFile)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -259,22 +259,22 @@ echo "Should timeout" > ./1.txt
 `
 	mockBinary := createMockBinary(t, script)
 	defer os.Remove(mockBinary)
-	
+
 	lt := NewLocalTranscriber(mockBinary, "/mock/model.bin")
-	
+
 	tempFile := createTempAudioFile(t)
 	defer os.Remove(tempFile)
-	
+
 	// Note: The current implementation doesn't have timeout,
 	// but this test demonstrates how to test for it
 	done := make(chan bool)
 	var err error
-	
+
 	go func() {
 		_, err = lt.Transcript(tempFile)
 		done <- true
 	}()
-	
+
 	select {
 	case <-done:
 		// Command completed (possibly too quickly for a real timeout test)
@@ -295,14 +295,14 @@ echo "Transcription with special path" > ./1.txt
 	mockBinary := createMockBinary(t, script)
 	defer os.Remove(mockBinary)
 	defer os.Remove("./1.txt")
-	
+
 	lt := NewLocalTranscriber(mockBinary, "/mock/model.bin")
-	
+
 	// Create temp file with special characters
 	tempDir := t.TempDir()
 	specialPath := filepath.Join(tempDir, "test file with spaces & special.wav")
 	createTestAudioFile(t, specialPath)
-	
+
 	result, err := lt.Transcript(specialPath)
 	if err != nil {
 		t.Errorf("Failed to handle special characters in path: %v", err)
@@ -321,9 +321,9 @@ sleep 0.1
 `
 	mockBinary := createMockBinary(t, script)
 	defer os.Remove(mockBinary)
-	
+
 	lt := NewLocalTranscriber(mockBinary, "/mock/model.bin")
-	
+
 	// Create multiple temp files
 	numFiles := 3
 	tempFiles := make([]string, numFiles)
@@ -331,13 +331,13 @@ sleep 0.1
 		tempFiles[i] = createTempAudioFile(t)
 		defer os.Remove(tempFiles[i])
 	}
-	
+
 	// Run concurrent transcriptions
 	// Note: The current implementation writes to the same output file,
 	// so concurrent execution may cause issues
 	results := make(chan string, numFiles)
 	errors := make(chan error, numFiles)
-	
+
 	for i := 0; i < numFiles; i++ {
 		go func(index int) {
 			// Add small delay between starts to avoid file conflicts
@@ -350,7 +350,7 @@ sleep 0.1
 			}
 		}(i)
 	}
-	
+
 	// Collect results
 	for i := 0; i < numFiles; i++ {
 		select {
@@ -377,26 +377,26 @@ echo "Test" > ./1.txt
 	defer os.Remove(mockBinary)
 	defer os.Remove("./1.txt")
 	defer os.Remove("./args.txt")
-	
+
 	modelPath := "/test/model.bin"
 	lt := NewLocalTranscriber(mockBinary, modelPath)
-	
+
 	tempFile := createTempAudioFile(t)
 	defer os.Remove(tempFile)
-	
+
 	_, err := lt.Transcript(tempFile)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	
+
 	// Read captured arguments
 	argsData, err := os.ReadFile("./args.txt")
 	if err != nil {
 		t.Fatalf("Failed to read args file: %v", err)
 	}
-	
+
 	capturedArgs := strings.Fields(string(argsData))
-	
+
 	// Verify key arguments are present
 	expectedPairs := map[string]string{
 		"-m":       modelPath,
@@ -404,7 +404,7 @@ echo "Test" > ./1.txt
 		"--prompt": "以下是简体中文普通话:",
 		"-of":      "./1",
 	}
-	
+
 	for i := 0; i < len(capturedArgs)-1; i++ {
 		if expectedValue, exists := expectedPairs[capturedArgs[i]]; exists {
 			if capturedArgs[i+1] != expectedValue {
@@ -412,7 +412,7 @@ echo "Test" > ./1.txt
 			}
 		}
 	}
-	
+
 	// Verify required flags are present
 	requiredFlags := []string{"-m", "--print-colors", "-l", "--prompt", "-otxt", "-f", "-of"}
 	for _, flag := range requiredFlags {
@@ -438,12 +438,12 @@ echo "Transcription result" > ./1.txt
 	mockBinary := createMockBinary(t, script)
 	defer os.Remove(mockBinary)
 	defer os.Remove("./1.txt")
-	
+
 	lt := NewLocalTranscriber(mockBinary, "/mock/model.bin")
-	
+
 	tempFile := createTempAudioFile(t)
 	defer os.Remove(tempFile)
-	
+
 	result, err := lt.Transcript(tempFile)
 	if err != nil {
 		t.Errorf("Unexpected error despite stderr output: %v", err)
@@ -458,16 +458,16 @@ echo "Transcription result" > ./1.txt
 // createMockBinary creates a temporary executable that runs the provided function
 func createMockBinary(t *testing.T, scriptContent string) string {
 	t.Helper()
-	
+
 	// Create a temporary directory and shell script
 	tempDir := t.TempDir()
 	scriptFile := filepath.Join(tempDir, "mock_whisper.sh")
-	
+
 	err := os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 	if err != nil {
 		t.Fatalf("Failed to create mock script: %v", err)
 	}
-	
+
 	return scriptFile
 }
 
@@ -480,7 +480,7 @@ func createTempAudioFile(t *testing.T) string {
 // createTestAudioFile creates a test audio file at the specified path
 func createTestAudioFile(t *testing.T, path string) string {
 	t.Helper()
-	
+
 	// Create a minimal valid WAV file
 	wavHeader := []byte{
 		0x52, 0x49, 0x46, 0x46, // "RIFF"
@@ -488,36 +488,36 @@ func createTestAudioFile(t *testing.T, path string) string {
 		0x57, 0x41, 0x56, 0x45, // "WAVE"
 		0x66, 0x6D, 0x74, 0x20, // "fmt "
 		0x10, 0x00, 0x00, 0x00, // Chunk size
-		0x01, 0x00,             // Audio format (PCM)
-		0x01, 0x00,             // Channels (mono)
+		0x01, 0x00, // Audio format (PCM)
+		0x01, 0x00, // Channels (mono)
 		0x80, 0x3E, 0x00, 0x00, // Sample rate (16000)
 		0x00, 0x7D, 0x00, 0x00, // Byte rate
-		0x02, 0x00,             // Block align
-		0x10, 0x00,             // Bits per sample
+		0x02, 0x00, // Block align
+		0x10, 0x00, // Bits per sample
 		0x64, 0x61, 0x74, 0x61, // "data"
 		0x00, 0x00, 0x00, 0x00, // Data size
 	}
-	
+
 	err := os.WriteFile(path, wavHeader, 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test audio file: %v", err)
 	}
-	
+
 	return path
 }
 
 // TestCommandNotFound tests behavior when binary doesn't exist
 func TestCommandNotFound(t *testing.T) {
 	lt := NewLocalTranscriber("/definitely/not/a/real/binary", "/mock/model.bin")
-	
+
 	tempFile := createTempAudioFile(t)
 	defer os.Remove(tempFile)
-	
+
 	_, err := lt.Transcript(tempFile)
 	if err == nil {
 		t.Error("Expected error for non-existent binary")
 	}
-	
+
 	// Check if it's a "command not found" type error
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		t.Logf("Exit error: %v", exitErr)
@@ -534,18 +534,18 @@ func BenchmarkLocalTranscriber_Transcript(b *testing.B) {
 	if _, err := os.Stat("/Users/tiansheng/workspace/cpp/whisper.cpp/main"); os.IsNotExist(err) {
 		b.Skip("Skipping benchmark: whisper.cpp binary not found")
 	}
-	
+
 	lt := NewLocalTranscriber(
 		"/Users/tiansheng/workspace/cpp/whisper.cpp/main",
 		"/Users/tiansheng/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin",
 	)
-	
+
 	// Use a real test file for benchmarking
 	testFile := "/Users/tiansheng/workspace/go/tiktok-whisper/test/data/jfk.wav"
 	if _, err := os.Stat(testFile); os.IsNotExist(err) {
 		b.Skip("Test file not found")
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := lt.Transcript(testFile)

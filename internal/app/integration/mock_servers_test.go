@@ -166,7 +166,7 @@ func (m *MockOpenAIServer) handleRequest(w http.ResponseWriter, r *http.Request)
 // shouldRateLimit determines if request should be rate limited
 func (m *MockOpenAIServer) shouldRateLimit() bool {
 	now := time.Now()
-	
+
 	// Reset window if needed
 	if now.Sub(m.rateLimitConfig.WindowStart) > time.Minute {
 		m.rateLimitConfig.WindowStart = now
@@ -202,9 +202,9 @@ func (m *MockOpenAIServer) sendDefaultTranscriptionResponse(w http.ResponseWrite
 	response := map[string]interface{}{
 		"text": fmt.Sprintf("Mock transcription response %d", m.requestCount),
 	}
-	
+
 	jsonBytes, _ := json.Marshal(response)
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonBytes)
@@ -375,7 +375,7 @@ func TestMockServerRateLimiting(t *testing.T) {
 		_, err := transcriber.Transcript(testFile)
 		if err != nil {
 			if strings.Contains(strings.ToLower(err.Error()), "rate limit") ||
-			   strings.Contains(strings.ToLower(err.Error()), "429") {
+				strings.Contains(strings.ToLower(err.Error()), "429") {
 				rateLimitCount++
 			}
 		} else {
@@ -426,7 +426,7 @@ func TestMockServerCustomResponses(t *testing.T) {
 	start := time.Now()
 	result2, err2 := transcriber.Transcript(testFile)
 	duration := time.Since(start)
-	
+
 	assert.NoError(t, err2)
 	assert.Equal(t, "Second custom response", result2)
 	assert.GreaterOrEqual(t, duration, 200*time.Millisecond)
@@ -463,7 +463,7 @@ func TestMockServerConcurrentRequests(t *testing.T) {
 			transcriber := whisper.NewRemoteTranscriber(client)
 			testFile := testutil.CreateTestAudioFile(t, fmt.Sprintf("concurrent_%d.wav", id))
 			defer testutil.CleanupFile(t, testFile)
-			
+
 			_, err := transcriber.Transcript(testFile)
 			results <- err
 		}(i)
@@ -579,7 +579,7 @@ func TestMockServerHTTPHeaders(t *testing.T) {
 	require.Len(t, requests, 1)
 
 	request := requests[0]
-	
+
 	// Verify expected headers
 	assert.Contains(t, request.Headers, "Authorization")
 	assert.Contains(t, request.Headers["Authorization"], "Bearer")
@@ -644,7 +644,7 @@ func TestMockServerResponseTiming(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Contains(t, result, fmt.Sprintf("Response %d", i+1))
 		assert.GreaterOrEqual(t, actualDelay, expectedDelay, "Response should be delayed")
-		
+
 		t.Logf("Request %d: expected delay %v, actual delay %v", i+1, expectedDelay, actualDelay)
 	}
 }

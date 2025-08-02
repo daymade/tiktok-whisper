@@ -18,11 +18,11 @@ func TestGetAPIKeys(t *testing.T) {
 	}()
 
 	testCases := []struct {
-		name           string
-		openaiKey      string
-		geminiKey      string
-		expectError    bool
-		errorContains  string
+		name          string
+		openaiKey     string
+		geminiKey     string
+		expectError   bool
+		errorContains string
 	}{
 		{
 			name:        "valid OpenAI key",

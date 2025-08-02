@@ -37,7 +37,7 @@ func TestBatchProcessor(t *testing.T) {
 	mockLogger := new(MockLogger)
 
 	processor := NewBatchProcessor(mockOrchestrator, mockStorage, mockLogger)
-	
+
 	// Create test transcriptions
 	transcriptions := []*vector.Transcription{
 		{ID: 1, TranscriptionText: "First transcription", User: "user1"},
@@ -69,7 +69,7 @@ func TestBatchProcessorWithErrors(t *testing.T) {
 	mockLogger := new(MockLogger)
 
 	processor := NewBatchProcessor(mockOrchestrator, mockStorage, mockLogger)
-	
+
 	transcriptions := []*vector.Transcription{
 		{ID: 1, TranscriptionText: "First transcription", User: "user1"},
 		{ID: 2, TranscriptionText: "Second transcription", User: "user1"},
@@ -99,7 +99,7 @@ func TestBatchProcessorProcessAll(t *testing.T) {
 	mockLogger := new(MockLogger)
 
 	processor := NewBatchProcessor(mockOrchestrator, mockStorage, mockLogger)
-	
+
 	// Mock storage to return transcriptions without embeddings
 	transcriptions := []*vector.Transcription{
 		{ID: 1, TranscriptionText: "First transcription", User: "user1"},
@@ -107,12 +107,13 @@ func TestBatchProcessorProcessAll(t *testing.T) {
 	}
 
 	mockStorage.On("GetTranscriptionsWithoutEmbeddings", mock.Anything, "openai", mock.Anything).Return(transcriptions, nil)
+	mockStorage.On("GetTranscriptionsWithoutEmbeddings", mock.Anything, "gemini", mock.Anything).Return(transcriptions, nil)
 	mockOrchestrator.On("ProcessTranscription", mock.Anything, 1, "First transcription").Return(nil)
 	mockOrchestrator.On("ProcessTranscription", mock.Anything, 2, "Second transcription").Return(nil)
 	mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 
 	// Act
-	err := processor.ProcessAllTranscriptions(context.Background(), 10)
+	err := processor.ProcessAllTranscriptions(context.Background(), []string{"openai", "gemini"}, 10)
 
 	// Assert
 	assert.NoError(t, err)
@@ -128,7 +129,7 @@ func TestBatchProcessorProgress(t *testing.T) {
 	mockLogger := new(MockLogger)
 
 	processor := NewBatchProcessor(mockOrchestrator, mockStorage, mockLogger)
-	
+
 	// Start processing in background
 	go func() {
 		transcriptions := []*vector.Transcription{
@@ -136,13 +137,13 @@ func TestBatchProcessorProgress(t *testing.T) {
 		}
 		mockOrchestrator.On("ProcessTranscription", mock.Anything, 1, "First transcription").Return(nil)
 		mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-		
+
 		processor.ProcessBatch(context.Background(), transcriptions, 1)
 	}()
 
 	// Give some time for processing to start
 	time.Sleep(10 * time.Millisecond)
-	
+
 	// Act
 	status, err := processor.GetProcessingStatus(context.Background())
 
@@ -163,10 +164,10 @@ func TestBatchProcessorPauseResume(t *testing.T) {
 	// Act & Assert
 	err := processor.PauseProcessing()
 	assert.NoError(t, err)
-	
+
 	err = processor.ResumeProcessing()
 	assert.NoError(t, err)
-	
+
 	err = processor.StopProcessing()
 	assert.NoError(t, err)
 }
@@ -283,32 +284,32 @@ func TestBatchProcessor_ConcurrentProcessing(t *testing.T) {
 // TestBatchProcessor_PartialFailures tests handling of partial failures in batches
 func TestBatchProcessor_PartialFailures(t *testing.T) {
 	tests := []struct {
-		name              string
+		name                string
 		totalTranscriptions int
-		failureIndices    []int
-		expectedProcessed int
-		expectedFailed    int
+		failureIndices      []int
+		expectedProcessed   int
+		expectedFailed      int
 	}{
 		{
-			name:              "Single failure in middle",
+			name:                "Single failure in middle",
 			totalTranscriptions: 5,
-			failureIndices:    []int{2},
-			expectedProcessed: 4,
-			expectedFailed:    1,
+			failureIndices:      []int{2},
+			expectedProcessed:   4,
+			expectedFailed:      1,
 		},
 		{
-			name:              "Multiple failures",
+			name:                "Multiple failures",
 			totalTranscriptions: 10,
-			failureIndices:    []int{1, 3, 7},
-			expectedProcessed: 7,
-			expectedFailed:    3,
+			failureIndices:      []int{1, 3, 7},
+			expectedProcessed:   7,
+			expectedFailed:      3,
 		},
 		{
-			name:              "All failures",
+			name:                "All failures",
 			totalTranscriptions: 3,
-			failureIndices:    []int{0, 1, 2},
-			expectedProcessed: 0,
-			expectedFailed:    3,
+			failureIndices:      []int{0, 1, 2},
+			expectedProcessed:   0,
+			expectedFailed:      3,
 		},
 	}
 
@@ -371,10 +372,11 @@ func TestBatchProcessor_ProcessAllTranscriptions_StorageFailure(t *testing.T) {
 
 	// Setup storage to return error
 	storageError := errors.New("database connection failed")
-	mockStorage.On("GetTranscriptionsWithoutEmbeddings", mock.Anything, "openai", 0).Return(([]*vector.Transcription)(nil), storageError)
+	mockStorage.On("GetTranscriptionsWithoutEmbeddings", mock.Anything, "openai", mock.Anything).Return(([]*vector.Transcription)(nil), storageError)
+	mockStorage.On("GetTranscriptionsWithoutEmbeddings", mock.Anything, "gemini", mock.Anything).Return(([]*vector.Transcription)(nil), storageError)
 
 	// Act
-	err := processor.ProcessAllTranscriptions(context.Background(), 10)
+	err := processor.ProcessAllTranscriptions(context.Background(), []string{"openai", "gemini"}, 10)
 
 	// Assert
 	assert.Error(t, err)
@@ -393,11 +395,12 @@ func TestBatchProcessor_ProcessAllTranscriptions_NoTranscriptions(t *testing.T) 
 
 	// Setup storage to return empty list
 	emptyTranscriptions := []*vector.Transcription{}
-	mockStorage.On("GetTranscriptionsWithoutEmbeddings", mock.Anything, "openai", 0).Return(emptyTranscriptions, nil)
+	mockStorage.On("GetTranscriptionsWithoutEmbeddings", mock.Anything, "openai", mock.Anything).Return(emptyTranscriptions, nil)
+	mockStorage.On("GetTranscriptionsWithoutEmbeddings", mock.Anything, "gemini", mock.Anything).Return(emptyTranscriptions, nil)
 	mockLogger.SetEnabled(true)
 
 	// Act
-	err := processor.ProcessAllTranscriptions(context.Background(), 10)
+	err := processor.ProcessAllTranscriptions(context.Background(), []string{"openai", "gemini"}, 10)
 
 	// Assert
 	assert.NoError(t, err)
@@ -437,7 +440,7 @@ func TestBatchProcessor_ContextCancellation(t *testing.T) {
 			// Simulate processing time
 			time.Sleep(10 * time.Millisecond)
 			processedCount++
-			
+
 			// Cancel after processing a few items
 			if processedCount == 3 {
 				cancel()
@@ -485,20 +488,20 @@ func TestBatchProcessor_PauseResumeIntegration(t *testing.T) {
 			id := args.Get(1).(int)
 			mu.Lock()
 			processedOrder = append(processedOrder, id)
-			
+
 			// Pause after processing first item
 			if id == 1 {
 				go func() {
 					time.Sleep(10 * time.Millisecond)
 					processor.PauseProcessing()
-					
+
 					// Resume after a delay
 					time.Sleep(50 * time.Millisecond)
 					processor.ResumeProcessing()
 				}()
 			}
 			mu.Unlock()
-			
+
 			time.Sleep(20 * time.Millisecond) // Simulate processing time
 		})
 	}
@@ -554,7 +557,7 @@ func TestBatchProcessor_ProgressTracking(t *testing.T) {
 				progressSnapshots = append(progressSnapshots, status.Progress)
 				mu.Unlock()
 			}()
-			
+
 			time.Sleep(10 * time.Millisecond)
 		})
 	}
@@ -606,7 +609,7 @@ func TestBatchProcessor_StopProcessing(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		mockOrchestrator.On("ProcessTranscription", mock.Anything, i+1, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 			processedCount++
-			
+
 			// Stop processing after a few items
 			if processedCount == 3 {
 				go func() {
@@ -614,7 +617,7 @@ func TestBatchProcessor_StopProcessing(t *testing.T) {
 					processor.StopProcessing()
 				}()
 			}
-			
+
 			time.Sleep(20 * time.Millisecond)
 		}).Maybe() // Use Maybe() since not all calls will happen due to stop
 	}
@@ -635,33 +638,33 @@ func TestBatchProcessor_StopProcessing(t *testing.T) {
 // TestBatchProcessor_BatchSizeHandling tests different batch sizes
 func TestBatchProcessor_BatchSizeHandling(t *testing.T) {
 	tests := []struct {
-		name          string
-		totalItems    int
-		batchSize     int
+		name            string
+		totalItems      int
+		batchSize       int
 		expectedBatches int
 	}{
 		{
-			name:          "Exact batch division",
-			totalItems:    10,
-			batchSize:     5,
+			name:            "Exact batch division",
+			totalItems:      10,
+			batchSize:       5,
 			expectedBatches: 2,
 		},
 		{
-			name:          "Partial last batch",
-			totalItems:    7,
-			batchSize:     3,
+			name:            "Partial last batch",
+			totalItems:      7,
+			batchSize:       3,
 			expectedBatches: 3,
 		},
 		{
-			name:          "Single item batches",
-			totalItems:    5,
-			batchSize:     1,
+			name:            "Single item batches",
+			totalItems:      5,
+			batchSize:       1,
 			expectedBatches: 5,
 		},
 		{
-			name:          "Batch size larger than total",
-			totalItems:    3,
-			batchSize:     10,
+			name:            "Batch size larger than total",
+			totalItems:      3,
+			batchSize:       10,
 			expectedBatches: 1,
 		},
 	}

@@ -100,7 +100,7 @@ func TestUnicodePathHandling(t *testing.T) {
 			if err != nil {
 				t.Errorf("GetAbsolutePath() failed with Unicode path %s: %v", tt.path, err)
 			}
-			
+
 			// Ensure Unicode is preserved
 			for _, part := range strings.Split(tt.path, "/") {
 				if part != "" && !strings.Contains(got, part) {
@@ -140,15 +140,15 @@ func TestLongPathHandling(t *testing.T) {
 			parts := make([]string, 0)
 			currentLength := 0
 			segment := "verylongdirectorynametotestpathlimits"
-			
+
 			for currentLength < tt.pathLength {
 				parts = append(parts, segment)
 				currentLength += len(segment) + 1 // +1 for separator
 			}
-			
+
 			longPath := filepath.Join(parts...)
 			got, err := GetAbsolutePath(longPath)
-			
+
 			if tt.shouldWork && err != nil {
 				t.Errorf("GetAbsolutePath() failed for long path: %v", err)
 			}
@@ -203,7 +203,7 @@ func TestSpecialCharactersInPath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testPath := filepath.Join("test", tt.char, "file.txt")
 			got, err := GetAbsolutePath(testPath)
-			
+
 			if tt.valid && err != nil {
 				t.Errorf("GetAbsolutePath() failed for special character %s: %v", tt.name, err)
 			}
@@ -297,7 +297,7 @@ func TestCrossPlatformPathSeparators(t *testing.T) {
 			if err != nil {
 				t.Errorf("GetAbsolutePath() failed for mixed separators: %v", err)
 			}
-			
+
 			// Note: filepath.Join and GetAbsolutePath may preserve backslashes on Unix
 			// This is expected Go behavior - the path is still valid
 			// Just verify the path is absolute and contains expected components
@@ -318,7 +318,7 @@ func TestPathCaseSensitivity(t *testing.T) {
 		t.Run("case_insensitive_comparison", func(t *testing.T) {
 			path1, _ := GetAbsolutePath("Test/Path")
 			path2, _ := GetAbsolutePath("test/path")
-			
+
 			// On case-insensitive systems, these might resolve to the same canonical path
 			// This test is informational rather than assertive
 			t.Logf("Path comparison - path1: %s, path2: %s", path1, path2)
@@ -328,7 +328,7 @@ func TestPathCaseSensitivity(t *testing.T) {
 		t.Run("case_sensitive_comparison", func(t *testing.T) {
 			path1, _ := GetAbsolutePath("Test/Path")
 			path2, _ := GetAbsolutePath("test/path")
-			
+
 			// These should be different paths
 			if path1 == path2 {
 				t.Errorf("Paths should be case-sensitive but got same result")
@@ -340,28 +340,28 @@ func TestPathCaseSensitivity(t *testing.T) {
 func TestSymlinkHandling(t *testing.T) {
 	// Note: This test requires filesystem support for symlinks
 	// May not work on all Windows systems without appropriate permissions
-	
+
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping symlink test on Windows")
 	}
 
 	tempDir := t.TempDir()
-	
+
 	// Create a real directory and file
 	realDir := filepath.Join(tempDir, "real")
 	os.MkdirAll(realDir, 0755)
 	realFile := filepath.Join(realDir, "file.txt")
 	os.WriteFile(realFile, []byte("content"), 0644)
-	
+
 	// Create symlinks
 	linkDir := filepath.Join(tempDir, "link_to_dir")
 	linkFile := filepath.Join(tempDir, "link_to_file")
-	
+
 	if err := os.Symlink(realDir, linkDir); err != nil {
 		t.Skip("Cannot create symlinks on this system")
 	}
 	os.Symlink(realFile, linkFile)
-	
+
 	tests := []struct {
 		name string
 		path string
@@ -370,14 +370,14 @@ func TestSymlinkHandling(t *testing.T) {
 		{"symlink_to_file", linkFile},
 		{"path_through_symlink", filepath.Join(linkDir, "file.txt")},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetAbsolutePath(tt.path)
 			if err != nil {
 				t.Errorf("GetAbsolutePath() failed for symlink: %v", err)
 			}
-			
+
 			// The result should be a valid path
 			if !filepath.IsAbs(got) {
 				t.Errorf("Expected absolute path for symlink, got: %s", got)

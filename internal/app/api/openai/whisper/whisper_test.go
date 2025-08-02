@@ -214,7 +214,7 @@ func TestRemoteTranscriber_LargeFile(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Track content length
 		uploadedSize = r.ContentLength
-		
+
 		// Parse multipart to verify file can be read
 		err := r.ParseMultipartForm(100 << 20) // 100MB limit
 		if err != nil {
@@ -343,14 +343,14 @@ func TestRemoteTranscriber_RetryableErrors(t *testing.T) {
 	attemptCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attemptCount++
-		
+
 		// Fail first attempt with retryable error
 		if attemptCount == 1 {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte(`{"error": {"message": "Service temporarily unavailable"}}`))
 			return
 		}
-		
+
 		// Succeed on second attempt
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"text": "Success after retry"}`))
@@ -365,7 +365,7 @@ func TestRemoteTranscriber_RetryableErrors(t *testing.T) {
 	tempFile := createTempTestFile(t, "/test/audio.mp3")
 	defer os.Remove(tempFile)
 
-	// Note: The OpenAI client may not automatically retry, 
+	// Note: The OpenAI client may not automatically retry,
 	// so we expect an error on the first attempt
 	_, err := rt.Transcript(tempFile)
 	if err == nil {
@@ -404,10 +404,10 @@ func TestRemoteTranscriber_EmptyAPIKey(t *testing.T) {
 // Helper function to create temporary test files
 func createTempTestFile(t *testing.T, name string) string {
 	t.Helper()
-	
+
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, filepath.Base(name))
-	
+
 	// Create a minimal valid audio file (WAV header)
 	wavHeader := []byte{
 		0x52, 0x49, 0x46, 0x46, // "RIFF"
@@ -415,31 +415,31 @@ func createTempTestFile(t *testing.T, name string) string {
 		0x57, 0x41, 0x56, 0x45, // "WAVE"
 		0x66, 0x6D, 0x74, 0x20, // "fmt "
 		0x10, 0x00, 0x00, 0x00, // Chunk size
-		0x01, 0x00,             // Audio format (PCM)
-		0x01, 0x00,             // Channels (mono)
+		0x01, 0x00, // Audio format (PCM)
+		0x01, 0x00, // Channels (mono)
 		0x80, 0x3E, 0x00, 0x00, // Sample rate (16000)
 		0x00, 0x7D, 0x00, 0x00, // Byte rate
-		0x02, 0x00,             // Block align
-		0x10, 0x00,             // Bits per sample
+		0x02, 0x00, // Block align
+		0x10, 0x00, // Bits per sample
 		0x64, 0x61, 0x74, 0x61, // "data"
 		0x00, 0x00, 0x00, 0x00, // Data size
 	}
-	
+
 	err := os.WriteFile(tempFile, wavHeader, 0644)
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	
+
 	return tempFile
 }
 
 // Helper function to create temporary test files for benchmarks
 func createTempTestFileForBenchmark(b *testing.B, name string) string {
 	b.Helper()
-	
+
 	tempDir := b.TempDir()
 	tempFile := filepath.Join(tempDir, filepath.Base(name))
-	
+
 	// Create a minimal valid audio file (WAV header)
 	wavHeader := []byte{
 		0x52, 0x49, 0x46, 0x46, // "RIFF"
@@ -447,21 +447,21 @@ func createTempTestFileForBenchmark(b *testing.B, name string) string {
 		0x57, 0x41, 0x56, 0x45, // "WAVE"
 		0x66, 0x6D, 0x74, 0x20, // "fmt "
 		0x10, 0x00, 0x00, 0x00, // Chunk size
-		0x01, 0x00,             // Audio format (PCM)
-		0x01, 0x00,             // Channels (mono)
+		0x01, 0x00, // Audio format (PCM)
+		0x01, 0x00, // Channels (mono)
 		0x80, 0x3E, 0x00, 0x00, // Sample rate (16000)
 		0x00, 0x7D, 0x00, 0x00, // Byte rate
-		0x02, 0x00,             // Block align
-		0x10, 0x00,             // Bits per sample
+		0x02, 0x00, // Block align
+		0x10, 0x00, // Bits per sample
 		0x64, 0x61, 0x74, 0x61, // "data"
 		0x00, 0x00, 0x00, 0x00, // Data size
 	}
-	
+
 	err := os.WriteFile(tempFile, wavHeader, 0644)
 	if err != nil {
 		b.Fatalf("Failed to create temp file: %v", err)
 	}
-	
+
 	return tempFile
 }
 
@@ -470,28 +470,28 @@ func BenchmarkRemoteTranscriber_Transcript(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Simulate processing time
 		time.Sleep(50 * time.Millisecond)
-		
+
 		// Read the uploaded file to simulate real processing
 		err := r.ParseMultipartForm(32 << 20)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		
+
 		file, _, err := r.FormFile("file")
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		defer file.Close()
-		
+
 		// Read file content (simulate processing)
 		_, err = io.ReadAll(file)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"text": "Benchmark transcription result"}`))
 	}))

@@ -144,7 +144,7 @@ func TestCosineSimilarityLargeVectors(t *testing.T) {
 
 	// Assert
 	assert.NoError(t, err)
-	assert.Greater(t, similarity, float32(0.9)) // Should be highly similar
+	assert.Greater(t, similarity, float32(0.9))       // Should be highly similar
 	assert.LessOrEqual(t, similarity, float32(1.001)) // Allow for floating point precision
 }
 
@@ -197,15 +197,15 @@ func TestEuclideanDistanceCalculator(t *testing.T) {
 // Test similarity threshold functionality
 func TestSimilarityThreshold(t *testing.T) {
 	calculator := NewCosineSimilarityCalculator()
-	
+
 	// Test vectors with known similarity
 	a := []float32{1, 1, 0}
 	b := []float32{1, 0, 0}
-	
+
 	similarity, err := calculator.Calculate(a, b)
 	assert.NoError(t, err)
-	
+
 	// Test threshold checking
-	assert.True(t, similarity > 0.7)  // Should pass 70% threshold
-	assert.True(t, similarity < 0.8)  // Should fail 80% threshold
+	assert.True(t, similarity > 0.7) // Should pass 70% threshold
+	assert.True(t, similarity < 0.8) // Should fail 80% threshold
 }

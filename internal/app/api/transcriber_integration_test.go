@@ -137,11 +137,11 @@ func (s *TranscriberTestSuite) testLargeFile(t *testing.T, largeFile string) {
 	start := time.Now()
 	result, err := s.transcriber.Transcript(largeFile)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		t.Errorf("%s: Failed to transcribe large file: %v", s.name, err)
 	}
-	
+
 	t.Logf("%s: Large file transcription took %v", s.name, duration)
 	t.Logf("%s: Result length: %d characters", s.name, len(result))
 }
@@ -183,7 +183,7 @@ func (s *TranscriberTestSuite) testConcurrentRequests(t *testing.T, audioFile st
 func (s *TranscriberTestSuite) testSpecialCharactersPath(t *testing.T, testDir string) {
 	specialPath := filepath.Join(testDir, "audio with spaces & special.wav")
 	createTestAudioFile(t, specialPath)
-	
+
 	result, err := s.transcriber.Transcript(specialPath)
 	if err != nil {
 		t.Errorf("%s: Failed with special characters in path: %v", s.name, err)
@@ -198,7 +198,7 @@ func TestTranscriberComparison(t *testing.T) {
 	// Skip if not all implementations are available
 	localTranscriber := createLocalTranscriberIfAvailable(t)
 	remoteTranscriber := createRemoteTranscriberIfConfigured(t)
-	
+
 	if localTranscriber == nil || remoteTranscriber == nil {
 		t.Skip("Both local and remote transcribers must be available for comparison")
 	}
@@ -223,19 +223,19 @@ func TestTranscriberComparison(t *testing.T) {
 	// Calculate similarity (simple word overlap)
 	localWords := strings.Fields(strings.ToLower(localResult))
 	remoteWords := strings.Fields(strings.ToLower(remoteResult))
-	
+
 	wordSet := make(map[string]bool)
 	for _, word := range localWords {
 		wordSet[word] = true
 	}
-	
+
 	overlap := 0
 	for _, word := range remoteWords {
 		if wordSet[word] {
 			overlap++
 		}
 	}
-	
+
 	similarity := float64(overlap) / float64(len(remoteWords))
 	t.Logf("Word overlap similarity: %.2f%%", similarity*100)
 }
@@ -247,7 +247,7 @@ func TestTranscriberPerformance(t *testing.T) {
 	}
 
 	testFile := createTestAudioFile(t, filepath.Join(t.TempDir(), "performance.wav"))
-	
+
 	implementations := []struct {
 		name        string
 		transcriber api.Transcriber
@@ -270,12 +270,12 @@ func TestTranscriberPerformance(t *testing.T) {
 				start := time.Now()
 				_, err := impl.transcriber.Transcript(testFile)
 				duration := time.Since(start)
-				
+
 				if err != nil {
 					t.Errorf("Transcription failed: %v", err)
 					continue
 				}
-				
+
 				totalDuration += duration
 				t.Logf("Iteration %d: %v", i+1, duration)
 			}
@@ -331,7 +331,7 @@ func TestTranscriberErrorHandling(t *testing.T) {
 			defer os.RemoveAll(filepath.Dir(testFile))
 
 			_, err := transcriber.Transcript(testFile)
-			
+
 			if tc.expectError && err == nil {
 				t.Error("Expected error but got none")
 			}
@@ -349,18 +349,18 @@ func TestTranscriberErrorHandling(t *testing.T) {
 
 func createMockTranscriber() *testutil.MockTranscriber {
 	mock := testutil.NewMockTranscriber()
-	
+
 	// Set up custom behavior that checks file existence
 	mock.TranscriptFunc = func(inputFilePath string) (string, error) {
 		// Check if file exists
 		if _, err := os.Stat(inputFilePath); os.IsNotExist(err) {
 			return "", fmt.Errorf("file not found: %s", inputFilePath)
 		}
-		
+
 		// Return default response for existing files
 		return "This is a mock transcription of the audio file.", nil
 	}
-	
+
 	return mock
 }
 
@@ -368,14 +368,14 @@ func createLocalTranscriberIfAvailable(t *testing.T) api.Transcriber {
 	// Check if whisper.cpp is available
 	binaryPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/main"
 	modelPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
-	
+
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 		return nil
 	}
 	if _, err := os.Stat(modelPath); os.IsNotExist(err) {
 		return nil
 	}
-	
+
 	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
 }
 
@@ -384,14 +384,14 @@ func createRemoteTranscriberIfConfigured(t *testing.T) api.Transcriber {
 	if apiKey == "" {
 		return nil
 	}
-	
+
 	client := openai.NewClient(apiKey)
 	return whisper.NewRemoteTranscriber(client)
 }
 
 func createTestAudioFile(t *testing.T, path string) string {
 	t.Helper()
-	
+
 	// Create a minimal valid WAV file
 	wavHeader := []byte{
 		0x52, 0x49, 0x46, 0x46, // "RIFF"
@@ -399,25 +399,25 @@ func createTestAudioFile(t *testing.T, path string) string {
 		0x57, 0x41, 0x56, 0x45, // "WAVE"
 		0x66, 0x6D, 0x74, 0x20, // "fmt "
 		0x10, 0x00, 0x00, 0x00, // Chunk size
-		0x01, 0x00,             // Audio format (PCM)
-		0x01, 0x00,             // Channels (mono)
+		0x01, 0x00, // Audio format (PCM)
+		0x01, 0x00, // Channels (mono)
 		0x80, 0x3E, 0x00, 0x00, // Sample rate (16000)
 		0x00, 0x7D, 0x00, 0x00, // Byte rate
-		0x02, 0x00,             // Block align
-		0x10, 0x00,             // Bits per sample
+		0x02, 0x00, // Block align
+		0x10, 0x00, // Bits per sample
 		0x64, 0x61, 0x74, 0x61, // "data"
 		0x00, 0x08, 0x00, 0x00, // Data size (2048 bytes)
 	}
-	
+
 	// Add some audio data (silence)
 	audioData := make([]byte, 2048)
-	
+
 	data := append(wavHeader, audioData...)
 	err := os.WriteFile(path, data, 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test audio file: %v", err)
 	}
-	
+
 	return path
 }
 
@@ -432,28 +432,28 @@ func createEmptyFile(t *testing.T, path string) string {
 
 func createLargeAudioFile(t *testing.T, path string) string {
 	t.Helper()
-	
+
 	// Create a WAV file with 30 seconds of audio
 	sampleRate := 16000
-	duration := 30 // seconds
+	duration := 30                        // seconds
 	dataSize := sampleRate * 2 * duration // 16-bit mono
-	
+
 	wavHeader := []byte{
 		0x52, 0x49, 0x46, 0x46, // "RIFF"
 		byte(dataSize + 36), byte((dataSize + 36) >> 8), byte((dataSize + 36) >> 16), byte((dataSize + 36) >> 24), // File size
 		0x57, 0x41, 0x56, 0x45, // "WAVE"
 		0x66, 0x6D, 0x74, 0x20, // "fmt "
 		0x10, 0x00, 0x00, 0x00, // Chunk size
-		0x01, 0x00,             // Audio format (PCM)
-		0x01, 0x00,             // Channels (mono)
+		0x01, 0x00, // Audio format (PCM)
+		0x01, 0x00, // Channels (mono)
 		0x80, 0x3E, 0x00, 0x00, // Sample rate (16000)
 		0x00, 0x7D, 0x00, 0x00, // Byte rate
-		0x02, 0x00,             // Block align
-		0x10, 0x00,             // Bits per sample
+		0x02, 0x00, // Block align
+		0x10, 0x00, // Bits per sample
 		0x64, 0x61, 0x74, 0x61, // "data"
 		byte(dataSize), byte(dataSize >> 8), byte(dataSize >> 16), byte(dataSize >> 24), // Data size
 	}
-	
+
 	// Generate simple sine wave audio
 	audioData := make([]byte, dataSize)
 	for i := 0; i < len(audioData); i += 2 {
@@ -462,27 +462,27 @@ func createLargeAudioFile(t *testing.T, path string) string {
 		audioData[i] = byte(sample)
 		audioData[i+1] = byte(sample >> 8)
 	}
-	
+
 	data := append(wavHeader, audioData...)
 	err := os.WriteFile(path, data, 0644)
 	if err != nil {
 		t.Fatalf("Failed to create large audio file: %v", err)
 	}
-	
+
 	return path
 }
 
 func createCorruptedAudioFile(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "corrupted.wav")
-	
+
 	// Create a file with invalid WAV header
 	corruptedData := []byte("This is not a valid audio file!")
 	err := os.WriteFile(path, corruptedData, 0644)
 	if err != nil {
 		t.Fatalf("Failed to create corrupted file: %v", err)
 	}
-	
+
 	return path
 }
 
@@ -490,7 +490,7 @@ func createCorruptedAudioFile(t *testing.T) string {
 
 func BenchmarkTranscribers(b *testing.B) {
 	testFile := createTestAudioFileForBenchmark(b, filepath.Join(b.TempDir(), "benchmark.wav"))
-	
+
 	implementations := []struct {
 		name        string
 		transcriber api.Transcriber
@@ -521,14 +521,14 @@ func BenchmarkTranscribers(b *testing.B) {
 func createLocalTranscriberForBenchmark(b *testing.B) api.Transcriber {
 	binaryPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/main"
 	modelPath := "/Users/tiansheng/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
-	
+
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 		return nil
 	}
 	if _, err := os.Stat(modelPath); os.IsNotExist(err) {
 		return nil
 	}
-	
+
 	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
 }
 
@@ -538,7 +538,7 @@ func createRemoteTranscriberForBenchmark(b *testing.B) api.Transcriber {
 	if apiKey == "" {
 		return nil
 	}
-	
+
 	client := openai.NewClient(apiKey)
 	return whisper.NewRemoteTranscriber(client)
 }
@@ -546,7 +546,7 @@ func createRemoteTranscriberForBenchmark(b *testing.B) api.Transcriber {
 // createTestAudioFileForBenchmark for benchmarks
 func createTestAudioFileForBenchmark(b *testing.B, path string) string {
 	b.Helper()
-	
+
 	// Same implementation as in tests
 	wavHeader := []byte{
 		0x52, 0x49, 0x46, 0x46, // "RIFF"
@@ -554,23 +554,23 @@ func createTestAudioFileForBenchmark(b *testing.B, path string) string {
 		0x57, 0x41, 0x56, 0x45, // "WAVE"
 		0x66, 0x6D, 0x74, 0x20, // "fmt "
 		0x10, 0x00, 0x00, 0x00, // Chunk size
-		0x01, 0x00,             // Audio format (PCM)
-		0x01, 0x00,             // Channels (mono)
+		0x01, 0x00, // Audio format (PCM)
+		0x01, 0x00, // Channels (mono)
 		0x80, 0x3E, 0x00, 0x00, // Sample rate (16000)
 		0x00, 0x7D, 0x00, 0x00, // Byte rate
-		0x02, 0x00,             // Block align
-		0x10, 0x00,             // Bits per sample
+		0x02, 0x00, // Block align
+		0x10, 0x00, // Bits per sample
 		0x64, 0x61, 0x74, 0x61, // "data"
 		0x00, 0x08, 0x00, 0x00, // Data size
 	}
-	
+
 	audioData := make([]byte, 2048)
 	data := append(wavHeader, audioData...)
-	
+
 	err := os.WriteFile(path, data, 0644)
 	if err != nil {
 		b.Fatalf("Failed to create test audio file: %v", err)
 	}
-	
+
 	return path
 }

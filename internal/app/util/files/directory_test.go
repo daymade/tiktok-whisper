@@ -83,12 +83,12 @@ func TestCheckAndCreateMP3DirectoryAdvanced(t *testing.T) {
 						done <- true
 					}()
 				}
-				
+
 				// Wait for all goroutines
 				for i := 0; i < 3; i++ {
 					<-done
 				}
-				
+
 				// Directory should exist and be valid
 				info, err := os.Stat(dir)
 				if err != nil {
@@ -104,7 +104,7 @@ func TestCheckAndCreateMP3DirectoryAdvanced(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := tt.setup()
-			
+
 			// For tests that should fail, we need to handle the fatal
 			if tt.shouldFail {
 				// CheckAndCreateMP3Directory uses log.Fatal on error
@@ -115,9 +115,9 @@ func TestCheckAndCreateMP3DirectoryAdvanced(t *testing.T) {
 					}
 				}()
 			}
-			
+
 			CheckAndCreateMP3Directory(dir)
-			
+
 			if tt.check != nil {
 				tt.check(t, dir)
 			}
@@ -195,7 +195,7 @@ func TestDirectoryTraversal(t *testing.T) {
 				t.Errorf("GetAllFiles() error = %v", err)
 				return
 			}
-			
+
 			if len(files) != tt.wantCount {
 				t.Errorf("GetAllFiles() found %d files, want %d", len(files), tt.wantCount)
 			}
@@ -335,7 +335,7 @@ func TestGetUserMp3DirVariations(t *testing.T) {
 					tt.nickname = tt.nickname[:i] + "a" + tt.nickname[i+1:]
 				}
 			}
-			
+
 			path := GetUserMp3Dir(tt.nickname)
 			tt.validate(t, path)
 		})
@@ -395,7 +395,7 @@ func TestDirectoryModificationTime(t *testing.T) {
 		dirPath := filepath.Join(tempDir, d.name)
 		os.MkdirAll(dirPath, 0755)
 		os.Chtimes(dirPath, d.modTime, d.modTime)
-		
+
 		// Create a file in each directory
 		filePath := filepath.Join(dirPath, "file.mp3")
 		ioutil.WriteFile(filePath, []byte("content"), 0644)
@@ -410,16 +410,16 @@ func TestDirectoryModificationTime(t *testing.T) {
 				t.Errorf("GetAllFiles() error = %v", err)
 				return
 			}
-			
+
 			if len(files) != 1 {
 				t.Errorf("Expected 1 file, got %d", len(files))
 				return
 			}
-			
+
 			// Check that modification time is preserved
 			timeDiff := files[0].ModTime.Sub(d.modTime).Abs()
 			if timeDiff > time.Second {
-				t.Errorf("Modification time not preserved: expected %v, got %v", 
+				t.Errorf("Modification time not preserved: expected %v, got %v",
 					d.modTime, files[0].ModTime)
 			}
 		})
@@ -434,16 +434,16 @@ func TestDirectorySizeCalculation(t *testing.T) {
 		path string
 		size int
 	}{
-		{"size_test/small.mp3", 1024},         // 1KB
-		{"size_test/medium.mp3", 1024 * 100},  // 100KB
-		{"size_test/large.mp3", 1024 * 1024},  // 1MB
+		{"size_test/small.mp3", 1024},        // 1KB
+		{"size_test/medium.mp3", 1024 * 100}, // 100KB
+		{"size_test/large.mp3", 1024 * 1024}, // 1MB
 	}
 
 	totalSize := 0
 	for _, f := range files {
 		fullPath := filepath.Join(tempDir, f.path)
 		os.MkdirAll(filepath.Dir(fullPath), 0755)
-		
+
 		// Create file with specific size
 		content := make([]byte, f.size)
 		ioutil.WriteFile(fullPath, content, 0644)

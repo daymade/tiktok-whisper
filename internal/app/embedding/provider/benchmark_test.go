@@ -144,11 +144,11 @@ func BenchmarkMemoryAllocation(b *testing.B) {
 	for _, dim := range dimensions {
 		b.Run(fmt.Sprintf("Dim-%d", dim), func(b *testing.B) {
 			provider := NewMockProvider(dim)
-			
+
 			var m1, m2 runtime.MemStats
 			runtime.GC()
 			runtime.ReadMemStats(&m1)
-			
+
 			b.ResetTimer()
 			b.ReportAllocs()
 
@@ -164,7 +164,7 @@ func BenchmarkMemoryAllocation(b *testing.B) {
 			b.StopTimer()
 			runtime.GC()
 			runtime.ReadMemStats(&m2)
-			
+
 			b.ReportMetric(float64(m2.Alloc-m1.Alloc)/float64(b.N), "bytes/op")
 		})
 	}
@@ -262,7 +262,7 @@ func BenchmarkEmbeddingNormalization(b *testing.B) {
 			provider := NewMockProvider(dim)
 			ctx := context.Background()
 			testText := "Normalization benchmark"
-			
+
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
 				embedding, err := provider.GenerateEmbedding(ctx, testText)
@@ -299,7 +299,7 @@ func BenchmarkOpenAIRealAPI(b *testing.B) {
 		if err != nil {
 			b.Fatalf("OpenAI API call failed: %v", err)
 		}
-		
+
 		// Add small delay to respect rate limits
 		if b.N > 1 {
 			time.Sleep(100 * time.Millisecond)
@@ -319,8 +319,8 @@ func BenchmarkThroughputUnderLoad(b *testing.B) {
 
 	// Test different load patterns
 	loadPatterns := []struct {
-		name        string
-		workers     int
+		name              string
+		workers           int
 		requestsPerWorker int
 	}{
 		{"Light", 5, 10},
@@ -354,7 +354,7 @@ func BenchmarkThroughputUnderLoad(b *testing.B) {
 				wg.Wait()
 				duration := time.Since(start)
 				totalRequests := pattern.workers * pattern.requestsPerWorker
-				
+
 				b.ReportMetric(float64(totalRequests)/duration.Seconds(), "requests/sec")
 			}
 		})
@@ -429,14 +429,14 @@ func BenchmarkContextOverhead(b *testing.B) {
 	}{
 		{"Background", func() context.Context { return context.Background() }},
 		{"TODO", func() context.Context { return context.TODO() }},
-		{"WithValue", func() context.Context { 
-			return context.WithValue(context.Background(), "key", "value") 
+		{"WithValue", func() context.Context {
+			return context.WithValue(context.Background(), "key", "value")
 		}},
-		{"WithCancel", func() context.Context { 
+		{"WithCancel", func() context.Context {
 			ctx, _ := context.WithCancel(context.Background())
 			return ctx
 		}},
-		{"WithTimeout", func() context.Context { 
+		{"WithTimeout", func() context.Context {
 			ctx, _ := context.WithTimeout(context.Background(), 1*time.Hour)
 			return ctx
 		}},
@@ -474,19 +474,19 @@ func BenchmarkProviderComparison(b *testing.B) {
 	for _, p := range providers {
 		b.Run(p.name, func(b *testing.B) {
 			b.ReportAllocs()
-			
+
 			// Warmup
 			for i := 0; i < 10; i++ {
 				_, _ = p.provider.GenerateEmbedding(ctx, testText)
 			}
-			
+
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				embedding, err := p.provider.GenerateEmbedding(ctx, testText)
 				if err != nil {
 					b.Fatalf("Provider %s failed: %v", p.name, err)
 				}
-				
+
 				// Simulate basic usage
 				info := p.provider.GetProviderInfo()
 				if len(embedding) != info.Dimension {

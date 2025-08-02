@@ -88,7 +88,7 @@ func BenchmarkVectorOperations(b *testing.B) {
 	b.Run("GetTranscriptionsWithoutEmbeddings", func(b *testing.B) {
 		// Clear some embeddings to have data to retrieve
 		_, _ = db.Exec("UPDATE transcriptions SET embedding_openai = NULL WHERE id % 2 = 0")
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := storage.GetTranscriptionsWithoutEmbeddings(ctx, "openai", 10)
@@ -105,7 +105,7 @@ func BenchmarkVectorConversion(b *testing.B) {
 
 	for _, size := range sizes {
 		vector := generateRandomEmbedding(size)
-		
+
 		b.Run(fmt.Sprintf("VectorToString/size=%d", size), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				_ = vectorToString(vector)
@@ -113,7 +113,7 @@ func BenchmarkVectorConversion(b *testing.B) {
 		})
 
 		vectorStr := vectorToString(vector)
-		
+
 		b.Run(fmt.Sprintf("StringToVector/size=%d", size), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				_ = stringToVector(vectorStr)
@@ -187,7 +187,7 @@ func BenchmarkMockVsReal(b *testing.B) {
 		for i := 0; i < 100; i++ {
 			_ = storage.StoreEmbedding(ctx, i, "openai", embedding)
 		}
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, _ = storage.GetEmbedding(ctx, i%100, "openai")
@@ -212,7 +212,7 @@ func BenchmarkMockVsReal(b *testing.B) {
 			for i := 0; i < 100; i++ {
 				_ = storage.StoreEmbedding(ctx, i+20000, "openai", embedding)
 			}
-			
+
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				_, _ = storage.GetEmbedding(ctx, (i%100)+20000, "openai")
@@ -280,7 +280,7 @@ func setupBenchmarkDB(b *testing.B) *sql.DB {
 
 	// Create extension and tables
 	_, _ = db.Exec("CREATE EXTENSION IF NOT EXISTS vector")
-	
+
 	schema := `
 	CREATE TABLE IF NOT EXISTS transcriptions (
 		id SERIAL PRIMARY KEY,
@@ -298,7 +298,7 @@ func setupBenchmarkDB(b *testing.B) *sql.DB {
 		embedding_gemini_status VARCHAR(20) DEFAULT 'pending',
 		embedding_sync_status VARCHAR(20) DEFAULT 'pending'
 	);`
-	
+
 	_, err = db.Exec(schema)
 	if err != nil {
 		b.Fatal(err)

@@ -139,7 +139,7 @@ func TestIntegrationGoModDetection(t *testing.T) {
 	for _, subDir := range testDirs {
 		t.Run("from_"+strings.ReplaceAll(subDir, "/", "_"), func(t *testing.T) {
 			fullPath := filepath.Join(projectRoot, subDir)
-			
+
 			// findGoModRoot should find the same root from any subdirectory
 			foundRoot, err := findGoModRoot(fullPath)
 			if err != nil {
@@ -158,7 +158,7 @@ func TestIntegrationGoModDetection(t *testing.T) {
 
 func TestIntegrationFileOperationsWorkflow(t *testing.T) {
 	// Test a complete workflow similar to real application usage
-	
+
 	// 1. Get project root
 	projectRoot, err := GetProjectRoot()
 	if err != nil {

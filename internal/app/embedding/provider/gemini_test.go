@@ -26,7 +26,7 @@ func TestGeminiProviderInterface(t *testing.T) {
 	assert.Equal(t, "gemini", info.Name)
 	assert.Equal(t, "gemini-embedding-001", info.Model)
 	assert.Equal(t, 768, info.Dimension)
-	
+
 	// Verify interface methods are implemented
 	_, ok := provider.(EmbeddingProvider)
 	assert.True(t, ok, "GeminiProvider should implement EmbeddingProvider interface")
@@ -61,7 +61,7 @@ func TestGeminiProviderConstructor(t *testing.T) {
 func TestGeminiEmbeddingGeneration(t *testing.T) {
 	// Note: This tests the mock implementation. When real API is implemented,
 	// add GEMINI_API_KEY check similar to OpenAI tests
-	
+
 	testCases := []struct {
 		name          string
 		input         string
@@ -147,10 +147,10 @@ func TestGeminiDeterministicBehavior(t *testing.T) {
 	ctx := context.Background()
 
 	testCases := []struct {
-		name   string
-		text1  string
-		text2  string
-		equal  bool
+		name  string
+		text1 string
+		text2 string
+		equal bool
 	}{
 		{
 			name:  "same text produces same embedding",
@@ -181,7 +181,7 @@ func TestGeminiDeterministicBehavior(t *testing.T) {
 			// Assert
 			assert.NoError(t, err1)
 			assert.NoError(t, err2)
-			
+
 			if tc.equal {
 				assert.Equal(t, embedding1, embedding2)
 			} else {
@@ -195,7 +195,7 @@ func TestGeminiDeterministicBehavior(t *testing.T) {
 func TestGeminiContextCancellation(t *testing.T) {
 	// Note: Current mock implementation doesn't check context
 	// This test documents expected behavior for real implementation
-	
+
 	// Arrange
 	provider := NewGeminiProvider("") // Empty API key for mock
 	ctx, cancel := context.WithCancel(context.Background())
@@ -346,7 +346,7 @@ func TestGeminiEmbeddingValueDistribution(t *testing.T) {
 			// Assert
 			require.NoError(t, err)
 			require.NotNil(t, embedding)
-			
+
 			// Check that not all values are the same (mock implementation issue)
 			firstVal := embedding[0]
 			allSame := true

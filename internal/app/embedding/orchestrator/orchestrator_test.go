@@ -59,6 +59,16 @@ func (m *MockVectorStorage) GetTranscriptionsWithoutEmbeddings(ctx context.Conte
 	return args.Get(0).([]*vector.Transcription), args.Error(1)
 }
 
+func (m *MockVectorStorage) GetTranscriptionsWithoutEmbeddingsByUser(ctx context.Context, provider string, user string, limit int) ([]*vector.Transcription, error) {
+	args := m.Called(ctx, provider, user, limit)
+	return args.Get(0).([]*vector.Transcription), args.Error(1)
+}
+
+func (m *MockVectorStorage) GetUserEmbeddingStats(ctx context.Context, userNickname string) (*vector.UserEmbeddingStats, error) {
+	args := m.Called(ctx, userNickname)
+	return args.Get(0).(*vector.UserEmbeddingStats), args.Error(1)
+}
+
 func (m *MockVectorStorage) Close() error {
 	args := m.Called()
 	return args.Error(0)
@@ -99,7 +109,7 @@ func TestEmbeddingOrchestrator(t *testing.T) {
 	// Setup mocks
 	openaiEmbedding := make([]float32, 1536)
 	geminiEmbedding := make([]float32, 768)
-	
+
 	mockOpenAI.On("GenerateEmbedding", mock.Anything, "test text").Return(openaiEmbedding, nil)
 	mockGemini.On("GenerateEmbedding", mock.Anything, "test text").Return(geminiEmbedding, nil)
 	mockStorage.On("StoreDualEmbeddings", mock.Anything, 1, openaiEmbedding, geminiEmbedding).Return(nil)
@@ -130,7 +140,7 @@ func TestEmbeddingOrchestratorSingleProvider(t *testing.T) {
 
 	// Setup mocks
 	embedding := make([]float32, 1536)
-	
+
 	mockOpenAI.On("GenerateEmbedding", mock.Anything, "test text").Return(embedding, nil)
 	mockStorage.On("StoreEmbedding", mock.Anything, 1, "openai", embedding).Return(nil)
 	mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
@@ -189,7 +199,7 @@ func TestEmbeddingOrchestratorGetStatus(t *testing.T) {
 		OpenAI: make([]float32, 1536),
 		Gemini: make([]float32, 768),
 	}
-	
+
 	mockStorage.On("GetDualEmbeddings", mock.Anything, 1).Return(dualEmbedding, nil)
 
 	// Act
@@ -209,11 +219,11 @@ func TestEmbeddingOrchestratorGetStatus(t *testing.T) {
 // TestEmbeddingOrchestrator_DualProviderPartialFailure tests when one provider fails but the other succeeds
 func TestEmbeddingOrchestrator_DualProviderPartialFailure(t *testing.T) {
 	tests := []struct {
-		name            string
-		openaiError     error
-		geminiError     error
-		expectedError   bool
-		errorSubstring  string
+		name           string
+		openaiError    error
+		geminiError    error
+		expectedError  bool
+		errorSubstring string
 	}{
 		{
 			name:           "OpenAI fails, Gemini succeeds",
@@ -550,11 +560,11 @@ func TestEmbeddingOrchestrator_GetStatusStorageError(t *testing.T) {
 // TestEmbeddingOrchestrator_GetStatusPartialEmbeddings tests status with partial embeddings
 func TestEmbeddingOrchestrator_GetStatusPartialEmbeddings(t *testing.T) {
 	tests := []struct {
-		name                string
-		openaiEmbedding     []float32
-		geminiEmbedding     []float32
-		expectedOpenAI      bool
-		expectedGemini      bool
+		name            string
+		openaiEmbedding []float32
+		geminiEmbedding []float32
+		expectedOpenAI  bool
+		expectedGemini  bool
 	}{
 		{
 			name:            "Only OpenAI embedding exists",
@@ -699,4 +709,314 @@ func TestEmbeddingOrchestrator_ProviderCoordination(t *testing.T) {
 	mockOpenAI.AssertExpectations(t)
 	mockGemini.AssertExpectations(t)
 	mockStorage.AssertExpectations(t)
+}
+
+// =============================================================================
+// BATCH PROCESSOR TESTS - User-Specific Functionality
+// =============================================================================
+
+// TestBatchProcessor_ProcessUserTranscriptions tests user-specific batch processing
+func TestBatchProcessor_ProcessUserTranscriptions(t *testing.T) {
+	tests := []struct {
+		name               string
+		userNickname       string
+		providers          []string
+		batchSize          int
+		mockTranscriptions []*vector.Transcription
+		expectedProcessed  int
+		expectedFailed     int
+		setupMocks         func(*MockEmbeddingOrchestratorInterface, *MockVectorStorage, *MockLogger)
+		expectError        bool
+		errorSubstring     string
+	}{
+		{
+			name:         "successful_user_processing_single_provider",
+			userNickname: "test_user",
+			providers:    []string{"openai"},
+			batchSize:    2,
+			mockTranscriptions: []*vector.Transcription{
+				{ID: 1, User: "test_user", TranscriptionText: "Test 1"},
+				{ID: 2, User: "test_user", TranscriptionText: "Test 2"},
+			},
+			expectedProcessed: 2,
+			expectedFailed:    0,
+			setupMocks: func(orchestrator *MockEmbeddingOrchestratorInterface, storage *MockVectorStorage, logger *MockLogger) {
+				storage.On("GetTranscriptionsWithoutEmbeddingsByUser", mock.Anything, "openai", "test_user", 10000).Return([]*vector.Transcription{
+					{ID: 1, User: "test_user", TranscriptionText: "Test 1"},
+					{ID: 2, User: "test_user", TranscriptionText: "Test 2"},
+				}, nil)
+
+				orchestrator.On("ProcessTranscription", mock.Anything, 1, "Test 1").Return(nil)
+				orchestrator.On("ProcessTranscription", mock.Anything, 2, "Test 2").Return(nil)
+
+				logger.On("Info", mock.MatchedBy(func(msg string) bool {
+					return msg == "Starting user-specific batch processing"
+				}), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+
+				logger.On("Info", mock.MatchedBy(func(msg string) bool {
+					return msg == "Batch processing progress"
+				}), mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+
+				logger.On("Info", mock.MatchedBy(func(msg string) bool {
+					return msg == "Completed user-specific batch processing"
+				}), mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+			},
+			expectError: false,
+		},
+		{
+			name:         "successful_user_processing_dual_providers",
+			userNickname: "test_user",
+			providers:    []string{"openai", "gemini"},
+			batchSize:    3,
+			mockTranscriptions: []*vector.Transcription{
+				{ID: 1, User: "test_user", TranscriptionText: "Test 1"},
+				{ID: 2, User: "test_user", TranscriptionText: "Test 2"},
+				{ID: 3, User: "test_user", TranscriptionText: "Test 3"},
+			},
+			expectedProcessed: 3,
+			expectedFailed:    0,
+			setupMocks: func(orchestrator *MockEmbeddingOrchestratorInterface, storage *MockVectorStorage, logger *MockLogger) {
+				// OpenAI has 2 transcriptions
+				storage.On("GetTranscriptionsWithoutEmbeddingsByUser", mock.Anything, "openai", "test_user", 10000).Return([]*vector.Transcription{
+					{ID: 1, User: "test_user", TranscriptionText: "Test 1"},
+					{ID: 2, User: "test_user", TranscriptionText: "Test 2"},
+				}, nil)
+
+				// Gemini has 2 transcriptions (with overlap)
+				storage.On("GetTranscriptionsWithoutEmbeddingsByUser", mock.Anything, "gemini", "test_user", 10000).Return([]*vector.Transcription{
+					{ID: 2, User: "test_user", TranscriptionText: "Test 2"}, // Overlaps with OpenAI
+					{ID: 3, User: "test_user", TranscriptionText: "Test 3"},
+				}, nil)
+
+				// Should process each unique transcription once
+				orchestrator.On("ProcessTranscription", mock.Anything, 1, "Test 1").Return(nil)
+				orchestrator.On("ProcessTranscription", mock.Anything, 2, "Test 2").Return(nil)
+				orchestrator.On("ProcessTranscription", mock.Anything, 3, "Test 3").Return(nil)
+
+				logger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+			},
+			expectError: false,
+		},
+		{
+			name:               "user_with_no_pending_transcriptions",
+			userNickname:       "user_no_pending",
+			providers:          []string{"openai"},
+			batchSize:          10,
+			mockTranscriptions: []*vector.Transcription{},
+			expectedProcessed:  0,
+			expectedFailed:     0,
+			setupMocks: func(orchestrator *MockEmbeddingOrchestratorInterface, storage *MockVectorStorage, logger *MockLogger) {
+				storage.On("GetTranscriptionsWithoutEmbeddingsByUser", mock.Anything, "openai", "user_no_pending", 10000).Return([]*vector.Transcription{}, nil)
+
+				logger.On("Info", mock.MatchedBy(func(msg string) bool {
+					return msg == "No transcriptions to process for user"
+				}), mock.Anything, mock.Anything).Return()
+			},
+			expectError: false,
+		},
+		{
+			name:         "database_error_retrieving_transcriptions",
+			userNickname: "test_user",
+			providers:    []string{"openai"},
+			batchSize:    10,
+			setupMocks: func(orchestrator *MockEmbeddingOrchestratorInterface, storage *MockVectorStorage, logger *MockLogger) {
+				storage.On("GetTranscriptionsWithoutEmbeddingsByUser", mock.Anything, "openai", "test_user", 10000).Return(
+					[]*vector.Transcription(nil), errors.New("database connection failed"))
+			},
+			expectError:    true,
+			errorSubstring: "database connection failed",
+		},
+		{
+			name:         "unicode_user_nickname",
+			userNickname: "用户测试",
+			providers:    []string{"openai"},
+			batchSize:    1,
+			mockTranscriptions: []*vector.Transcription{
+				{ID: 1, User: "用户测试", TranscriptionText: "Unicode test"},
+			},
+			expectedProcessed: 1,
+			expectedFailed:    0,
+			setupMocks: func(orchestrator *MockEmbeddingOrchestratorInterface, storage *MockVectorStorage, logger *MockLogger) {
+				storage.On("GetTranscriptionsWithoutEmbeddingsByUser", mock.Anything, "openai", "用户测试", 10000).Return([]*vector.Transcription{
+					{ID: 1, User: "用户测试", TranscriptionText: "Unicode test"},
+				}, nil)
+
+				orchestrator.On("ProcessTranscription", mock.Anything, 1, "Unicode test").Return(nil)
+
+				logger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+			},
+			expectError: false,
+		},
+		{
+			name:         "empty_providers_list",
+			userNickname: "test_user",
+			providers:    []string{},
+			batchSize:    10,
+			setupMocks: func(orchestrator *MockEmbeddingOrchestratorInterface, storage *MockVectorStorage, logger *MockLogger) {
+				logger.On("Info", mock.MatchedBy(func(msg string) bool {
+					return msg == "No transcriptions to process for user"
+				}), mock.Anything, mock.Anything).Return()
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			mockOrchestrator := new(MockEmbeddingOrchestratorInterface)
+			mockStorage := new(MockVectorStorage)
+			mockLogger := new(MockLogger)
+
+			processor := NewBatchProcessor(mockOrchestrator, mockStorage, mockLogger)
+
+			// Setup mocks
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockOrchestrator, mockStorage, mockLogger)
+			}
+
+			// Act
+			err := processor.ProcessUserTranscriptions(context.Background(), tt.userNickname, tt.providers, tt.batchSize)
+
+			// Assert
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorSubstring != "" {
+					assert.Contains(t, err.Error(), tt.errorSubstring)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+
+			// Verify all mocks were called as expected
+			mockOrchestrator.AssertExpectations(t)
+			mockStorage.AssertExpectations(t)
+			mockLogger.AssertExpectations(t)
+		})
+	}
+}
+
+// TestBatchProcessor_ProcessUserTranscriptions_ConcurrentProcessing tests concurrent processing within batches
+func TestBatchProcessor_ProcessUserTranscriptions_ConcurrentProcessing(t *testing.T) {
+	// Arrange
+	mockOrchestrator := new(MockEmbeddingOrchestratorInterface)
+	mockStorage := new(MockVectorStorage)
+	mockLogger := testutil.NewMockLogger()
+
+	processor := NewBatchProcessor(mockOrchestrator, mockStorage, mockLogger)
+
+	userNickname := "test_user"
+	providers := []string{"openai"}
+	batchSize := 3
+
+	// Track processing timing to verify concurrency
+	var processingTimes []time.Time
+	var mu sync.Mutex
+
+	// Setup mocks
+	mockStorage.On("GetTranscriptionsWithoutEmbeddingsByUser", mock.Anything, "openai", userNickname, 10000).Return([]*vector.Transcription{
+		{ID: 1, User: userNickname, TranscriptionText: "Test 1"},
+		{ID: 2, User: userNickname, TranscriptionText: "Test 2"},
+		{ID: 3, User: userNickname, TranscriptionText: "Test 3"},
+	}, nil)
+
+	// Mock ProcessTranscription to record timing
+	mockOrchestrator.On("ProcessTranscription", mock.Anything, mock.Anything, mock.Anything).Return(func(ctx context.Context, id int, text string) error {
+		mu.Lock()
+		processingTimes = append(processingTimes, time.Now())
+		mu.Unlock()
+
+		// Simulate some processing time
+		time.Sleep(50 * time.Millisecond)
+		return nil
+	})
+
+	// Act
+	start := time.Now()
+	err := processor.ProcessUserTranscriptions(context.Background(), userNickname, providers, batchSize)
+	totalDuration := time.Since(start)
+
+	// Assert
+	assert.NoError(t, err)
+
+	// Verify concurrent processing: total time should be less than sequential processing
+	// Sequential would be ~150ms (3 * 50ms), concurrent should be ~50-100ms depending on timing
+	assert.Less(t, totalDuration, 120*time.Millisecond, "Processing should be concurrent within batch")
+
+	// Verify all three items were processed
+	mu.Lock()
+	assert.Len(t, processingTimes, 3, "All three transcriptions should be processed")
+	mu.Unlock()
+
+	mockOrchestrator.AssertExpectations(t)
+	mockStorage.AssertExpectations(t)
+}
+
+// TestBatchProcessor_ProcessUserTranscriptions_ContextCancellation tests context cancellation
+func TestBatchProcessor_ProcessUserTranscriptions_ContextCancellation(t *testing.T) {
+	// Arrange
+	mockOrchestrator := new(MockEmbeddingOrchestratorInterface)
+	mockStorage := new(MockVectorStorage)
+	mockLogger := testutil.NewMockLogger()
+
+	processor := NewBatchProcessor(mockOrchestrator, mockStorage, mockLogger)
+
+	userNickname := "test_user"
+	providers := []string{"openai"}
+	batchSize := 2
+
+	// Create cancellable context
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Setup mocks
+	mockStorage.On("GetTranscriptionsWithoutEmbeddingsByUser", mock.Anything, "openai", userNickname, 10000).Return([]*vector.Transcription{
+		{ID: 1, User: userNickname, TranscriptionText: "Test 1"},
+		{ID: 2, User: userNickname, TranscriptionText: "Test 2"},
+	}, nil)
+
+	// Mock ProcessTranscription to simulate work that can be cancelled
+	mockOrchestrator.On("ProcessTranscription", mock.Anything, mock.Anything, mock.Anything).Return(func(ctx context.Context, id int, text string) error {
+		// Cancel context during processing
+		if id == 1 {
+			go func() {
+				time.Sleep(10 * time.Millisecond)
+				cancel()
+			}()
+		}
+
+		// Simulate work that respects context cancellation
+		select {
+		case <-time.After(100 * time.Millisecond):
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	})
+
+	// Act
+	err := processor.ProcessUserTranscriptions(ctx, userNickname, providers, batchSize)
+
+	// Assert
+	// The method itself doesn't handle context cancellation directly,
+	// but the orchestrator should respect it
+	// We mainly verify that the cancellation doesn't cause a panic
+	assert.NoError(t, err) // ProcessUserTranscriptions doesn't propagate context cancellation errors directly
+
+	mockOrchestrator.AssertExpectations(t)
+	mockStorage.AssertExpectations(t)
+}
+
+// MockEmbeddingOrchestratorInterface for testing
+type MockEmbeddingOrchestratorInterface struct {
+	mock.Mock
+}
+
+func (m *MockEmbeddingOrchestratorInterface) ProcessTranscription(ctx context.Context, transcriptionID int, text string) error {
+	args := m.Called(ctx, transcriptionID, text)
+	return args.Error(0)
+}
+
+func (m *MockEmbeddingOrchestratorInterface) GetEmbeddingStatus(ctx context.Context, transcriptionID int) (*EmbeddingStatus, error) {
+	args := m.Called(ctx, transcriptionID)
+	return args.Get(0).(*EmbeddingStatus), args.Error(1)
 }

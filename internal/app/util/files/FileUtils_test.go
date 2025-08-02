@@ -16,13 +16,13 @@ func TestGetProjectRoot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetProjectRoot() error = %v", err)
 	}
-	
+
 	// Verify that go.mod exists at the returned path
 	goModPath := filepath.Join(got, "go.mod")
 	if _, err := os.Stat(goModPath); os.IsNotExist(err) {
 		t.Errorf("GetProjectRoot() returned path without go.mod: %v", got)
 	}
-	
+
 	// Should end with the project name
 	if !strings.HasSuffix(got, "tiktok-whisper") {
 		t.Errorf("GetProjectRoot() path doesn't end with project name: %v", got)
@@ -89,7 +89,7 @@ func TestGetAbsolutePath(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Platform-specific tests
 	if runtime.GOOS == "windows" {
 		tests = append(tests, struct {
@@ -107,7 +107,7 @@ func TestGetAbsolutePath(t *testing.T) {
 			},
 		})
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetAbsolutePath(tt.path)
@@ -156,7 +156,7 @@ func TestGetUserMp3Dir(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := GetUserMp3Dir(tt.userNickname)
@@ -174,7 +174,7 @@ func TestCheckAndCreateMP3Directory(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
-	
+
 	tests := []struct {
 		name  string
 		setup func() string
@@ -216,7 +216,7 @@ func TestCheckAndCreateMP3Directory(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mp3Dir := tt.setup()
@@ -235,7 +235,7 @@ func TestGetAllFiles(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
-	
+
 	// Create test files with different extensions and modification times
 	testFiles := []struct {
 		name    string
@@ -249,7 +249,7 @@ func TestGetAllFiles(t *testing.T) {
 		{"file5.txt", "content5", time.Now()},
 		{"file6.Mp3", "content6", time.Now().Add(-4 * time.Hour)},
 	}
-	
+
 	for _, tf := range testFiles {
 		filePath := filepath.Join(tempDir, tf.name)
 		err := ioutil.WriteFile(filePath, []byte(tf.content), 0644)
@@ -258,12 +258,12 @@ func TestGetAllFiles(t *testing.T) {
 		}
 		os.Chtimes(filePath, tf.modTime, tf.modTime)
 	}
-	
+
 	tests := []struct {
-		name      string
-		directory string
-		extension string
-		wantCount int
+		name       string
+		directory  string
+		extension  string
+		wantCount  int
 		checkOrder bool
 	}{
 		{
@@ -298,7 +298,7 @@ func TestGetAllFiles(t *testing.T) {
 			wantCount: -1, // Don't check count, just ensure it works
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetAllFiles(tt.directory, tt.extension)
@@ -306,11 +306,11 @@ func TestGetAllFiles(t *testing.T) {
 				t.Errorf("GetAllFiles() error = %v", err)
 				return
 			}
-			
+
 			if tt.wantCount >= 0 && len(got) != tt.wantCount {
 				t.Errorf("GetAllFiles() returned %d files, want %d", len(got), tt.wantCount)
 			}
-			
+
 			// Check sorting order (oldest to newest)
 			if tt.checkOrder && len(got) > 1 {
 				for i := 1; i < len(got); i++ {
@@ -320,7 +320,7 @@ func TestGetAllFiles(t *testing.T) {
 					}
 				}
 			}
-			
+
 			// Verify all returned files have correct extension
 			for _, f := range got {
 				ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(f.Name)), ".")
@@ -340,12 +340,12 @@ func TestReadOutputFile(t *testing.T) {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
 	defer os.Remove(tempFile.Name())
-	
+
 	tests := []struct {
-		name     string
-		setup    func() string
-		want     string
-		wantErr  bool
+		name    string
+		setup   func() string
+		want    string
+		wantErr bool
 	}{
 		{
 			name: "read_normal_content",
@@ -390,7 +390,7 @@ func TestReadOutputFile(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filePath := tt.setup()
@@ -413,7 +413,7 @@ func TestWriteToFile(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
-	
+
 	tests := []struct {
 		name     string
 		content  string
@@ -469,10 +469,10 @@ func TestWriteToFile(t *testing.T) {
 				// Pre-create file with old content
 				oldFile := filepath.Join(tempDir, "existing.txt")
 				ioutil.WriteFile(oldFile, []byte("Old content"), 0644)
-				
+
 				// Write new content
 				WriteToFile("New content", oldFile)
-				
+
 				// Verify new content
 				content, _ := ioutil.ReadFile(oldFile)
 				if string(content) != "New content" {
@@ -492,7 +492,7 @@ func TestWriteToFile(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := WriteToFile(tt.content, tt.filePath)
@@ -514,7 +514,7 @@ func TestFindGoModRoot(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
-	
+
 	// Create directory structure:
 	// tempDir/
 	//   go.mod
@@ -523,13 +523,13 @@ func TestFindGoModRoot(t *testing.T) {
 	//       testfile.go
 	goModPath := filepath.Join(tempDir, "go.mod")
 	ioutil.WriteFile(goModPath, []byte("module test\n"), 0644)
-	
+
 	subdir1 := filepath.Join(tempDir, "subdir1")
 	os.MkdirAll(subdir1, 0755)
-	
+
 	subdir2 := filepath.Join(subdir1, "subdir2")
 	os.MkdirAll(subdir2, 0755)
-	
+
 	tests := []struct {
 		name    string
 		path    string
@@ -557,7 +557,7 @@ func TestFindGoModRoot(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := findGoModRoot(tt.path)

@@ -388,7 +388,7 @@ func TestDatabaseSpecificFeatures(t *testing.T) {
 	t.Run("SQLiteFeatures", func(t *testing.T) {
 		testutil.WithTestDB(t, func(t *testing.T, db *sql.DB) {
 			// Test SQLite-specific features
-			
+
 			// Test WAL mode (if applicable)
 			var walMode string
 			err := db.QueryRow("PRAGMA journal_mode").Scan(&walMode)
@@ -413,7 +413,7 @@ func TestDatabaseSpecificFeatures(t *testing.T) {
 		t.Run("PostgreSQLFeatures", func(t *testing.T) {
 			testutil.WithTestDB(t, func(t *testing.T, db *sql.DB) {
 				// Test PostgreSQL-specific features
-				
+
 				// Test version
 				var version string
 				err := db.QueryRow("SELECT version()").Scan(&version)
@@ -440,7 +440,7 @@ func TestDatabaseSpecificFeatures(t *testing.T) {
 						WHERE table_name = 'transcriptions'
 					)
 				`).Scan(&tableExists)
-				
+
 				if err != nil {
 					t.Errorf("PostgreSQL information_schema query failed: %v", err)
 				}

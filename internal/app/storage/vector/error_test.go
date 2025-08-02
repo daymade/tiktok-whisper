@@ -51,8 +51,8 @@ func TestInvalidTranscriptionIDs(t *testing.T) {
 		transcriptionID int
 		expectError     bool
 	}{
-		{"negative ID", -1, false}, // Mock accepts negative IDs
-		{"zero ID", 0, false},      // Mock accepts zero
+		{"negative ID", -1, false},          // Mock accepts negative IDs
+		{"zero ID", 0, false},               // Mock accepts zero
 		{"very large ID", 999999999, false}, // Mock accepts large IDs
 	}
 
@@ -256,7 +256,7 @@ func TestVectorStringConversionEdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := stringToVector(tt.input)
-			
+
 			if tt.expected == nil {
 				assert.Nil(t, result)
 			} else {
@@ -292,7 +292,7 @@ func TestErrorHandlingConsistency(t *testing.T) {
 		for i := range largeEmbedding {
 			largeEmbedding[i] = float32(i)
 		}
-		
+
 		err := storage.StoreEmbedding(ctx, 1, "openai", largeEmbedding)
 		assert.NoError(t, err) // Mock should handle large embeddings
 

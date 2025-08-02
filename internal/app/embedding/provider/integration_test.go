@@ -18,8 +18,8 @@ func TestAllProvidersWithSameInput(t *testing.T) {
 
 	// Test cases for providers that don't require real API keys
 	testCases := []struct {
-		name     string
-		provider EmbeddingProvider
+		name       string
+		provider   EmbeddingProvider
 		skipReason string
 	}{
 		{
@@ -27,8 +27,8 @@ func TestAllProvidersWithSameInput(t *testing.T) {
 			provider: NewMockProvider(768),
 		},
 		{
-			name:     "GeminiProvider",
-			provider: NewGeminiProvider(""), // Empty API key for mock
+			name:       "GeminiProvider",
+			provider:   NewGeminiProvider(""), // Empty API key for mock
 			skipReason: "Mock implementation",
 		},
 	}
@@ -36,8 +36,8 @@ func TestAllProvidersWithSameInput(t *testing.T) {
 	// Only test OpenAI if API key is available
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
 		testCases = append(testCases, struct {
-			name     string
-			provider EmbeddingProvider
+			name       string
+			provider   EmbeddingProvider
 			skipReason string
 		}{
 			name:     "OpenAIProvider",
@@ -65,7 +65,7 @@ func TestAllProvidersWithSameInput(t *testing.T) {
 			assert.Len(t, embedding, info.Dimension)
 
 			// Log provider information
-			t.Logf("Provider: %s, Model: %s, Dimension: %d", 
+			t.Logf("Provider: %s, Model: %s, Dimension: %d",
 				info.Name, info.Model, info.Dimension)
 		})
 	}
@@ -112,10 +112,10 @@ func TestProviderSwitching(t *testing.T) {
 	for i, provider := range providers {
 		t.Run("provider-"+string(rune('A'+i)), func(t *testing.T) {
 			embedding, err := generateEmbedding(provider, testText)
-			
+
 			assert.NoError(t, err)
 			assert.NotNil(t, embedding)
-			
+
 			info := provider.GetProviderInfo()
 			assert.Len(t, embedding, info.Dimension)
 		})
@@ -133,7 +133,7 @@ func TestConcurrentMultiProviderAccess(t *testing.T) {
 
 	texts := []string{
 		"Concurrent test 1",
-		"Concurrent test 2", 
+		"Concurrent test 2",
 		"Concurrent test 3",
 		"Concurrent test 4",
 	}
@@ -176,7 +176,7 @@ func TestConcurrentMultiProviderAccess(t *testing.T) {
 	resultCount := 0
 	for result := range results {
 		resultCount++
-		assert.NoError(t, result.err, 
+		assert.NoError(t, result.err,
 			"Provider %d with text %d failed", result.providerIdx, result.textIdx)
 		assert.NotNil(t, result.embedding,
 			"Provider %d with text %d returned nil embedding", result.providerIdx, result.textIdx)
@@ -207,16 +207,16 @@ func TestProviderPerformanceComparison(t *testing.T) {
 	for _, p := range providers {
 		t.Run(p.name, func(t *testing.T) {
 			start := time.Now()
-			
+
 			for i := 0; i < iterations; i++ {
 				embedding, err := p.provider.GenerateEmbedding(ctx, testText)
 				require.NoError(t, err)
 				require.NotNil(t, embedding)
 			}
-			
+
 			duration := time.Since(start)
 			avgDuration := duration / time.Duration(iterations)
-			
+
 			t.Logf("Provider %s: %d iterations in %v (avg: %v per embedding)",
 				p.name, iterations, duration, avgDuration)
 		})
@@ -241,7 +241,7 @@ func TestProviderStressTest(t *testing.T) {
 		wg.Add(1)
 		go func(goroutineID int) {
 			defer wg.Done()
-			
+
 			for j := 0; j < numRequestsPerGoroutine; j++ {
 				text := "Stress test text for goroutine " + string(rune('A'+goroutineID)) + " request " + string(rune('0'+j))
 				_, err := provider.GenerateEmbedding(ctx, text)
@@ -271,8 +271,8 @@ func TestProviderContextScenarios(t *testing.T) {
 	testText := "Context test"
 
 	testCases := []struct {
-		name string
-		ctx  context.Context
+		name          string
+		ctx           context.Context
 		expectTimeout bool
 	}{
 		{
@@ -310,13 +310,13 @@ func TestProviderContextScenarios(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			embedding, err := provider.GenerateEmbedding(tc.ctx, testText)
-			
+
 			// Note: Mock provider doesn't check context, so these tests
 			// document expected behavior for real implementations
 			if tc.expectTimeout {
 				t.Log("Note: Mock provider doesn't respect context timeout. Real providers should.")
 			}
-			
+
 			// For now, all should succeed with mock provider
 			assert.NoError(t, err)
 			assert.NotNil(t, embedding)
@@ -332,19 +332,19 @@ func TestProviderMemoryUsage(t *testing.T) {
 
 	provider := NewMockProvider(4096) // Large dimension
 	ctx := context.Background()
-	
+
 	// Generate many embeddings to test for memory leaks
 	for i := 0; i < 1000; i++ {
 		text := "Memory test iteration " + string(rune('0'+(i%10)))
 		embedding, err := provider.GenerateEmbedding(ctx, text)
-		
+
 		require.NoError(t, err)
 		require.Len(t, embedding, 4096)
-		
+
 		// Clear reference to help GC
 		embedding = nil
 	}
-	
+
 	t.Log("Memory usage test completed successfully")
 }
 
@@ -395,7 +395,7 @@ func TestProviderEdgeCaseInputs(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			embedding, err := provider.GenerateEmbedding(ctx, tc.input)
-			
+
 			if tc.expectError {
 				assert.Error(t, err)
 				assert.Nil(t, embedding)
@@ -415,28 +415,28 @@ func TestProviderEdgeCaseInputs(t *testing.T) {
 func TestProviderRateLimitingBehavior(t *testing.T) {
 	// This test simulates how providers should behave with rate limiting
 	// Currently only documents expected behavior since providers don't implement it
-	
+
 	provider := NewMockProvider(256)
 	ctx := context.Background()
-	
+
 	// Rapid fire requests
 	numRequests := 10
 	requestInterval := 10 * time.Millisecond
-	
+
 	for i := 0; i < numRequests; i++ {
 		start := time.Now()
-		
+
 		_, err := provider.GenerateEmbedding(ctx, "Rate limit test")
 		assert.NoError(t, err)
-		
+
 		elapsed := time.Since(start)
 		t.Logf("Request %d completed in %v", i+1, elapsed)
-		
+
 		if i < numRequests-1 {
 			time.Sleep(requestInterval)
 		}
 	}
-	
+
 	t.Log("Note: Real providers should implement rate limiting and backoff")
 }
 
@@ -444,17 +444,17 @@ func TestProviderRateLimitingBehavior(t *testing.T) {
 func TestProviderErrorRecovery(t *testing.T) {
 	provider := NewMockProvider(128)
 	ctx := context.Background()
-	
+
 	// First, cause an error
 	_, err := provider.GenerateEmbedding(ctx, "")
 	assert.Error(t, err)
-	
+
 	// Then verify provider still works normally
 	embedding, err := provider.GenerateEmbedding(ctx, "recovery test")
 	assert.NoError(t, err)
 	assert.NotNil(t, embedding)
 	assert.Len(t, embedding, 128)
-	
+
 	t.Log("Provider successfully recovered from error state")
 }
 

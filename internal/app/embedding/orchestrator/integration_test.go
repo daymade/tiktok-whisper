@@ -56,7 +56,7 @@ func TestEmbeddingOrchestrator_FullWorkflow(t *testing.T) {
 	mockLogger.SetEnabled(true)
 
 	// Act
-	err := batchProcessor.ProcessAllTranscriptions(context.Background(), 2)
+	err := batchProcessor.ProcessAllTranscriptions(context.Background(), []string{"openai", "gemini"}, 2)
 
 	// Assert
 	assert.NoError(t, err)
@@ -212,7 +212,7 @@ func TestEmbeddingOrchestrator_DatabaseConnectivityIssues(t *testing.T) {
 	// Act & Assert
 	for i, expectedErr := range storageErrors {
 		err := orchestrator.ProcessTranscription(context.Background(), i+1, "test text")
-		
+
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to store dual embeddings")
 		assert.Contains(t, err.Error(), expectedErr.Error())
@@ -394,7 +394,7 @@ func TestBatchProcessor_ConcurrencyLimits(t *testing.T) {
 
 // TestEmbeddingOrchestrator_ProviderFailover tests provider failover scenarios
 func TestEmbeddingOrchestrator_ProviderFailover(t *testing.T) {
-	// Note: Current implementation doesn't support failover, but this test 
+	// Note: Current implementation doesn't support failover, but this test
 	// documents the expected behavior and can be updated when failover is implemented
 
 	// Arrange

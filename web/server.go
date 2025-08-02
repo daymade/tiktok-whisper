@@ -27,10 +27,10 @@ func NewServer(addr string) (*Server, error) {
 	user := getEnvOrDefault("DB_USER", "postgres")
 	password := getEnvOrDefault("DB_PASSWORD", "")
 	dbname := getEnvOrDefault("DB_NAME", "postgres")
-	
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", 
+
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
-	
+
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to PostgreSQL database: %w", err)
@@ -42,7 +42,7 @@ func NewServer(addr string) (*Server, error) {
 	}
 
 	// Log connection info without sensitive data
-	log.Printf("✅ Connected to PostgreSQL database (pgvector): host=%s port=%s user=%s dbname=%s", 
+	log.Printf("✅ Connected to PostgreSQL database (pgvector): host=%s port=%s user=%s dbname=%s",
 		host, port, user, dbname)
 
 	return &Server{
@@ -71,7 +71,7 @@ func (s *Server) Start() error {
 
 	log.Printf("🚀 Starting embedding visualization server on %s", s.addr)
 	log.Printf("🌐 Visit http://localhost%s to view the visualization", s.addr)
-	
+
 	return http.ListenAndServe(s.addr, mux)
 }
 

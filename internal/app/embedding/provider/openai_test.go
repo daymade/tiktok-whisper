@@ -26,7 +26,7 @@ func TestOpenAIProviderInterface(t *testing.T) {
 	assert.Equal(t, "openai", info.Name)
 	assert.Equal(t, "text-embedding-ada-002", info.Model)
 	assert.Equal(t, 1536, info.Dimension)
-	
+
 	// Verify interface methods are implemented
 	_, ok := provider.(EmbeddingProvider)
 	assert.True(t, ok, "OpenAIProvider should implement EmbeddingProvider interface")

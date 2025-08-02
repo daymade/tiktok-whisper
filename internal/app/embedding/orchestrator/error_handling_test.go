@@ -36,12 +36,12 @@ var (
 // TestEmbeddingOrchestrator_NetworkErrorHandling tests various network-related errors
 func TestEmbeddingOrchestrator_NetworkErrorHandling(t *testing.T) {
 	tests := []struct {
-		name                string
-		openaiError         error
-		geminiError         error
-		expectedErrorType   string
-		shouldLogError      bool
-		errorLogPattern     string
+		name              string
+		openaiError       error
+		geminiError       error
+		expectedErrorType string
+		shouldLogError    bool
+		errorLogPattern   string
 	}{
 		{
 			name:              "Network timeout on OpenAI",
@@ -124,7 +124,7 @@ func TestEmbeddingOrchestrator_NetworkErrorHandling(t *testing.T) {
 			if tt.shouldLogError {
 				errorLogs := mockLogger.GetLogsByLevel(testutil.LogLevelError)
 				assert.Greater(t, len(errorLogs), 0, "Should have logged errors")
-				
+
 				found := false
 				for _, log := range errorLogs {
 					if assert.Contains(t, log.Message, tt.errorLogPattern) {
@@ -144,10 +144,10 @@ func TestEmbeddingOrchestrator_NetworkErrorHandling(t *testing.T) {
 // TestEmbeddingOrchestrator_DatabaseErrorHandling tests database-related error scenarios
 func TestEmbeddingOrchestrator_DatabaseErrorHandling(t *testing.T) {
 	tests := []struct {
-		name           string
-		storageError   error
-		expectedError  string
-		shouldRetry    bool
+		name          string
+		storageError  error
+		expectedError string
+		shouldRetry   bool
 	}{
 		{
 			name:          "Database deadlock",
@@ -323,7 +323,7 @@ func TestEmbeddingOrchestrator_GoroutineLeakPrevention(t *testing.T) {
 	finalGoroutines := runtime.NumGoroutine()
 
 	// Allow some variance in goroutine count (test framework may create some)
-	assert.LessOrEqual(t, finalGoroutines, initialGoroutines+2, 
+	assert.LessOrEqual(t, finalGoroutines, initialGoroutines+2,
 		"Should not have significant goroutine leaks")
 }
 
@@ -484,7 +484,7 @@ func TestBatchProcessor_ResourceExhaustionHandling(t *testing.T) {
 	}
 
 	for _, expectedError := range resourceErrors {
-		assert.Contains(t, errorStrings, expectedError.Error(), 
+		assert.Contains(t, errorStrings, expectedError.Error(),
 			"Should capture resource error: %s", expectedError.Error())
 	}
 
@@ -548,4 +548,3 @@ func TestEmbeddingOrchestrator_EdgeCaseInputHandling(t *testing.T) {
 		})
 	}
 }
-
