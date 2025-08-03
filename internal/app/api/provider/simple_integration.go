@@ -19,26 +19,40 @@ type SimpleProviderTranscriber struct {
 
 // NewSimpleProviderTranscriber creates a transcriber that uses the provider framework
 func NewSimpleProviderTranscriber() api.Transcriber {
-	// Load configuration
-	configPath := filepath.Join(os.Getenv("HOME"), ".tiktok-whisper", "providers.yaml")
-	configManager := NewConfigManager(configPath)
+	// Determine config path - priority order:
+	// 1. Local providers.yaml
+	// 2. Home directory ~/.tiktok-whisper/providers.yaml
+	var configPath string
+	if _, err := os.Stat("providers.yaml"); err == nil {
+		configPath = "providers.yaml"
+	} else {
+		configPath = filepath.Join(os.Getenv("HOME"), ".tiktok-whisper", "providers.yaml")
+	}
 	
+	configManager := NewConfigManager(configPath)
 	config, err := configManager.LoadConfig()
 	if err != nil {
-		log.Printf("Failed to load provider configuration: %v", err)
-		return nil
+		log.Fatalf("Failed to load provider configuration from %s: %v", configPath, err)
 	}
 
-	// Get the default provider
-	defaultProviderName := config.DefaultProvider
-	if defaultProviderName == "" {
-		defaultProviderName = "whisper_cpp"
+	// Get the provider name - priority order:
+	// 1. Runtime provider override
+	// 2. Default from config
+	// 3. Fallback to whisper_cpp
+	runtimeCfg := GetRuntimeConfig()
+	var providerName string
+	if runtimeCfg != nil && runtimeCfg.ProviderName != "" {
+		providerName = runtimeCfg.ProviderName
+	} else {
+		providerName = config.DefaultProvider
+		if providerName == "" {
+			providerName = "whisper_cpp"
+		}
 	}
 
-	providerConfig, exists := config.Providers[defaultProviderName]
+	providerConfig, exists := config.Providers[providerName]
 	if !exists {
-		log.Printf("Default provider '%s' not found in configuration", defaultProviderName)
-		return nil
+		log.Fatalf("Provider '%s' not found in configuration", providerName)
 	}
 
 	// Create provider factory
@@ -54,11 +68,10 @@ func NewSimpleProviderTranscriber() api.Transcriber {
 	// Create the provider
 	provider, err := factory.CreateProvider(providerConfig.Type, configMap)
 	if err != nil {
-		log.Printf("Failed to create provider '%s': %v", defaultProviderName, err)
-		return nil
+		log.Fatalf("Failed to create provider '%s': %v", providerName, err)
 	}
 
-	log.Printf("Using provider: %s (%s)", defaultProviderName, providerConfig.Type)
+	log.Printf("Using provider: %s (%s)", providerName, providerConfig.Type)
 
 	return &SimpleProviderTranscriber{
 		provider: provider,

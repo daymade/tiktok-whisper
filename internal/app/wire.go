@@ -26,15 +26,15 @@ func provideRemoteTranscriber() api.Transcriber {
 
 // provideLocalTranscriber with native whisper.cpp conversion, you need to compile whisper.cpp/main executable by yourself
 func provideLocalTranscriber() api.Transcriber {
-	// Get paths from environment variables or use defaults
+	// Get paths from environment variables - no defaults
 	binaryPath := os.Getenv("WHISPER_CPP_BINARY")
 	if binaryPath == "" {
-		binaryPath = "./whisper.cpp/main" // Relative path as default
+		log.Fatal("WHISPER_CPP_BINARY environment variable must be set")
 	}
 	
 	modelPath := os.Getenv("WHISPER_CPP_MODEL")
 	if modelPath == "" {
-		modelPath = "./whisper.cpp/models/ggml-large-v2.bin" // Relative path as default
+		log.Fatal("WHISPER_CPP_MODEL environment variable must be set")
 	}
 	
 	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
@@ -42,15 +42,12 @@ func provideLocalTranscriber() api.Transcriber {
 
 // provideEnhancedTranscriber provides the provider framework-based transcriber
 func provideEnhancedTranscriber() api.Transcriber {
-	// Try to use the provider framework
+	// Use the provider framework - fail fast if it doesn't work
 	transcriber := provider.NewSimpleProviderTranscriber()
-	if transcriber != nil {
-		return transcriber
+	if transcriber == nil {
+		log.Fatal("Provider framework initialization failed - check your configuration")
 	}
-	
-	// Fallback to local transcriber if provider framework fails
-	log.Println("Provider framework initialization failed, falling back to local transcriber")
-	return provideLocalTranscriber()
+	return transcriber
 }
 
 func provideTranscriptionDAO() repository.TranscriptionDAO {

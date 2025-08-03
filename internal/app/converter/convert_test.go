@@ -252,7 +252,7 @@ func TestConverter_ConvertAudios(t *testing.T) {
 			dao := tt.setupDAO()
 			converter := NewConverter(transcriber, dao)
 
-			err := converter.ConvertAudios(tt.audioFiles, tt.outputDirectory, tt.parallel)
+			err := converter.ConvertAudios(tt.audioFiles, tt.outputDirectory, "test_user", tt.parallel)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
@@ -444,6 +444,7 @@ func TestConverter_ConvertAudioDir(t *testing.T) {
 			converter := NewConverter(transcriber, dao)
 
 			err := converter.ConvertAudioDir(
+				"test_user",
 				tt.directory,
 				tt.extension,
 				tt.outputDirectory,
@@ -620,7 +621,7 @@ func TestConverter_ConcurrentSafety(t *testing.T) {
 			go func(batchStart int) {
 				defer wg.Done()
 				batchFiles := testFiles[batchStart*2 : (batchStart+1)*2]
-				err := converter.ConvertAudios(batchFiles, outputDir, 2)
+				err := converter.ConvertAudios(batchFiles, outputDir, "test_user", 2)
 				if err != nil {
 					errChan <- err
 				}
@@ -667,7 +668,7 @@ func TestConverter_ErrorHandling(t *testing.T) {
 				return testutil.NewMockTranscriptionDAO()
 			},
 			operation: func(c *Converter) error {
-				return c.ConvertAudios([]string{testFile}, outputDir, 1)
+				return c.ConvertAudios([]string{testFile}, outputDir, "test_user", 1)
 			},
 			expectedError: "", // Network errors are logged but don't stop processing
 		},
@@ -682,7 +683,7 @@ func TestConverter_ErrorHandling(t *testing.T) {
 				return testutil.NewMockTranscriptionDAO()
 			},
 			operation: func(c *Converter) error {
-				return c.ConvertAudios([]string{testFile}, outputDir, 1)
+				return c.ConvertAudios([]string{testFile}, outputDir, "test_user", 1)
 			},
 			expectedError: "",
 		},
@@ -747,7 +748,7 @@ func TestConverter_ProgressTracking(t *testing.T) {
 	converter := NewConverter(transcriber, dao)
 
 	// Execute conversion
-	err := converter.ConvertAudios(testFiles, outputDir, 2)
+	err := converter.ConvertAudios(testFiles, outputDir, "test_user", 2)
 	require.NoError(t, err)
 
 	// Wait for completion
@@ -789,7 +790,7 @@ func BenchmarkConverter_ConvertAudios(b *testing.B) {
 		transcriber.Reset()
 		transcriber.WithDefaultResponse("Benchmark transcription").
 			WithLatency(1 * time.Millisecond)
-		err := converter.ConvertAudios(testFiles, outputDir, 4)
+		err := converter.ConvertAudios(testFiles, outputDir, "benchmark_user", 4)
 		require.NoError(b, err)
 	}
 }

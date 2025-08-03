@@ -71,9 +71,9 @@ func NewBatchProcessor(
 		logger:       logger,
 		batchSize:    10,
 		concurrency:  5,
-		stopChan:     make(chan struct{}),
-		pauseChan:    make(chan struct{}),
-		resumeChan:   make(chan struct{}),
+		stopChan:     make(chan struct{}, 1),
+		pauseChan:    make(chan struct{}, 1),
+		resumeChan:   make(chan struct{}, 1),
 	}
 }
 

@@ -306,7 +306,7 @@ func WithTestDB(t *testing.T, testFunc func(t *testing.T, db *sql.DB)) {
 	t.Helper()
 
 	db := SetupTestDB(t)
-	defer TeardownTestDB(t, db)
+	// Note: cleanup is already handled by t.Cleanup() in SetupTestDB/SetupTestSQLite
 
 	testFunc(t, db)
 }
@@ -316,7 +316,7 @@ func WithSeekedTestDB(t *testing.T, testFunc func(t *testing.T, db *sql.DB)) {
 	t.Helper()
 
 	db := SetupTestDB(t)
-	defer TeardownTestDB(t, db)
+	// Note: cleanup is already handled by t.Cleanup() in SetupTestDB/SetupTestSQLite
 
 	SeedTestData(t, db)
 	testFunc(t, db)

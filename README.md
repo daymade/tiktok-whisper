@@ -21,11 +21,15 @@ The tiktok-whisper tool allows batch conversion of videos to text using either O
 
 ### macOS
 
-Tiktok-whipser is based on two whisper engines: local whisper_cpp and remote openai whisper API. 
+Tiktok-whisper supports multiple transcription providers that can be easily switched via command line:
+- Local whisper.cpp with CoreML acceleration
+- OpenAI Whisper API
+- ElevenLabs Speech-to-Text
+- HTTP-based whisper server
+- SSH remote whisper.cpp
+- Custom HTTP transcription services
 
-For local conversion using coreML on macOS, you need to modify `binaryPath` and `modelPath` direct to your local whisper_cpp. 
-
-If you have an API KEY, you can use OpenAI's cloud API for conversion; skip step 1,2,3 to step 4 for compilation.
+Provider configuration is managed through `providers.yaml`. See [Provider Switching Documentation](docs/06-reference/PROVIDER_SWITCHING.md) for details.
 
 1. Generate coreML's model:
 ```shell
@@ -41,14 +45,19 @@ make clean
 WHISPER_COREML=1 make -j
 ```
 
-2. for using local whisper_cpp, you should modify the binaryPath and modelPath in `tiktok-whisper/internal/app/wire.go` manually.
-```go
-func provideLocalTranscriber() api.Transcriber {
-    // Modify binaryPath and modelPath to your paths here!
-    binaryPath := "~/workspace/cpp/whisper.cpp/main"
-    modelPath := "~/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
-    return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
-}
+2. Create a `providers.yaml` configuration file:
+```yaml
+default_provider: "whisper_cpp"
+
+providers:
+  whisper_cpp:
+    type: "whisper_cpp"
+    enabled: true
+    settings:
+      binary_path: "~/workspace/cpp/whisper.cpp/main"
+      model_path: "~/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
+      language: "en"
+      prompt: ""
 ```
 
 3. Generate wire configuration and compile the executable:
@@ -125,13 +134,38 @@ On macOS, you can use whisper.cpp for audio conversion, ensuring the correct set
 ./v2t export --userNickname "testUser" --outputFilePath ./data/testUser.xlsx
 ```
 
-To use OpenAI's API KEY for audio conversion, ensure `OPENAI_API_KEY` is set correctly in your environment variables and modify `wire.go` to use `provideRemoteTranscriber`:
-```diff
-func InitializeConverter() *converter.Converter {
--   wire.Build(converter.NewConverter, provideLocalTranscriber, provideTranscriptionDAO)
-+   wire.Build(converter.NewConverter, provideRemoteTranscriber, provideTranscriptionDAO)
-    return &converter.Converter{}
-}
+### Provider Selection
+
+You can switch between providers using the `--provider` flag:
+
+```shell
+# Use local whisper.cpp (default)
+./v2t convert -a -i audio.mp3
+
+# Use OpenAI Whisper API
+./v2t convert -a -i audio.mp3 --provider openai
+
+# Use a specific provider
+./v2t convert -a -i audio.mp3 --provider whisper_server
+
+# List all available providers
+./v2t providers list
+
+# Check provider configuration
+./v2t providers config
+```
+
+To use OpenAI, add it to your `providers.yaml`:
+```yaml
+providers:
+  openai:
+    type: "openai"
+    enabled: true
+    auth:
+      api_key: "sk-your-api-key-here"
+    settings:
+      model: "whisper-1"
+      language: "en"
 ```
 
 ### Using Python scripts for faster-whisper

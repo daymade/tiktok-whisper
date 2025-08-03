@@ -44,18 +44,13 @@ func (sdb *SQLiteDB) RecordToDB(user, inputDir, fileName, mp3FileName string, au
 }
 
 func (sdb *SQLiteDB) GetAllByUser(userNickname string) ([]model.Transcription, error) {
-	db, err := GetConnection()
-	if err != nil {
-		return nil, fmt.Errorf("get connection failed: %v", err)
-	}
-
 	sqlStr := `
 		SELECT id, user, last_conversion_time, mp3_file_name, audio_duration, transcription, error_message
 		FROM transcriptions
 		WHERE has_error = 0
 		  AND "user" = ?
 		ORDER BY last_conversion_time DESC;`
-	rows, err := db.Query(sqlStr, userNickname)
+	rows, err := sdb.db.Query(sqlStr, userNickname)
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %v", err)
 	}

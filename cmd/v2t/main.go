@@ -6,6 +6,14 @@ import (
 
 	"tiktok-whisper/cmd/v2t/cmd"
 	"tiktok-whisper/internal/config"
+	
+	// Import providers to register them
+	_ "tiktok-whisper/internal/app/api/whisper_cpp"
+	_ "tiktok-whisper/internal/app/api/openai/whisper"
+	_ "tiktok-whisper/internal/app/api/elevenlabs"
+	_ "tiktok-whisper/internal/app/api/ssh_whisper"
+	_ "tiktok-whisper/internal/app/api/whisper_server"
+	_ "tiktok-whisper/internal/app/api/custom_http"
 )
 
 func main() {

@@ -2,11 +2,9 @@ package provider
 
 import (
 	"context"
-	"os"
 	"strings"
 	"sync"
 	"testing"
-	"time"
 	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
@@ -366,67 +364,9 @@ func TestGeminiEmbeddingValueDistribution(t *testing.T) {
 	}
 }
 
-// Test API key validation behavior
-func TestGeminiAPIKeyValidation(t *testing.T) {
-	testCases := []struct {
-		name        string
-		apiKey      string
-		expectError bool // For real implementation
-	}{
-		{"valid looking key", "AIzaSy" + strings.Repeat("a", 33), false},
-		{"empty key", "", true},
-		{"whitespace key", "   ", true},
-		{"obviously invalid key", "invalid", true},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
-			provider := NewGeminiProvider(tc.apiKey)
-			ctx := context.Background()
-
-			// Act
-			embedding, err := provider.GenerateEmbedding(ctx, "test")
-
-			// Assert - Mock implementation doesn't validate API key format
-			// It only validates that text is not empty
-			assert.NoError(t, err)
-			assert.NotNil(t, embedding)
-			t.Log("Note: Real implementation should validate API key format and authentication")
-		})
-	}
-}
-
-// Test timeout behavior
-func TestGeminiTimeout(t *testing.T) {
-	// Arrange
-	provider := NewGeminiProvider("") // Empty API key for mock
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
-	defer cancel()
-
-	time.Sleep(2 * time.Millisecond) // Ensure timeout has passed
-
-	// Act
-	embedding, err := provider.GenerateEmbedding(ctx, "test")
-
-	// Assert - Mock doesn't respect context timeout
-	// Real implementation should return deadline exceeded error
-	if err == nil {
-		t.Log("Note: Mock implementation doesn't respect context timeout. Real implementation should.")
-		assert.NotNil(t, embedding)
-	}
-}
-
-// Integration test placeholder
-func TestGeminiIntegration(t *testing.T) {
-	apiKey := os.Getenv("GEMINI_API_KEY")
-	if apiKey == "" {
-		t.Skip("GEMINI_API_KEY not set, skipping integration tests")
-	}
-
-	// TODO: Implement real Gemini API integration tests when API client is added
-	t.Log("Gemini integration tests will be implemented when real API client is added")
-}
+// Note: API key validation and integration tests have been moved to:
+// - gemini_unit_test.go (unit tests without API calls)
+// - gemini_integration_test.go (integration tests with real API calls)
 
 // Helper functions
 func isNaNFloat32(f float32) bool {
