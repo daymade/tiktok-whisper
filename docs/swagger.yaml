@@ -1,0 +1,650 @@
+basePath: /api/v1
+definitions:
+  tiktok-whisper_internal_api_errors.APIError:
+    properties:
+      code:
+        type: string
+      details:
+        additionalProperties:
+          type: string
+        type: object
+      kind:
+        $ref: '#/definitions/tiktok-whisper_internal_api_errors.ErrorKind'
+      message:
+        type: string
+      request_id:
+        type: string
+    type: object
+  tiktok-whisper_internal_api_errors.ErrorKind:
+    enum:
+    - validation
+    - not_found
+    - unauthorized
+    - forbidden
+    - conflict
+    - internal
+    - service_unavailable
+    - bad_request
+    type: string
+    x-enum-varnames:
+    - KindValidation
+    - KindNotFound
+    - KindUnauthorized
+    - KindForbidden
+    - KindConflict
+    - KindInternal
+    - KindServiceUnavailable
+    - KindBadRequest
+  tiktok-whisper_internal_api_v1_dto.CreateTranscriptionRequest:
+    properties:
+      file_path:
+        type: string
+      language:
+        type: string
+      model:
+        type: string
+      options:
+        additionalProperties: true
+        type: object
+      output_format:
+        enum:
+        - text
+        - json
+        - srt
+        - vtt
+        type: string
+      provider:
+        type: string
+      user_id:
+        type: string
+    required:
+    - file_path
+    type: object
+  tiktok-whisper_internal_api_v1_dto.PaginatedTranscriptionsResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.PaginationResponse'
+      transcriptions:
+        items:
+          $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.TranscriptionResponse'
+        type: array
+    type: object
+  tiktok-whisper_internal_api_v1_dto.PaginationResponse:
+    properties:
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  tiktok-whisper_internal_api_v1_dto.ProviderCapabilities:
+    properties:
+      max_duration_sec:
+        type: integer
+      max_file_size_mb:
+        type: integer
+      supports_languages:
+        items:
+          type: string
+        type: array
+      supports_models:
+        items:
+          type: string
+        type: array
+      supports_streaming:
+        type: boolean
+    type: object
+  tiktok-whisper_internal_api_v1_dto.ProviderResponse:
+    properties:
+      available:
+        type: boolean
+      capabilities:
+        $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.ProviderCapabilities'
+      configuration:
+        additionalProperties: true
+        type: object
+      description:
+        type: string
+      health_status:
+        type: string
+      id:
+        type: string
+      is_default:
+        type: boolean
+      last_health_check:
+        type: string
+      name:
+        type: string
+      priority:
+        type: integer
+      requires_api_key:
+        type: boolean
+      supported_formats:
+        items:
+          type: string
+        type: array
+      type:
+        type: string
+    type: object
+  tiktok-whisper_internal_api_v1_dto.ProviderStatsResponse:
+    properties:
+      average_response_time_ms:
+        type: number
+      failed_requests:
+        type: integer
+      id:
+        type: string
+      last_used:
+        type: string
+      name:
+        type: string
+      period_end:
+        type: string
+      period_start:
+        type: string
+      success_rate:
+        type: number
+      successful_requests:
+        type: integer
+      total_audio_duration_sec:
+        type: number
+      total_processing_time_ms:
+        type: integer
+      total_requests:
+        type: integer
+    type: object
+  tiktok-whisper_internal_api_v1_dto.ProviderStatusResponse:
+    properties:
+      checked_at:
+        type: string
+      details:
+        additionalProperties: true
+        type: object
+      error_message:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      response_time_ms:
+        type: integer
+      status:
+        type: string
+    type: object
+  tiktok-whisper_internal_api_v1_dto.SegmentResponse:
+    properties:
+      confidence:
+        type: number
+      end:
+        type: number
+      id:
+        type: integer
+      start:
+        type: number
+      text:
+        type: string
+      words:
+        items:
+          $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.WordResponse'
+        type: array
+    type: object
+  tiktok-whisper_internal_api_v1_dto.TestProviderRequest:
+    properties:
+      options:
+        additionalProperties: true
+        type: object
+      test_file:
+        type: string
+    type: object
+  tiktok-whisper_internal_api_v1_dto.TestProviderResponse:
+    properties:
+      error_message:
+        type: string
+      response_time_ms:
+        type: integer
+      success:
+        type: boolean
+      test_result:
+        additionalProperties: true
+        type: object
+      tested_at:
+        type: string
+    type: object
+  tiktok-whisper_internal_api_v1_dto.TranscriptionResponse:
+    properties:
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      duration:
+        type: number
+      error:
+        type: string
+      file_hash:
+        type: string
+      file_path:
+        type: string
+      file_size:
+        type: integer
+      id:
+        type: integer
+      language:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      model:
+        type: string
+      processing_time_ms:
+        type: integer
+      provider:
+        type: string
+      segments:
+        items:
+          $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.SegmentResponse'
+        type: array
+      status:
+        type: string
+      transcription:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  tiktok-whisper_internal_api_v1_dto.WordResponse:
+    properties:
+      confidence:
+        type: number
+      end:
+        type: number
+      start:
+        type: number
+      word:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: TikTok Whisper API Support
+    url: https://github.com/your-org/tiktok-whisper/issues
+  description: |-
+    RESTful API for the TikTok Whisper CLI tool providing audio transcription services
+
+    This API provides 1:1 mapping of CLI commands to RESTful endpoints for:
+    - Transcription management (convert command)
+    - Provider management (providers command)
+    - Download operations (download command)
+    - Embedding operations (embed command)
+    - Export functionality (export command)
+    - Configuration management (config command)
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://github.com/your-org/tiktok-whisper
+  title: TikTok Whisper API
+  version: "1.0"
+paths:
+  /providers:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of all registered transcription providers with
+        their capabilities and status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'List of providers" SchemaExample({"providers": [{"id": "openai/whisper",
+            "name": "OpenAI Whisper", "type": "remote", "available": true, "health_status":
+            "healthy"}]})'
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+      summary: List all available providers
+      tags:
+      - providers
+  /providers/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves detailed information about a specific transcription provider
+        including capabilities and configuration
+      parameters:
+      - description: Provider ID
+        example: openai/whisper
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Provider details
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.ProviderResponse'
+        "400":
+          description: Bad request - provider ID required
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "404":
+          description: Provider not found
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+      summary: Get provider details
+      tags:
+      - providers
+  /providers/{id}/stats:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves detailed usage statistics for a provider including request
+        counts, success rates, and performance metrics
+      parameters:
+      - description: Provider ID
+        example: openai/whisper
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Provider usage statistics
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.ProviderStatsResponse'
+        "400":
+          description: Bad request - provider ID required
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "404":
+          description: Provider not found
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+      summary: Get provider usage statistics
+      tags:
+      - providers
+  /providers/{id}/status:
+    get:
+      consumes:
+      - application/json
+      description: Performs a health check on a specific provider and returns current
+        status with response time
+      parameters:
+      - description: Provider ID
+        example: openai/whisper
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Provider health status
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.ProviderStatusResponse'
+        "400":
+          description: Bad request - provider ID required
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "404":
+          description: Provider not found
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+      summary: Get provider health status
+      tags:
+      - providers
+  /providers/{id}/test:
+    post:
+      consumes:
+      - application/json
+      description: Tests a provider with an optional audio file to verify it's working
+        correctly
+      parameters:
+      - description: Provider ID
+        example: '"openai/whisper"'
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Test request with optional audio file path
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.TestProviderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Test result
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.TestProviderResponse'
+        "400":
+          description: Bad request (invalid provider ID)
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "404":
+          description: Provider not found
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+      summary: Test a provider
+      tags:
+      - providers
+  /transcriptions:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of transcriptions with optional filtering
+        by user, status, and provider
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: string
+      - description: Filter by status
+        enum:
+        - pending
+        - processing
+        - completed
+        - failed
+        in: query
+        name: status
+        type: string
+      - description: Filter by provider
+        enum:
+        - whisper_cpp
+        - openai/whisper
+        - elevenlabs
+        in: query
+        name: provider
+        type: string
+      - default: created_at
+        description: Sort field
+        enum:
+        - created_at
+        - updated_at
+        - duration
+        - file_size
+        in: query
+        name: order_by
+        type: string
+      - default: desc
+        description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of transcriptions with pagination
+          headers:
+            X-Total-Count:
+              description: Total number of transcriptions
+              type: string
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.PaginatedTranscriptionsResponse'
+        "400":
+          description: Bad request - invalid query parameters
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+      summary: List transcriptions with pagination
+      tags:
+      - transcriptions
+    post:
+      consumes:
+      - application/json
+      description: Creates a new audio transcription job with specified provider and
+        options
+      parameters:
+      - description: Transcription creation data
+        in: body
+        name: transcription
+        required: true
+        schema:
+          $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.CreateTranscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Transcription created successfully
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.TranscriptionResponse'
+        "400":
+          description: Bad request - invalid input data
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+      summary: Create a new transcription job
+      tags:
+      - transcriptions
+  /transcriptions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft deletes a transcription job by its ID. The transcription data
+        is marked as deleted but not permanently removed.
+      parameters:
+      - description: Transcription ID
+        format: int32
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Transcription deleted successfully
+        "400":
+          description: Bad request - invalid ID
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "404":
+          description: Transcription not found
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+      summary: Delete a transcription
+      tags:
+      - transcriptions
+    get:
+      consumes:
+      - application/json
+      description: Retrieves detailed information about a specific transcription job
+      parameters:
+      - description: Transcription ID
+        format: int32
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transcription details
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_v1_dto.TranscriptionResponse'
+        "400":
+          description: Bad request - invalid ID
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "404":
+          description: Transcription not found
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/tiktok-whisper_internal_api_errors.APIError'
+      summary: Get transcription by ID
+      tags:
+      - transcriptions
+schemes:
+- http
+- https
+swagger: "2.0"
