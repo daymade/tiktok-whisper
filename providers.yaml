@@ -1,0 +1,32 @@
+default_provider: "whisper_cpp"
+
+providers:
+  whisper_cpp:
+    type: "whisper_cpp"
+    enabled: true
+    settings:
+      binary_path: "/Volumes/SSD2T/workspace/cpp/whisper.cpp-updated/build/bin/whisper-cli"
+      model_path: "/Volumes/SSD2T/workspace/cpp/whisper.cpp-updated/models/ggml-base.en.bin"
+      output_format: "json"
+      language: "en"
+      threads: 4
+  
+  openai:
+    type: "openai"
+    enabled: true
+    auth:
+      api_key: "${OPENAI_API_KEY}"
+    settings:
+      model: "whisper-1"
+      language: "en"
+      response_format: "json"
+      temperature: 0
+  
+  elevenlabs:
+    type: "elevenlabs"
+    enabled: false
+    auth:
+      api_key: "${ELEVENLABS_API_KEY}"
+    settings:
+      model: "multilingual-v1"
+      language: "en"

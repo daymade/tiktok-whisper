@@ -5,6 +5,7 @@ import (
 	"strings"
 	"tiktok-whisper/internal/app"
 	"tiktok-whisper/internal/app/converter"
+	"tiktok-whisper/internal/app/api/provider"
 
 	"github.com/spf13/cobra"
 )
@@ -18,6 +19,7 @@ var audio bool
 var convertCount int
 var parallel int
 var noProgress bool
+var providerName string
 
 var inputFile string
 
@@ -47,6 +49,9 @@ func init() {
 
 	Cmd.Flags().BoolVar(&noProgress, "no-progress", false,
 		"Disable progress bar display")
+	
+	Cmd.Flags().StringVar(&providerName, "provider", "",
+		"Transcription provider to use (whisper_cpp, openai, elevenlabs, whisper_server, etc.)")
 }
 
 // Cmd represents the convert command
@@ -83,6 +88,14 @@ var Cmd = &cobra.Command{
 			return
 		}
 
+		// Set runtime configuration for provider selection
+		if providerName != "" {
+			provider.InitializeRuntimeConfig()
+			provider.SetRuntimeConfig(&provider.RuntimeConfig{
+				ProviderName: providerName,
+			})
+		}
+		
 		progressConfig := converter.ProgressConfig{
 			Enabled: !noProgress && converter.ShouldShowProgress(false),
 			Writer:  nil, // Use default (stderr)

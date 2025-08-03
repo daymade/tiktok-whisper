@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package pg
 
 import (
@@ -7,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestGetConnection(t *testing.T) {
+func TestGetConnection_Integration(t *testing.T) {
 	tests := []struct {
 		name    string
 		want    *sql.DB

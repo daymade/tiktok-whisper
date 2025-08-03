@@ -14,10 +14,14 @@ all: build
 build:
 	CGO_ENABLED=$(CGO_ENABLED) go build -o $(BINARY_NAME) ./cmd/v2t/main.go
 
-# Run unit tests
+# Run unit tests only (with -short flag to skip integration tests)
 .PHONY: test
 test:
-	go test -v ./...
+	go test -short -v ./...
+
+# Run unit tests only (alias)
+.PHONY: test-unit
+test-unit: test
 
 # Run integration tests
 .PHONY: test-integration
@@ -29,7 +33,7 @@ test-integration: build
 # Run Go integration tests
 .PHONY: test-integration-go
 test-integration-go: build
-	CGO_ENABLED=$(CGO_ENABLED) go test -v -tags=integration ./test/...
+	CGO_ENABLED=$(CGO_ENABLED) go test -v -tags=integration ./...
 
 # Run all tests
 .PHONY: test-all
@@ -97,7 +101,8 @@ test-convert: build
 help:
 	@echo "Available targets:"
 	@echo "  make build          - Build the binary"
-	@echo "  make test           - Run unit tests"
+	@echo "  make test           - Run unit tests only (fast, no external deps)"
+	@echo "  make test-unit      - Alias for 'make test'"
 	@echo "  make test-integration - Run shell integration tests"
 	@echo "  make test-integration-go - Run Go integration tests"
 	@echo "  make test-all       - Run all tests"

@@ -3,8 +3,6 @@ package whisper_server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,11 +10,11 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"tiktok-whisper/internal/app/api/provider"
+	providerPkg "tiktok-whisper/internal/app/api/provider"
 )
 
 // Mock HTTP server for testing
-func createMockWhisperServer(t *testing.T, responses map[string]interface{}) *httptest.Server {
+func createMockWhisperServer(t testing.TB, responses map[string]interface{}) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/inference":
@@ -500,20 +498,20 @@ func TestWhisperServerProvider_TranscriptWithOptions(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		request     *provider.TranscriptionRequest
+		request     *providerPkg.TranscriptionRequest
 		expectError bool
 		errorCode   string
 	}{
 		{
 			name: "valid request",
-			request: &provider.TranscriptionRequest{
+			request: &providerPkg.TranscriptionRequest{
 				InputFilePath: audioFile,
 			},
 			expectError: false,
 		},
 		{
 			name: "empty input path",
-			request: &provider.TranscriptionRequest{
+			request: &providerPkg.TranscriptionRequest{
 				InputFilePath: "",
 			},
 			expectError: true,
@@ -521,7 +519,7 @@ func TestWhisperServerProvider_TranscriptWithOptions(t *testing.T) {
 		},
 		{
 			name: "non-existent file",
-			request: &provider.TranscriptionRequest{
+			request: &providerPkg.TranscriptionRequest{
 				InputFilePath: "/non/existent/file.wav",
 			},
 			expectError: true,
@@ -541,7 +539,7 @@ func TestWhisperServerProvider_TranscriptWithOptions(t *testing.T) {
 					t.Errorf("Expected error but got none")
 				} else {
 					// Check if it's a TranscriptionError with expected code
-					if transcErr, ok := err.(*provider.TranscriptionError); ok {
+					if transcErr, ok := err.(*providerPkg.TranscriptionError); ok {
 						if transcErr.Code != tt.errorCode {
 							t.Errorf("Expected error code %q, got %q", tt.errorCode, transcErr.Code)
 						}
@@ -711,7 +709,7 @@ func TestWhisperServerProvider_GetProviderInfo(t *testing.T) {
 	if info.Name != "whisper_server" {
 		t.Errorf("Expected name 'whisper_server', got %q", info.Name)
 	}
-	if info.Type != provider.ProviderTypeRemote {
+	if info.Type != providerPkg.ProviderTypeRemote {
 		t.Errorf("Expected type Remote, got %v", info.Type)
 	}
 	if !info.RequiresInternet {

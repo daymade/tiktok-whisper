@@ -457,9 +457,16 @@ $RECYCLE.BIN/
 v2t
 v2t.exe
 v2t_*
+tiktok-whisper
+tiktok-whisper.exe
+tiktok-whisper_*
 
 # Test and temporary files
 *.txt
+*.test
+test-v2t
+providers-test.yaml
+test_batch/
 
 # Server files
 server.pid

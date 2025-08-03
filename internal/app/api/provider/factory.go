@@ -2,7 +2,6 @@ package provider
 
 import (
 	"fmt"
-	"os"
 )
 
 // DefaultProviderFactory implements ProviderFactory interface
@@ -33,16 +32,10 @@ func (f *DefaultProviderFactory) CreateProvider(providerType string, config map[
 	}
 }
 
-// GetAvailableProviders returns a list of available provider types
+// GetAvailableProviders returns a list of registered provider types
 func (f *DefaultProviderFactory) GetAvailableProviders() []string {
-	return []string{
-		"whisper_cpp",
-		"openai", 
-		"elevenlabs",
-		"ssh_whisper",
-		"whisper_server",
-		"custom_http",
-	}
+	// Return only registered providers
+	return ListRegisteredProviders()
 }
 
 // GetProviderInfo returns provider information without creating an instance
@@ -67,73 +60,56 @@ func (f *DefaultProviderFactory) GetProviderInfo(providerType string) (ProviderI
 
 // createWhisperCppProvider creates a whisper.cpp provider
 func (f *DefaultProviderFactory) createWhisperCppProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	// TODO: Implement without import cycle
-	// return whisper_cpp.NewEnhancedLocalTranscriberFromSettings(config)
-	return nil, fmt.Errorf("whisper_cpp provider creation not yet implemented in factory")
+	creator, err := GetProviderCreator("whisper_cpp")
+	if err != nil {
+		return nil, fmt.Errorf("whisper_cpp provider not registered: %w", err)
+	}
+	return creator(config)
 }
 
 // createOpenAIProvider creates an OpenAI provider
 func (f *DefaultProviderFactory) createOpenAIProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	// Get API key from environment or config
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if keyFromConfig, ok := config["api_key"].(string); ok && keyFromConfig != "" {
-		apiKey = keyFromConfig
+	creator, err := GetProviderCreator("openai")
+	if err != nil {
+		return nil, fmt.Errorf("openai provider not registered: %w", err)
 	}
-	
-	if apiKey == "" {
-		return nil, fmt.Errorf("OpenAI API key is required (set OPENAI_API_KEY environment variable)")
-	}
-	
-	// TODO: Implement without import cycle
-	// return whisper.NewEnhancedRemoteTranscriberFromSettings(config, apiKey)
-	return nil, fmt.Errorf("openai provider creation not yet implemented in factory")
+	return creator(config)
 }
 
 // createElevenLabsProvider creates an ElevenLabs provider
 func (f *DefaultProviderFactory) createElevenLabsProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	// Get API key from environment or config
-	apiKey := os.Getenv("ELEVENLABS_API_KEY")
-	if keyFromConfig, ok := config["api_key"].(string); ok && keyFromConfig != "" {
-		apiKey = keyFromConfig
+	creator, err := GetProviderCreator("elevenlabs")
+	if err != nil {
+		return nil, fmt.Errorf("elevenlabs provider not registered: %w", err)
 	}
-	
-	if apiKey == "" {
-		return nil, fmt.Errorf("ElevenLabs API key is required (set ELEVENLABS_API_KEY environment variable)")
-	}
-	
-	// TODO: Implement without import cycle
-	// return elevenlabs.NewElevenLabsSTTProviderFromSettings(config, apiKey)
-	return nil, fmt.Errorf("elevenlabs provider creation not yet implemented in factory")
+	return creator(config)
 }
 
 // createSSHWhisperProvider creates an SSH whisper provider
 func (f *DefaultProviderFactory) createSSHWhisperProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	// TODO: Implement without import cycle
-	// return ssh_whisper.NewSSHWhisperProviderFromSettings(config)
-	return nil, fmt.Errorf("ssh_whisper provider creation not yet implemented in factory")
+	creator, err := GetProviderCreator("ssh_whisper")
+	if err != nil {
+		return nil, fmt.Errorf("ssh_whisper provider not registered: %w", err)
+	}
+	return creator(config)
 }
 
 // createWhisperServerProvider creates a whisper-server HTTP provider
 func (f *DefaultProviderFactory) createWhisperServerProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	// Extract settings
-	settings, ok := config["settings"].(map[string]interface{})
-	if !ok {
-		settings = config // Try using config directly
+	creator, err := GetProviderCreator("whisper_server")
+	if err != nil {
+		return nil, fmt.Errorf("whisper_server provider not registered: %w", err)
 	}
-	
-	// Create provider using direct implementation to avoid import cycle
-	provider := NewDirectWhisperServerProvider(settings)
-	if provider == nil {
-		return nil, fmt.Errorf("failed to create whisper server provider")
-	}
-	
-	return provider, nil
+	return creator(config)
 }
 
-// createCustomHTTPProvider creates a custom HTTP provider (placeholder)
+// createCustomHTTPProvider creates a custom HTTP provider
 func (f *DefaultProviderFactory) createCustomHTTPProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	// This would be implemented for custom HTTP-based whisper services
-	return nil, fmt.Errorf("custom HTTP provider not yet implemented")
+	creator, err := GetProviderCreator("custom_http")
+	if err != nil {
+		return nil, fmt.Errorf("custom_http provider not registered: %w", err)
+	}
+	return creator(config)
 }
 
 // Provider info methods
@@ -266,7 +242,7 @@ func (f *DefaultProviderFactory) getSSHWhisperInfo() ProviderInfo {
 	return ProviderInfo{
 		Name:        "ssh_whisper",
 		DisplayName: "SSH Remote Whisper.cpp",
-		Type:        ProviderTypeRemote,
+		Type:        ProviderTypeHybrid,
 		Version:     "1.0.0",
 		SupportedFormats: []AudioFormat{
 			FormatWAV,

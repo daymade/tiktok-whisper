@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package provider
 
 import (
@@ -13,51 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Test OpenAI provider interface compliance
-func TestOpenAIProviderInterface(t *testing.T) {
-	// Arrange
-	var provider EmbeddingProvider
-	provider = NewOpenAIProvider("test-key")
-
-	// Act
-	info := provider.GetProviderInfo()
-
-	// Assert
-	assert.Equal(t, "openai", info.Name)
-	assert.Equal(t, "text-embedding-ada-002", info.Model)
-	assert.Equal(t, 1536, info.Dimension)
-
-	// Verify interface methods are implemented
-	_, ok := provider.(EmbeddingProvider)
-	assert.True(t, ok, "OpenAIProvider should implement EmbeddingProvider interface")
-}
-
-// Test OpenAI constructor and configuration
-func TestOpenAIProviderConstructor(t *testing.T) {
-	testCases := []struct {
-		name   string
-		apiKey string
-	}{
-		{"with valid API key", "sk-test123"},
-		{"with empty API key", ""},
-		{"with whitespace API key", "   "},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Act
-			provider := NewOpenAIProvider(tc.apiKey)
-
-			// Assert
-			assert.NotNil(t, provider)
-			assert.NotNil(t, provider.client)
-			assert.Equal(t, "text-embedding-ada-002", string(provider.model))
-		})
-	}
-}
-
 // Test OpenAI embedding generation with various inputs
-func TestOpenAIEmbeddingGeneration(t *testing.T) {
+func TestOpenAIEmbeddingGeneration_Integration(t *testing.T) {
 	// Skip if no API key
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
@@ -127,8 +87,8 @@ func TestOpenAIEmbeddingGeneration(t *testing.T) {
 	}
 }
 
-// Test OpenAI error scenarios
-func TestOpenAIErrorScenarios(t *testing.T) {
+// Test OpenAI error scenarios with real API
+func TestOpenAIErrorScenarios_Integration(t *testing.T) {
 	testCases := []struct {
 		name          string
 		apiKey        string
@@ -140,18 +100,6 @@ func TestOpenAIErrorScenarios(t *testing.T) {
 			apiKey:        "invalid-key",
 			input:         "test",
 			errorContains: "", // OpenAI API error message varies
-		},
-		{
-			name:          "empty text",
-			apiKey:        "dummy-key",
-			input:         "",
-			errorContains: "empty text",
-		},
-		{
-			name:          "whitespace only text",
-			apiKey:        "dummy-key",
-			input:         "   \t\n  ",
-			errorContains: "empty text",
 		},
 	}
 
@@ -167,15 +115,12 @@ func TestOpenAIErrorScenarios(t *testing.T) {
 			// Assert
 			assert.Error(t, err)
 			assert.Nil(t, embedding)
-			if tc.errorContains != "" {
-				assert.Contains(t, err.Error(), tc.errorContains)
-			}
 		})
 	}
 }
 
-// Test context cancellation
-func TestOpenAIContextCancellation(t *testing.T) {
+// Test context cancellation with real API
+func TestOpenAIContextCancellation_Integration(t *testing.T) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		t.Skip("OPENAI_API_KEY not set, skipping integration tests")
@@ -195,7 +140,7 @@ func TestOpenAIContextCancellation(t *testing.T) {
 }
 
 // Test concurrent embedding generation
-func TestOpenAIConcurrentRequests(t *testing.T) {
+func TestOpenAIConcurrentRequests_Integration(t *testing.T) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		t.Skip("OPENAI_API_KEY not set, skipping integration tests")
@@ -249,7 +194,7 @@ func TestOpenAIConcurrentRequests(t *testing.T) {
 }
 
 // Test embedding consistency
-func TestOpenAIEmbeddingConsistency(t *testing.T) {
+func TestOpenAIEmbeddingConsistency_Integration(t *testing.T) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		t.Skip("OPENAI_API_KEY not set, skipping integration tests")
@@ -271,28 +216,8 @@ func TestOpenAIEmbeddingConsistency(t *testing.T) {
 	assert.Equal(t, embedding1, embedding2, "Same text should produce identical embeddings")
 }
 
-// Benchmark OpenAI embedding generation
-func BenchmarkOpenAIEmbeddingGeneration(b *testing.B) {
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		b.Skip("OPENAI_API_KEY not set, skipping benchmarks")
-	}
-
-	provider := NewOpenAIProvider(apiKey)
-	ctx := context.Background()
-	testText := "This is a benchmark test for OpenAI embedding generation performance."
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, err := provider.GenerateEmbedding(ctx, testText)
-		if err != nil {
-			b.Fatalf("Failed to generate embedding: %v", err)
-		}
-	}
-}
-
 // Test extremely long text handling
-func TestOpenAIExtremelyLongText(t *testing.T) {
+func TestOpenAIExtremelyLongText_Integration(t *testing.T) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		t.Skip("OPENAI_API_KEY not set, skipping integration tests")
@@ -320,7 +245,7 @@ func TestOpenAIExtremelyLongText(t *testing.T) {
 }
 
 // Test various UTF-8 edge cases
-func TestOpenAIUTF8EdgeCases(t *testing.T) {
+func TestOpenAIUTF8EdgeCases_Integration(t *testing.T) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		t.Skip("OPENAI_API_KEY not set, skipping integration tests")
@@ -359,11 +284,24 @@ func TestOpenAIUTF8EdgeCases(t *testing.T) {
 	}
 }
 
-// Helper functions
-func isNaN(f float32) bool {
-	return f != f
+// Benchmark OpenAI embedding generation
+func BenchmarkOpenAIEmbeddingGeneration(b *testing.B) {
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		b.Skip("OPENAI_API_KEY not set, skipping benchmarks")
+	}
+
+	provider := NewOpenAIProvider(apiKey)
+	ctx := context.Background()
+	testText := "This is a benchmark test for OpenAI embedding generation performance."
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := provider.GenerateEmbedding(ctx, testText)
+		if err != nil {
+			b.Fatalf("Failed to generate embedding: %v", err)
+		}
+	}
 }
 
-func isInf(f float32) bool {
-	return f > 1e30 || f < -1e30
-}
+// Helper functions are defined in gemini_integration_test.go

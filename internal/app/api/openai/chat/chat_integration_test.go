@@ -1,11 +1,21 @@
+//go:build integration
+// +build integration
+
 package chat
 
 import (
-	"github.com/sashabaranov/go-openai"
+	"os"
 	"testing"
+
+	"github.com/sashabaranov/go-openai"
 )
 
-func TestChat(t *testing.T) {
+func TestChat_Integration(t *testing.T) {
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		t.Skip("OPENAI_API_KEY not set, skipping integration tests")
+	}
+
 	type args struct {
 		text string
 	}

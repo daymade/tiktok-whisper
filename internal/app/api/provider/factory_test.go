@@ -8,7 +8,7 @@ func TestDefaultProviderFactory_GetAvailableProviders(t *testing.T) {
 	factory := NewProviderFactory()
 	providers := factory.GetAvailableProviders()
 	
-	expectedProviders := []string{"whisper_cpp", "openai", "elevenlabs", "custom_http"}
+	expectedProviders := []string{"whisper_cpp", "openai", "elevenlabs", "ssh_whisper", "whisper_server", "custom_http"}
 	
 	if len(providers) != len(expectedProviders) {
 		t.Errorf("Expected %d providers, got %d", len(expectedProviders), len(providers))

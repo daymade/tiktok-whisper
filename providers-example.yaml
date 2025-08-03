@@ -1,0 +1,173 @@
+# Comprehensive Provider Configuration Example
+# This file demonstrates all available provider types and their configurations
+
+# Default provider to use when none specified
+default_provider: "whisper_cpp"
+
+# Provider configurations
+providers:
+  # Local Whisper.cpp Provider
+  whisper_cpp:
+    type: "whisper_cpp"
+    enabled: true
+    settings:
+      binary_path: "${WHISPER_CPP_BINARY:-./whisper.cpp/main}"
+      model_path: "${WHISPER_CPP_MODEL:-./whisper.cpp/models/ggml-large-v2.bin}"
+      language: "zh"
+      prompt: "以下是简体中文普通话:"
+      threads: 4
+    performance:
+      timeout_sec: 300
+      max_concurrency: 2
+    error_handling:
+      max_retries: 2
+      retry_delay_ms: 1000
+
+  # OpenAI API Provider
+  openai:
+    type: "openai"
+    enabled: true
+    settings:
+      api_key: "${OPENAI_API_KEY}"
+      model: "whisper-1"
+      language: "zh"
+      prompt: "以下是简体中文普通话:"
+      temperature: 0.0
+      response_format: "text"
+    performance:
+      timeout_sec: 60
+      max_concurrency: 5
+    error_handling:
+      max_retries: 3
+      retry_delay_ms: 1000
+
+  # ElevenLabs Speech-to-Text Provider
+  elevenlabs:
+    type: "elevenlabs"
+    enabled: false
+    settings:
+      api_key: "${ELEVENLABS_API_KEY}"
+      language_code: "zh"
+      model: "eleven_whisper_v2"
+    performance:
+      timeout_sec: 120
+      max_concurrency: 3
+    error_handling:
+      max_retries: 2
+      retry_delay_ms: 1000
+
+  # SSH Remote Whisper Provider
+  ssh_whisper:
+    type: "ssh_whisper"
+    enabled: true
+    settings:
+      host: "${REMOTE_USER:-daymade}@${REMOTE_HOST:-mac-mini-m4-1.local}"
+      remote_dir: "/Users/daymade/Workspace/cpp/whisper.cpp"
+      binary_path: "./build/bin/whisper-cli"
+      model_path: "models/ggml-large-v3.bin"
+      language: "zh"
+      prompt: "以下是简体中文普通话:"
+      threads: 6
+    performance:
+      timeout_sec: 180
+      max_concurrency: 1
+    error_handling:
+      max_retries: 2
+      retry_delay_ms: 2000
+
+  # HTTP Whisper Server Provider (Local)
+  whisper_server_local:
+    type: "whisper_server"
+    enabled: true
+    settings:
+      base_url: "http://${LOCAL_HOST:-localhost}:${HTTP_PORT:-8080}"
+      inference_path: "/inference"
+      load_path: "/load"
+      timeout: 60
+      language: "auto"
+      response_format: "json"
+      temperature: 0.0
+      translate: false
+      no_timestamps: false
+      word_threshold: 0.01
+      max_length: 0
+      custom_headers: {}
+      insecure_skip_tls: false
+    performance:
+      timeout_sec: 120
+      max_concurrency: 2
+    error_handling:
+      max_retries: 3
+      retry_delay_ms: 1000
+
+  # HTTP Whisper Server Provider (Remote via SSH tunnel)
+  whisper_server_tunnel:
+    type: "whisper_server"
+    enabled: false
+    settings:
+      base_url: "http://localhost:8082"  # SSH tunnel endpoint
+      inference_path: "/inference"
+      load_path: "/load"
+      timeout: 180
+      language: "zh"
+      response_format: "text"
+      prompt: "以下是简体中文普通话:"
+    performance:
+      timeout_sec: 180
+      max_concurrency: 1
+    error_handling:
+      max_retries: 2
+      retry_delay_ms: 2000
+
+# Orchestrator configuration
+orchestrator:
+  # Fallback chain when primary provider fails
+  fallback_chain: ["whisper_cpp", "openai", "ssh_whisper"]
+  
+  # Health check settings
+  health_check_interval: "10m"
+  health_check_timeout: "30s"
+  
+  # Global settings
+  global_timeout_sec: 600
+  max_retries: 1
+  retry_delay: "5s"
+  prefer_local: true
+  
+  # Router rules for provider selection
+  router_rules:
+    # Route by language
+    by_language:
+      zh: "whisper_cpp"
+      en: "openai"
+      auto: "openai"
+    
+    # Route by file size (in MB)
+    by_file_size:
+      small: "openai"        # < 10MB
+      medium: "whisper_cpp"  # 10-50MB  
+      large: "ssh_whisper"   # > 50MB
+    
+    # Route by quality requirements
+    by_quality:
+      high: "whisper_cpp"
+      standard: "openai"
+      fast: "whisper_server_local"
+  
+  # Load balancing strategy
+  load_balancing:
+    strategy: "round_robin"  # Options: round_robin, least_connections, weighted
+    weights:
+      whisper_cpp: 3
+      openai: 2
+      ssh_whisper: 1
+
+# Environment Variables Reference:
+# WHISPER_CPP_BINARY - Path to whisper.cpp binary
+# WHISPER_CPP_MODEL - Path to whisper model file
+# OPENAI_API_KEY - OpenAI API key
+# ELEVENLABS_API_KEY - ElevenLabs API key
+# REMOTE_HOST - Remote host for SSH connections
+# REMOTE_USER - Remote user for SSH connections
+# LOCAL_HOST - Local host for services
+# HTTP_PORT - HTTP port for whisper server

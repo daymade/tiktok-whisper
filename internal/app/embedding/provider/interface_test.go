@@ -129,7 +129,7 @@ func TestEmbeddingProviderBasicGeneration(t *testing.T) {
 		provider EmbeddingProvider
 	}{
 		{"MockProvider", NewMockProvider(768)},
-		{"GeminiProvider", NewGeminiProvider("test-key")}, // Mock implementation
+		// Note: GeminiProvider removed - requires real API key, tested in integration tests
 	}
 
 	ctx := context.Background()
