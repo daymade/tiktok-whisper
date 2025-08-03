@@ -10,6 +10,7 @@ import (
 	"tiktok-whisper/internal/app/api"
 	"tiktok-whisper/internal/app/api/openai"
 	"tiktok-whisper/internal/app/api/openai/whisper"
+	"tiktok-whisper/internal/app/api/provider"
 	"tiktok-whisper/internal/app/api/whisper_cpp"
 	"tiktok-whisper/internal/app/converter"
 	"tiktok-whisper/internal/app/repository"
@@ -29,6 +30,19 @@ func provideLocalTranscriber() api.Transcriber {
 	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
 }
 
+// provideEnhancedTranscriber provides the provider framework-based transcriber
+func provideEnhancedTranscriber() api.Transcriber {
+	// Try to use the provider framework
+	transcriber := provider.NewSimpleProviderTranscriber()
+	if transcriber != nil {
+		return transcriber
+	}
+	
+	// Fallback to local transcriber if provider framework fails
+	log.Println("Provider framework initialization failed, falling back to local transcriber")
+	return provideLocalTranscriber()
+}
+
 func provideTranscriptionDAO() repository.TranscriptionDAO {
 	projectRoot, err := files.GetProjectRoot()
 	if err != nil {
@@ -40,11 +54,11 @@ func provideTranscriptionDAO() repository.TranscriptionDAO {
 }
 
 func InitializeConverter() *converter.Converter {
-	wire.Build(converter.NewConverter, provideLocalTranscriber, provideTranscriptionDAO)
+	wire.Build(converter.NewConverter, provideEnhancedTranscriber, provideTranscriptionDAO)
 	return &converter.Converter{}
 }
 
 func InitializeProgressAwareConverter(config converter.ProgressConfig) *converter.ProgressAwareConverter {
-	wire.Build(converter.NewConverter, converter.NewProgressAwareConverter, provideLocalTranscriber, provideTranscriptionDAO)
+	wire.Build(converter.NewConverter, converter.NewProgressAwareConverter, provideEnhancedTranscriber, provideTranscriptionDAO)
 	return &converter.ProgressAwareConverter{}
 }

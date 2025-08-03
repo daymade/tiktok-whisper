@@ -221,7 +221,7 @@ func (pac *ProgressAwareConverter) ConvertVideosWithProgress(fileFullpaths []str
 	return nil
 }
 
-func (pac *ProgressAwareConverter) ConvertAudiosWithProgress(audioFiles []string, outputDirectory string, parallel int) error {
+func (pac *ProgressAwareConverter) ConvertAudiosWithProgress(audioFiles []string, outputDirectory string, userNickname string, parallel int) error {
 	if len(audioFiles) == 0 {
 		return nil
 	}
@@ -244,7 +244,7 @@ func (pac *ProgressAwareConverter) ConvertAudiosWithProgress(audioFiles []string
 			defer progressBar.Increment()
 			
 			sem <- true
-			pac.processFile(file, transcriptionDirectory)
+			pac.processFile(file, transcriptionDirectory, userNickname)
 			<-sem
 		}(file)
 	}
@@ -271,7 +271,7 @@ func (pac *ProgressAwareConverter) ConvertVideoDirWithProgress(userNickname stri
 	return pac.ConvertVideosWithProgress(fileFullpaths, userNickname, convertCount, parallel)
 }
 
-func (pac *ProgressAwareConverter) ConvertAudioDirWithProgress(directory string, extension string, outputDirectory string, convertCount int, parallel int) error {
+func (pac *ProgressAwareConverter) ConvertAudioDirWithProgress(userNickname string, directory string, extension string, outputDirectory string, convertCount int, parallel int) error {
 	absDir, err := files.GetAbsolutePath(directory)
 	if err != nil {
 		log.Printf("Error getting absolute path of directory %s: %v\n", directory, err)
@@ -295,7 +295,7 @@ func (pac *ProgressAwareConverter) ConvertAudioDirWithProgress(directory string,
 
 	log.Printf("Found %d files to convert\n", len(audioFiles))
 
-	err = pac.ConvertAudiosWithProgress(audioFiles, outputDirectory, parallel)
+	err = pac.ConvertAudiosWithProgress(audioFiles, outputDirectory, userNickname, parallel)
 	if err != nil {
 		log.Printf("Error converting audio files: %v\n", err)
 		return err

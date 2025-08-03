@@ -33,9 +33,10 @@ func (c *Converter) Close() error {
 }
 
 // ConvertAudioDir converts audio files in a directory to text in parallel.
-// It takes the directory, the file extension of the audios, the output directory,
+// It takes the user nickname, directory, the file extension of the audios, the output directory,
 // and the number of parallel conversions as parameters.
-func (c *Converter) ConvertAudioDir(directory string,
+func (c *Converter) ConvertAudioDir(userNickname string,
+	directory string,
 	extension string,
 	outputDirectory string,
 	convertCount int,
@@ -63,7 +64,7 @@ func (c *Converter) ConvertAudioDir(directory string,
 
 	log.Printf("Found %d files to convert\n", len(files))
 
-	err = c.ConvertAudios(files, outputDirectory, parallel)
+	err = c.ConvertAudios(files, outputDirectory, userNickname, parallel)
 	if err != nil {
 		log.Printf("Error converting audio files: %v\n", err)
 		return err
@@ -74,7 +75,7 @@ func (c *Converter) ConvertAudioDir(directory string,
 	return nil
 }
 
-func (c *Converter) ConvertAudios(audioFiles []string, outputDirectory string, parallel int) error {
+func (c *Converter) ConvertAudios(audioFiles []string, outputDirectory string, userNickname string, parallel int) error {
 	transcriptionDirectory, err := filepath.Abs(outputDirectory)
 	if err != nil {
 		return err
@@ -88,7 +89,7 @@ func (c *Converter) ConvertAudios(audioFiles []string, outputDirectory string, p
 		go func(file string) {
 			defer wg.Done()
 			sem <- true
-			c.processFile(file, transcriptionDirectory)
+			c.processFile(file, transcriptionDirectory, userNickname)
 			<-sem
 		}(file)
 	}
@@ -96,12 +97,19 @@ func (c *Converter) ConvertAudios(audioFiles []string, outputDirectory string, p
 	return nil
 }
 
-func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory string) {
+func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory string, userNickname string) {
 	log.Printf("Start to process %s\n", audioAbsPath)
 
+	// Start transcription
+	log.Printf("Starting transcription of file %s\n", audioAbsPath)
+	
 	transcription, err := c.transcriber.Transcript(audioAbsPath)
 	if err != nil {
 		log.Printf("Transcription error: %v\n", err)
+		// Record error to database
+		fileName := filepath.Base(audioAbsPath)
+		c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, 0, "", 
+			time.Now(), 1, fmt.Sprintf("Transcription error: %v", err))
 		return
 	}
 
@@ -113,8 +121,23 @@ func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory stri
 	err = files.WriteToFile(transcription, transcriptionFilepath)
 	if err != nil {
 		log.Printf("Error writing to audioAbsPath: %v\n", err)
+		// Record error to database
+		c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, 0, transcription,
+			time.Now(), 1, fmt.Sprintf("File write error: %v", err))
 		return
 	}
+	
+	// Get audio duration
+	duration, err := audio.GetAudioDuration(audioAbsPath)
+	if err != nil {
+		log.Printf("Failed to get audio duration: %v\n", err)
+		duration = 0 // Use 0 if we can't get duration
+	}
+	
+	// Save successful transcription to database
+	c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, duration, transcription, 
+		time.Now(), 0, "")
+	
 	log.Printf("Transcription saved to: %s\n", transcriptionFilepath)
 }
 

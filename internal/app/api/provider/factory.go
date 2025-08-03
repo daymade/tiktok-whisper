@@ -115,9 +115,19 @@ func (f *DefaultProviderFactory) createSSHWhisperProvider(config map[string]inte
 
 // createWhisperServerProvider creates a whisper-server HTTP provider
 func (f *DefaultProviderFactory) createWhisperServerProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	// TODO: Implement without import cycle
-	// return whisper_server.NewWhisperServerProviderFromSettings(config)
-	return nil, fmt.Errorf("whisper_server provider creation not yet implemented in factory")
+	// Extract settings
+	settings, ok := config["settings"].(map[string]interface{})
+	if !ok {
+		settings = config // Try using config directly
+	}
+	
+	// Create provider using direct implementation to avoid import cycle
+	provider := NewDirectWhisperServerProvider(settings)
+	if provider == nil {
+		return nil, fmt.Errorf("failed to create whisper server provider")
+	}
+	
+	return provider, nil
 }
 
 // createCustomHTTPProvider creates a custom HTTP provider (placeholder)

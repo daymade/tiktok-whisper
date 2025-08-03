@@ -12,6 +12,7 @@ import (
 	"tiktok-whisper/internal/app/api"
 	"tiktok-whisper/internal/app/api/openai"
 	"tiktok-whisper/internal/app/api/openai/whisper"
+	"tiktok-whisper/internal/app/api/provider"
 	"tiktok-whisper/internal/app/api/whisper_cpp"
 	"tiktok-whisper/internal/app/converter"
 	"tiktok-whisper/internal/app/repository"
@@ -22,14 +23,14 @@ import (
 // Injectors from wire.go:
 
 func InitializeConverter() *converter.Converter {
-	transcriber := provideLocalTranscriber()
+	transcriber := provideEnhancedTranscriber()
 	transcriptionDAO := provideTranscriptionDAO()
 	converterConverter := converter.NewConverter(transcriber, transcriptionDAO)
 	return converterConverter
 }
 
 func InitializeProgressAwareConverter(config converter.ProgressConfig) *converter.ProgressAwareConverter {
-	transcriber := provideLocalTranscriber()
+	transcriber := provideEnhancedTranscriber()
 	transcriptionDAO := provideTranscriptionDAO()
 	converterConverter := converter.NewConverter(transcriber, transcriptionDAO)
 	progressAwareConverter := converter.NewProgressAwareConverter(converterConverter, config)
@@ -48,6 +49,17 @@ func provideLocalTranscriber() api.Transcriber {
 	binaryPath := "/Volumes/SSD2T/workspace/cpp/whisper.cpp/main"
 	modelPath := "/Volumes/SSD2T/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
 	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
+}
+
+// provideEnhancedTranscriber provides the provider framework-based transcriber
+func provideEnhancedTranscriber() api.Transcriber {
+
+	transcriber := provider.NewSimpleProviderTranscriber()
+	if transcriber != nil {
+		return transcriber
+	}
+	log.Println("Provider framework initialization failed, falling back to local transcriber")
+	return provideLocalTranscriber()
 }
 
 func provideTranscriptionDAO() repository.TranscriptionDAO {
