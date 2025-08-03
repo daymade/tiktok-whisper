@@ -4,7 +4,7 @@
 
 ## About tiktok-whisper-video-to-text-go
 
-![demo_download_xiaoyuzhou](doc/demo/download_xiaoyuzhou.gif)
+![demo_download_xiaoyuzhou](docs/assets/download_xiaoyuzhou.gif)
 
 使用 openai 的 whisper 或者本地 coreML 的 whisper.cpp 批量将视频转换为文字
 

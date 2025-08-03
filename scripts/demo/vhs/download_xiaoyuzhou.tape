@@ -4,7 +4,7 @@ Set FontSize 20
 Set Width 1550
 Set Height 400
 
-Output doc/demo/download_xiaoyuzhou.gif
+Output docs/assets/download_xiaoyuzhou.gif
 
 Type "./v2t download"
 Type " "
