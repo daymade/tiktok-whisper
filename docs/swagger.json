@@ -1,0 +1,932 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "RESTful API for the TikTok Whisper CLI tool providing audio transcription services\n\nThis API provides 1:1 mapping of CLI commands to RESTful endpoints for:\n- Transcription management (convert command)\n- Provider management (providers command)\n- Download operations (download command)\n- Embedding operations (embed command)\n- Export functionality (export command)\n- Configuration management (config command)",
+        "title": "TikTok Whisper API",
+        "termsOfService": "https://github.com/your-org/tiktok-whisper",
+        "contact": {
+            "name": "TikTok Whisper API Support",
+            "url": "https://github.com/your-org/tiktok-whisper/issues",
+            "email": "support@example.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {
+        "/providers": {
+            "get": {
+                "description": "Retrieves a list of all registered transcription providers with their capabilities and status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "providers"
+                ],
+                "summary": "List all available providers",
+                "responses": {
+                    "200": {
+                        "description": "List of providers\" SchemaExample({\"providers\": [{\"id\": \"openai/whisper\", \"name\": \"OpenAI Whisper\", \"type\": \"remote\", \"available\": true, \"health_status\": \"healthy\"}]})",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/providers/{id}": {
+            "get": {
+                "description": "Retrieves detailed information about a specific transcription provider including capabilities and configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "providers"
+                ],
+                "summary": "Get provider details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "openai/whisper",
+                        "description": "Provider ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Provider details",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.ProviderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - provider ID required",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Provider not found",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/providers/{id}/stats": {
+            "get": {
+                "description": "Retrieves detailed usage statistics for a provider including request counts, success rates, and performance metrics",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "providers"
+                ],
+                "summary": "Get provider usage statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "openai/whisper",
+                        "description": "Provider ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Provider usage statistics",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.ProviderStatsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - provider ID required",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Provider not found",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/providers/{id}/status": {
+            "get": {
+                "description": "Performs a health check on a specific provider and returns current status with response time",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "providers"
+                ],
+                "summary": "Get provider health status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "openai/whisper",
+                        "description": "Provider ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Provider health status",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.ProviderStatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - provider ID required",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Provider not found",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/providers/{id}/test": {
+            "post": {
+                "description": "Tests a provider with an optional audio file to verify it's working correctly",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "providers"
+                ],
+                "summary": "Test a provider",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"openai/whisper\"",
+                        "description": "Provider ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Test request with optional audio file path",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.TestProviderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Test result",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.TestProviderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request (invalid provider ID)",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Provider not found",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/transcriptions": {
+            "get": {
+                "description": "Retrieves a paginated list of transcriptions with optional filtering by user, status, and provider",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transcriptions"
+                ],
+                "summary": "List transcriptions with pagination",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by user ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "pending",
+                            "processing",
+                            "completed",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "whisper_cpp",
+                            "openai/whisper",
+                            "elevenlabs"
+                        ],
+                        "type": "string",
+                        "description": "Filter by provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "created_at",
+                            "updated_at",
+                            "duration",
+                            "file_size"
+                        ],
+                        "type": "string",
+                        "default": "created_at",
+                        "description": "Sort field",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of transcriptions with pagination",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.PaginatedTranscriptionsResponse"
+                        },
+                        "headers": {
+                            "X-Total-Count": {
+                                "type": "string",
+                                "description": "Total number of transcriptions"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid query parameters",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new audio transcription job with specified provider and options",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transcriptions"
+                ],
+                "summary": "Create a new transcription job",
+                "parameters": [
+                    {
+                        "description": "Transcription creation data",
+                        "name": "transcription",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.CreateTranscriptionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Transcription created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.TranscriptionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid input data",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/transcriptions/{id}": {
+            "get": {
+                "description": "Retrieves detailed information about a specific transcription job",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transcriptions"
+                ],
+                "summary": "Get transcription by ID",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Transcription ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transcription details",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.TranscriptionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Transcription not found",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Soft deletes a transcription job by its ID. The transcription data is marked as deleted but not permanently removed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transcriptions"
+                ],
+                "summary": "Delete a transcription",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Transcription ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Transcription deleted successfully"
+                    },
+                    "400": {
+                        "description": "Bad request - invalid ID",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Transcription not found",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/tiktok-whisper_internal_api_errors.APIError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "tiktok-whisper_internal_api_errors.APIError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "kind": {
+                    "$ref": "#/definitions/tiktok-whisper_internal_api_errors.ErrorKind"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_errors.ErrorKind": {
+            "type": "string",
+            "enum": [
+                "validation",
+                "not_found",
+                "unauthorized",
+                "forbidden",
+                "conflict",
+                "internal",
+                "service_unavailable",
+                "bad_request"
+            ],
+            "x-enum-varnames": [
+                "KindValidation",
+                "KindNotFound",
+                "KindUnauthorized",
+                "KindForbidden",
+                "KindConflict",
+                "KindInternal",
+                "KindServiceUnavailable",
+                "KindBadRequest"
+            ]
+        },
+        "tiktok-whisper_internal_api_v1_dto.CreateTranscriptionRequest": {
+            "type": "object",
+            "required": [
+                "file_path"
+            ],
+            "properties": {
+                "file_path": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "options": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "output_format": {
+                    "type": "string",
+                    "enum": [
+                        "text",
+                        "json",
+                        "srt",
+                        "vtt"
+                    ]
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.PaginatedTranscriptionsResponse": {
+            "type": "object",
+            "properties": {
+                "pagination": {
+                    "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.PaginationResponse"
+                },
+                "transcriptions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.TranscriptionResponse"
+                    }
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.PaginationResponse": {
+            "type": "object",
+            "properties": {
+                "has_next": {
+                    "type": "boolean"
+                },
+                "has_prev": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.ProviderCapabilities": {
+            "type": "object",
+            "properties": {
+                "max_duration_sec": {
+                    "type": "integer"
+                },
+                "max_file_size_mb": {
+                    "type": "integer"
+                },
+                "supports_languages": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "supports_models": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "supports_streaming": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.ProviderResponse": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "boolean"
+                },
+                "capabilities": {
+                    "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.ProviderCapabilities"
+                },
+                "configuration": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "description": {
+                    "type": "string"
+                },
+                "health_status": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "last_health_check": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "requires_api_key": {
+                    "type": "boolean"
+                },
+                "supported_formats": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.ProviderStatsResponse": {
+            "type": "object",
+            "properties": {
+                "average_response_time_ms": {
+                    "type": "number"
+                },
+                "failed_requests": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_used": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "period_end": {
+                    "type": "string"
+                },
+                "period_start": {
+                    "type": "string"
+                },
+                "success_rate": {
+                    "type": "number"
+                },
+                "successful_requests": {
+                    "type": "integer"
+                },
+                "total_audio_duration_sec": {
+                    "type": "number"
+                },
+                "total_processing_time_ms": {
+                    "type": "integer"
+                },
+                "total_requests": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.ProviderStatusResponse": {
+            "type": "object",
+            "properties": {
+                "checked_at": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "response_time_ms": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.SegmentResponse": {
+            "type": "object",
+            "properties": {
+                "confidence": {
+                    "type": "number"
+                },
+                "end": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "start": {
+                    "type": "number"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "words": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.WordResponse"
+                    }
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.TestProviderRequest": {
+            "type": "object",
+            "properties": {
+                "options": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "test_file": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.TestProviderResponse": {
+            "type": "object",
+            "properties": {
+                "error_message": {
+                    "type": "string"
+                },
+                "response_time_ms": {
+                    "type": "integer"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "test_result": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "tested_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.TranscriptionResponse": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "number"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "file_hash": {
+                    "type": "string"
+                },
+                "file_path": {
+                    "type": "string"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "model": {
+                    "type": "string"
+                },
+                "processing_time_ms": {
+                    "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "segments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tiktok-whisper_internal_api_v1_dto.SegmentResponse"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transcription": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "tiktok-whisper_internal_api_v1_dto.WordResponse": {
+            "type": "object",
+            "properties": {
+                "confidence": {
+                    "type": "number"
+                },
+                "end": {
+                    "type": "number"
+                },
+                "start": {
+                    "type": "number"
+                },
+                "word": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
