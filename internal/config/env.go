@@ -111,28 +111,6 @@ func RequireAPIKeys(apiKeys *APIKeys) error {
 	return nil
 }
 
-// GetProjectRoot finds the project root directory by looking for go.mod
-func GetProjectRoot() (string, error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	for {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir, nil
-		}
-
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-
-	return "", fmt.Errorf("could not find project root (go.mod not found)")
-}
-
 // InitializeConfig loads environment and validates configuration
 // This is the main entry point for configuration loading
 func InitializeConfig() (*APIKeys, error) {
