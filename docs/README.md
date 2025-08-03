@@ -2,54 +2,69 @@
 
 This directory contains technical documentation for the tiktok-whisper project.
 
-## 📚 Current Documentation (2025-07-23)
-
-### Active Documents
-- **`TRACKPAD_GESTURE_SYSTEM.md`** - Jon Ive-level trackpad interaction system documentation
-- **`DUAL_EMBEDDING_TDD_PLAN.md`** - TDD implementation plan for dual embedding system
-- **`IMPLEMENTATION_SUMMARY.md`** - Completion summary of embedding system implementation
-
-### Configuration & Setup
-- **`CURRENT_PGVECTOR_STATUS.md`** - PostgreSQL pgvector database status
-- **`COMPREHENSIVE_TEST_PLAN.md`** - Testing strategy and plan
-
-## 📜 Historical Documents (Archive)
-
-### Early Design Documents
-- **`TRANSCRIPTION_EMBEDDINGS_DESIGN.md`** - ⚠️ **DEPRECATED** - Early embedding design (superseded by DUAL_EMBEDDING_TDD_PLAN.md)
-- **`EMBEDDING_IMPLEMENTATION_PLAN.md`** - ⚠️ **DEPRECATED** - Original implementation plan (implementation complete)
-
-## 🗂️ Document Categories
+## 📚 Active Documentation
 
 ### System Architecture
-- Current: `DUAL_EMBEDDING_TDD_PLAN.md`, `TRACKPAD_GESTURE_SYSTEM.md`
-- Archive: `TRANSCRIPTION_EMBEDDINGS_DESIGN.md`
+- **`PROVIDER_FRAMEWORK_ARCHITECTURE.md`** - Provider framework comprehensive design
+- **`SSH_WHISPER_PROVIDER.md`** - SSH-based remote whisper provider
+- **`WHISPER_SERVER_PROVIDER.md`** - HTTP whisper-server provider
+- **`PROVIDER_QUICK_START.md`** - Quick start guide for providers
 
-### Implementation Reports  
-- Current: `IMPLEMENTATION_SUMMARY.md`
-- Archive: `EMBEDDING_IMPLEMENTATION_PLAN.md`
+### Features
+- **`DUAL_EMBEDDING_TDD_PLAN.md`** - TDD implementation plan for dual embedding system
+- **`TRACKPAD_GESTURE_SYSTEM.md`** - Jon Ive-level trackpad interaction system
+
+### Implementation & Status
+- **`IMPLEMENTATION_SUMMARY.md`** - Embedding system implementation summary
+- **`DATABASE_MIGRATION_COMPLETED.md`** - Database migration final report
+- **`CURRENT_PGVECTOR_STATUS.md`** - PostgreSQL pgvector database status
 
 ### Testing & Quality
-- Current: `COMPREHENSIVE_TEST_PLAN.md`
+- **`COMPREHENSIVE_TEST_PLAN.md`** - Testing strategy and plan
+- **`INTEGRATION_TESTING.md`** - Integration testing guide
 
-## 🧹 Cleanup Recommendations
+### Maintenance
+- **`FINAL_CLEANUP_SUMMARY.md`** - Final cleanup and maintainability summary
+- **`MAINTAINABILITY_REVIEW.md`** - Code maintainability analysis
 
-### Files Safe to Archive/Remove
-1. `TRANSCRIPTION_EMBEDDINGS_DESIGN.md` - Superseded by newer documents
-2. `EMBEDDING_IMPLEMENTATION_PLAN.md` - Implementation completed
+## 📂 Archived Documents
 
-### Files to Keep
-1. All documents marked as "Current" above
-2. `CURRENT_PGVECTOR_STATUS.md` - Contains current database state
-3. `COMPREHENSIVE_TEST_PLAN.md` - Future testing reference
+### Migration History (`archive/migration_20250803/`)
+- `DATABASE_OPTIMIZATION_PLAN.md` - Original optimization plan
+- `DATABASE_MIGRATION_PLAN.md` - Original migration plan
+- `DATABASE_MIGRATION_REVIEW.md` - Migration review report
+
+### Provider Design (`archive/provider_design/`)
+- `PROVIDER_FRAMEWORK_DESIGN.md` - Early provider framework design
+
+### Embedding Design (`archive/embedding_design/`)
+- `TRANSCRIPTION_EMBEDDINGS_DESIGN.md` - Early embedding design (deprecated)
+- `EMBEDDING_IMPLEMENTATION_PLAN.md` - Original implementation plan (deprecated)
+
+### Cleanup History (`archive/cleanup_20250803/`)
+- `CLEANUP_SUMMARY_20250803.md` - Initial cleanup summary
+- `CLEANUP_REVIEW_20250803.md` - Mid-process cleanup review
+
+## 🗂️ Documentation Categories
+
+### Current Features
+1. **Provider System** - Complete documentation for the provider framework
+2. **Embedding System** - Dual embedding with OpenAI and Gemini
+3. **Database** - SQLite with migration to enhanced schema
+4. **UI/UX** - Advanced trackpad gesture system
+
+### Development Guides
+1. **Integration Testing** - How to run and add tests
+2. **Provider Quick Start** - Getting started with providers
+3. **Maintenance** - Code quality and cleanup guidelines
 
 ## 📝 Documentation Standards
 
-- **Naming**: Use descriptive filenames with dates when relevant
 - **Status**: Mark deprecated documents clearly
-- **Dependencies**: Reference related documents
-- **Updates**: Include last modified dates
+- **Archive**: Move outdated docs to appropriate archive folders
+- **Updates**: Include dates in filenames for time-sensitive docs
+- **Cross-references**: Link related documents
 
 ---
 
-*Last Updated: 2025-07-23*
+*Last Updated: 2025-08-03*
