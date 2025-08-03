@@ -206,8 +206,8 @@ v2t convert --audio --input audio.wav --provider whisper_server
 ## Next Steps
 
 1. Read detailed provider documentation:
-   - [Whisper-Server Provider](./WHISPER_SERVER_PROVIDER.md)
-   - [SSH Whisper Provider](./SSH_WHISPER_PROVIDER.md)
+   - [Whisper-Server Provider](../01-architecture/WHISPER_SERVER_PROVIDER.md)
+   - [SSH Whisper Provider](../01-architecture/SSH_WHISPER_PROVIDER.md)
 
 2. Explore advanced features:
    - Provider orchestration
