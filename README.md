@@ -4,7 +4,7 @@
 
 ## About tiktok-whisper-video-to-text-go
 
-![demo_download_xiaoyuzhou](doc/demo/download_xiaoyuzhou.gif)
+![demo_download_xiaoyuzhou](docs/assets/download_xiaoyuzhou.gif)
 
 Batch convert videos to text using OpenAI's Whisper or the local coreML whisper.cpp.
 
