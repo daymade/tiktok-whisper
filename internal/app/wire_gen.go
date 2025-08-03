@@ -8,6 +8,7 @@ package app
 
 import (
 	"log"
+	"os"
 	"path/filepath"
 	"tiktok-whisper/internal/app/api"
 	"tiktok-whisper/internal/app/api/openai"
@@ -37,6 +38,14 @@ func InitializeProgressAwareConverter(config converter.ProgressConfig) *converte
 	return progressAwareConverter
 }
 
+// InitializeConverterCompat creates a backward-compatible converter that uses V2 DAO
+func InitializeConverterCompat() *converter.Converter {
+	transcriber := provideEnhancedTranscriber()
+	transcriptionDAOV2 := provideTranscriptionDAOV2()
+	converterConverter := converter.NewConverter(transcriber, transcriptionDAOV2)
+	return converterConverter
+}
+
 // wire.go:
 
 // provideRemoteTranscriber with openai's remote service conversion, must set environment variable OPENAI_API_KEY
@@ -46,8 +55,17 @@ func provideRemoteTranscriber() api.Transcriber {
 
 // provideLocalTranscriber with native whisper.cpp conversion, you need to compile whisper.cpp/main executable by yourself
 func provideLocalTranscriber() api.Transcriber {
-	binaryPath := "/Volumes/SSD2T/workspace/cpp/whisper.cpp/main"
-	modelPath := "/Volumes/SSD2T/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
+
+	binaryPath := os.Getenv("WHISPER_CPP_BINARY")
+	if binaryPath == "" {
+		binaryPath = "./whisper.cpp/main"
+	}
+
+	modelPath := os.Getenv("WHISPER_CPP_MODEL")
+	if modelPath == "" {
+		modelPath = "./whisper.cpp/models/ggml-large-v2.bin"
+	}
+
 	return whisper_cpp.NewLocalTranscriber(binaryPath, modelPath)
 }
 
@@ -70,4 +88,17 @@ func provideTranscriptionDAO() repository.TranscriptionDAO {
 
 	dbPath := filepath.Join(projectRoot, "data/transcription.db")
 	return sqlite.NewSQLiteDB(dbPath)
+}
+
+// provideTranscriptionDAOV2 provides the enhanced DAO with new fields support
+func provideTranscriptionDAOV2() repository.TranscriptionDAOV2 {
+	projectRoot, err := files.GetProjectRoot()
+	if err != nil {
+		log.Fatalf("Failed to get project root: %v\n", err)
+	}
+
+	dbPath := filepath.Join(projectRoot, "data/transcription.db")
+	db := sqlite.NewSQLiteDB(dbPath)
+
+	return db
 }

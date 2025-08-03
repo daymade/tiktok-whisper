@@ -212,8 +212,8 @@ func (cm *ConfigManager) createDefaultConfig() *ProviderConfiguration {
 				Type:    "whisper_cpp",
 				Enabled: true,
 				Settings: map[string]interface{}{
-					"binary_path": "/Volumes/SSD2T/workspace/cpp/whisper.cpp/main",
-					"model_path":  "/Volumes/SSD2T/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin",
+					"binary_path": "${WHISPER_CPP_BINARY:-./whisper.cpp/main}",
+					"model_path":  "${WHISPER_CPP_MODEL:-./whisper.cpp/models/ggml-large-v2.bin}",
 					"language":    "zh",
 					"prompt":      "以下是简体中文普通话:",
 				},
