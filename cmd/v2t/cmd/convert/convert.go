@@ -135,7 +135,12 @@ var Cmd = &cobra.Command{
 			}
 
 			if directory != "" {
+				// Use userNickname if provided, otherwise use empty string
+				if userNickname == "" {
+					userNickname = "default"
+				}
 				err := progressConverter.ConvertAudioDirWithProgress(
+					userNickname,
 					directory,
 					fileExtension,
 					outputDirectory,
@@ -147,7 +152,10 @@ var Cmd = &cobra.Command{
 					return
 				}
 			} else if inputFile != "" {
-				err := progressConverter.ConvertAudiosWithProgress(strings.Split(inputFile, ","), outputDirectory, parallel)
+				if userNickname == "" {
+					userNickname = "default"
+				}
+				err := progressConverter.ConvertAudiosWithProgress(strings.Split(inputFile, ","), outputDirectory, userNickname, parallel)
 				if err != nil {
 					cmd.PrintErrf("ConvertAudiosWithProgress error: %v\n", err)
 					return
