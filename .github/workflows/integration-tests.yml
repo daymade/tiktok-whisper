@@ -1,0 +1,134 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        go-version: ['1.21', '1.22']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+        go mod tidy
+    
+    - name: Install system dependencies
+      run: |
+        if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg sqlite3
+        elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+          brew install ffmpeg sqlite3
+        fi
+    
+    - name: Run unit tests
+      run: |
+        go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+    
+    - name: Build application
+      run: |
+        make build
+      env:
+        CGO_ENABLED: 1
+    
+    - name: Run integration tests (shell)
+      run: |
+        make test-integration
+      env:
+        CGO_ENABLED: 1
+    
+    - name: Run integration tests (Go)
+      run: |
+        make test-integration-go
+      env:
+        CGO_ENABLED: 1
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.txt
+        flags: unittests
+        name: codecov-umbrella
+    
+    - name: Upload test artifacts
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-artifacts-${{ matrix.os }}-go${{ matrix.go-version }}
+        path: |
+          test/integration_*
+          *.log
+
+  database-migration-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+    
+    - name: Install SQLite
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y sqlite3
+    
+    - name: Create test database
+      run: |
+        mkdir -p data
+        sqlite3 data/transcription.db < scripts/sqlite/sql/create_table.sql
+    
+    - name: Test migration scripts
+      run: |
+        chmod +x scripts/migration/*.sh
+        # Run pre-migration check
+        DB_PATH=./data/transcription.db ./scripts/migration/01_pre_migration_check.sh << EOF
+        no
+        EOF
+    
+    - name: Verify migration readiness
+      run: |
+        sqlite3 data/transcription.db "SELECT COUNT(*) FROM transcriptions;"
+
+  provider-framework-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+    
+    - name: Build application
+      run: |
+        CGO_ENABLED=1 go build -o v2t ./cmd/v2t/main.go
+    
+    - name: Test provider commands
+      run: |
+        ./v2t providers list
+        ./v2t providers config --show
