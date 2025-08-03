@@ -1,0 +1,285 @@
+# Whisper-Server Provider Configuration Examples
+# This configuration demonstrates how to set up whisper-server HTTP providers
+# for various scenarios including local development, LAN deployment, and production
+
+default_provider: "whisper_server_local"
+
+providers:
+  # Local development server
+  whisper_server_local:
+    type: "whisper_server"
+    enabled: true
+    settings:
+      base_url: "http://127.0.0.1:8080"
+      inference_path: "/inference"
+      load_path: "/load"
+      timeout: 60
+      language: "auto"  # Auto-detect language
+      response_format: "json"
+      temperature: 0.0
+      translate: false
+      no_timestamps: false
+      word_threshold: 0.01
+      max_length: 0
+      custom_headers: {}
+      insecure_skip_tls: false
+    performance:
+      timeout_sec: 120
+      max_concurrency: 2
+    error_handling:
+      max_retries: 3
+      retry_delay_ms: 1000
+
+  # LAN server (mac-mini-m4-1.local)
+  whisper_server_lan:
+    type: "whisper_server"
+    enabled: true
+    settings:
+      base_url: "http://mac-mini-m4-1.local:8080"
+      inference_path: "/inference"
+      load_path: "/load"
+      timeout: 180  # Longer timeout for LAN
+      language: "en"
+      response_format: "verbose_json"  # Get detailed results
+      temperature: 0.0
+      translate: false
+      no_timestamps: false
+      word_threshold: 0.01
+      max_length: 0
+      custom_headers:
+        User-Agent: "tiktok-whisper-client/1.0"
+      insecure_skip_tls: false
+    performance:
+      timeout_sec: 300
+      max_concurrency: 1  # Single concurrent request for LAN
+    error_handling:
+      max_retries: 2
+      retry_delay_ms: 2000
+
+  # High-performance server for Chinese content
+  whisper_server_chinese:
+    type: "whisper_server"
+    enabled: true
+    settings:
+      base_url: "http://192.168.1.100:8080"
+      inference_path: "/inference"
+      load_path: "/load"
+      timeout: 240
+      language: "zh"
+      response_format: "verbose_json"
+      temperature: 0.0
+      translate: false  # Keep original Chinese
+      no_timestamps: false
+      word_threshold: 0.01
+      max_length: 0
+      custom_headers:
+        User-Agent: "tiktok-whisper-chinese/1.0"
+        Accept-Language: "zh-CN,zh;q=0.9"
+      insecure_skip_tls: false
+    performance:
+      timeout_sec: 360
+      max_concurrency: 1
+    error_handling:
+      max_retries: 3
+      retry_delay_ms: 3000
+
+  # Translation server (multilingual to English)
+  whisper_server_translate:
+    type: "whisper_server"
+    enabled: false  # Disabled by default
+    settings:
+      base_url: "http://translate-server.example.com:8080"
+      inference_path: "/inference"
+      load_path: "/load"
+      timeout: 300
+      language: "auto"  # Auto-detect then translate
+      response_format: "json"
+      temperature: 0.0
+      translate: true   # Translate everything to English
+      no_timestamps: false
+      word_threshold: 0.01
+      max_length: 0
+      custom_headers:
+        Authorization: "Bearer ${WHISPER_SERVER_TOKEN}"  # Environment variable
+        User-Agent: "tiktok-whisper-translate/1.0"
+      insecure_skip_tls: false
+    performance:
+      timeout_sec: 300
+      max_concurrency: 1
+    error_handling:
+      max_retries: 2
+      retry_delay_ms: 5000
+
+  # Fast transcription server (using tiny model)
+  whisper_server_fast:
+    type: "whisper_server"
+    enabled: true
+    settings:
+      base_url: "http://fast-whisper.local:8080"
+      inference_path: "/inference"
+      load_path: "/load"
+      timeout: 30  # Short timeout for fast model
+      language: "en"
+      response_format: "text"  # Simple text output for speed
+      temperature: 0.0
+      translate: false
+      no_timestamps: true  # No timestamps for speed
+      word_threshold: 0.01
+      max_length: 0
+      custom_headers:
+        User-Agent: "tiktok-whisper-fast/1.0"
+      insecure_skip_tls: false
+    performance:
+      timeout_sec: 60
+      max_concurrency: 4  # Higher concurrency for fast model
+    error_handling:
+      max_retries: 1  # Less retries for speed
+      retry_delay_ms: 500
+
+  # Subtitle generation server
+  whisper_server_subtitles:
+    type: "whisper_server"
+    enabled: true
+    settings:
+      base_url: "http://subtitle-server.local:8080"
+      inference_path: "/inference"
+      load_path: "/load"
+      timeout: 180
+      language: "auto"
+      response_format: "srt"  # SRT subtitle format
+      temperature: 0.0
+      translate: false
+      no_timestamps: false  # Keep timestamps for subtitles
+      word_threshold: 0.01
+      max_length: 50  # Shorter segments for subtitles
+      custom_headers:
+        User-Agent: "tiktok-whisper-subtitles/1.0"
+        Content-Type-Preference: "text/plain"
+      insecure_skip_tls: false
+    performance:
+      timeout_sec: 240
+      max_concurrency: 2
+    error_handling:
+      max_retries: 3
+      retry_delay_ms: 2000
+
+  # Development/testing server
+  whisper_server_dev:
+    type: "whisper_server"
+    enabled: false  # Only enable for development
+    settings:
+      base_url: "http://localhost:8081"
+      inference_path: "/inference"
+      load_path: "/load"
+      timeout: 30
+      language: "en"
+      response_format: "verbose_json"
+      temperature: 0.5  # Higher temperature for testing
+      translate: false
+      no_timestamps: false
+      word_threshold: 0.01
+      max_length: 100
+      custom_headers:
+        X-Debug: "true"
+        User-Agent: "tiktok-whisper-dev/1.0"
+      insecure_skip_tls: true  # Allow self-signed certs in dev
+    performance:
+      timeout_sec: 60
+      max_concurrency: 1
+    error_handling:
+      max_retries: 1
+      retry_delay_ms: 1000
+
+# Global orchestrator configuration
+orchestrator:
+  # Provider selection rules
+  router_rules:
+    by_file_size:
+      small: "whisper_server_fast"      # < 10MB
+      medium: "whisper_server_local"    # 10-50MB
+      large: "whisper_server_lan"       # > 50MB
+    
+    by_language:
+      zh: "whisper_server_chinese"
+      cn: "whisper_server_chinese"
+      en: "whisper_server_local"
+      auto: "whisper_server_local"
+    
+    by_output_format:
+      subtitles: "whisper_server_subtitles"
+      srt: "whisper_server_subtitles"
+      vtt: "whisper_server_subtitles"
+      translate: "whisper_server_translate"
+
+  # Fallback chain for reliability
+  fallback_chain:
+    - "whisper_server_local"
+    - "whisper_server_lan"
+    - "whisper_server_fast"
+
+  # Load balancing settings
+  load_balancing:
+    strategy: "round_robin"  # round_robin, least_connections, random
+    health_check_interval: 30  # seconds
+    failure_threshold: 3
+
+  # Performance preferences
+  performance:
+    prefer_local: true
+    max_concurrent_requests: 5
+    request_timeout_ms: 300000  # 5 minutes
+    connection_pool_size: 10
+
+# Advanced configuration examples
+advanced_examples:
+  # Example 1: Custom HTTP headers for authentication
+  authenticated_server:
+    type: "whisper_server"
+    settings:
+      base_url: "https://secure-whisper.company.com"
+      custom_headers:
+        Authorization: "Bearer ${COMPANY_API_TOKEN}"
+        X-Client-ID: "${CLIENT_ID}"
+        X-Request-ID: "auto-generated"
+
+  # Example 2: High-security deployment
+  secure_server:
+    type: "whisper_server"
+    settings:
+      base_url: "https://whisper-prod.secure.com"
+      insecure_skip_tls: false
+      custom_headers:
+        Authorization: "Bearer ${PROD_TOKEN}"
+        X-Security-Level: "high"
+        User-Agent: "tiktok-whisper-prod/1.0"
+
+  # Example 3: Multi-language routing
+  multilingual_setup:
+    chinese_server:
+      base_url: "http://whisper-zh.local:8080"
+      language: "zh"
+    english_server:
+      base_url: "http://whisper-en.local:8080"
+      language: "en"
+    japanese_server:
+      base_url: "http://whisper-ja.local:8080"
+      language: "ja"
+
+# Usage examples:
+#
+# 1. Start whisper-server on LAN:
+#    ssh daymade@mac-mini-m4-1.local
+#    cd /Users/daymade/Workspace/cpp/whisper.cpp
+#    ./build/bin/whisper-server --host 0.0.0.0 --port 8080 --model models/ggml-base.en.bin
+#
+# 2. Test provider:
+#    v2t providers test whisper_server_lan --file test.wav
+#
+# 3. Use specific provider for transcription:
+#    v2t convert --audio --input audio.wav --provider whisper_server_chinese
+#
+# 4. Generate subtitles:
+#    v2t convert --audio --input video_audio.wav --provider whisper_server_subtitles
+#
+# 5. Translate foreign language to English:
+#    v2t convert --audio --input foreign.wav --provider whisper_server_translate

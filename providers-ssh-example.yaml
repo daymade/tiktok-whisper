@@ -1,0 +1,60 @@
+default_provider: "ssh_whisper"
+
+providers:
+  ssh_whisper:
+    type: "ssh_whisper"
+    enabled: true
+    settings:
+      host: "daymade@mac-mini-m4-1.local"
+      remote_dir: "/Users/daymade/Workspace/cpp/whisper.cpp"
+      binary_path: "./build/bin/whisper-cli"
+      model_path: "models/ggml-base.en.bin"
+      language: "en"
+      prompt: "This is a clear English speech."
+      threads: 4
+    performance:
+      timeout_sec: 120
+      max_concurrency: 1
+    error_handling:
+      max_retries: 2
+      retry_delay_ms: 2000
+
+  ssh_whisper_chinese:
+    type: "ssh_whisper"
+    enabled: true
+    settings:
+      host: "daymade@mac-mini-m4-1.local"
+      remote_dir: "/Users/daymade/Workspace/cpp/whisper.cpp"
+      binary_path: "./build/bin/whisper-cli"
+      model_path: "models/ggml-large-v3.bin"
+      language: "zh"
+      prompt: "以下是简体中文普通话:"
+      threads: 6
+    performance:
+      timeout_sec: 300
+      max_concurrency: 1
+    error_handling:
+      max_retries: 3
+      retry_delay_ms: 3000
+
+orchestrator:
+  fallback_chain: ["ssh_whisper", "ssh_whisper_chinese"]
+  health_check_interval: "10m"
+  max_retries: 1
+  retry_delay: "5s"
+  prefer_local: false
+  router_rules:
+    by_language:
+      zh: "ssh_whisper_chinese"
+      en: "ssh_whisper"
+    by_file_size:
+      small: "ssh_whisper"      # < 10MB, use base model
+      large: "ssh_whisper_chinese"  # > 10MB, use large model
+
+global:
+  global_timeout_sec: 600
+  temp_dir: "/tmp/transcription"
+  log_level: "info"
+  metrics:
+    enabled: true
+    retention_days: 30

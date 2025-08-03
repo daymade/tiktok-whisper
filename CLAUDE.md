@@ -20,8 +20,9 @@ cp .env.example .env
 ```
 
 **Required API Keys:**
-- `OPENAI_API_KEY` - For OpenAI text-embedding-ada-002 (1536 dimensions)
+- `OPENAI_API_KEY` - For OpenAI text-embedding-ada-002 (1536 dimensions) and Whisper transcription
 - `GEMINI_API_KEY` - For Google Gemini embedding-001 (768 dimensions)
+- `ELEVENLABS_API_KEY` - For ElevenLabs Speech-to-Text API (optional)
 
 **Environment Variables:**
 ```bash
@@ -111,6 +112,7 @@ go mod tidy
    - `convert` - Convert audio/video to text
    - `embed` - Generate embeddings for similarity search and duplicate detection
    - `export` - Export transcription results
+   - `providers` - Manage transcription providers (NEW)
    - `config` - Configuration management
    - `version` - Version information
 
@@ -153,6 +155,121 @@ type TranscriptionDAO interface {
 - Set environment variable: `OPENAI_API_KEY`
 - Switch wire configuration to use `provideRemoteTranscriber`
 - Also used for embedding generation in dual embedding system
+
+## Provider Framework (NEW)
+
+The project now features a flexible transcription provider framework that abstracts the transcription process into a configurable, extensible system following SOLID design principles.
+
+### Architecture Overview
+
+For a complete understanding of the provider framework architecture, see:
+- [Provider Framework Architecture Documentation](docs/PROVIDER_FRAMEWORK_ARCHITECTURE.md) - Comprehensive technical design
+- [Provider Quick Start Guide](docs/PROVIDER_QUICK_START.md) - Quick setup and usage
+- [SSH Whisper Provider](docs/SSH_WHISPER_PROVIDER.md) - SSH-based remote transcription
+- [Whisper-Server Provider](docs/WHISPER_SERVER_PROVIDER.md) - HTTP whisper-server integration
+
+### Available Providers
+
+**Built-in Providers:**
+- **whisper_cpp** - Local whisper.cpp binary (default)
+- **openai** - OpenAI Whisper API 
+- **elevenlabs** - ElevenLabs Speech-to-Text API
+- **ssh_whisper** - Remote SSH whisper.cpp provider
+- **whisper_server** - HTTP whisper-server provider
+- **custom_http** - Generic HTTP-based whisper services (planned)
+
+### Provider Configuration
+
+**Configuration File:** `~/.tiktok-whisper/providers.yaml` (auto-created)
+
+```yaml
+default_provider: "whisper_cpp"
+
+providers:
+  whisper_cpp:
+    type: whisper_cpp
+    enabled: true
+    settings:
+      binary_path: "/Volumes/SSD2T/workspace/cpp/whisper.cpp/main"
+      model_path: "/Volumes/SSD2T/workspace/cpp/whisper.cpp/models/ggml-large-v2.bin"
+      language: "zh"
+      prompt: "以下是简体中文普通话:"
+    performance:
+      timeout_sec: 300
+      max_concurrency: 2
+  
+  openai:
+    type: openai
+    enabled: false
+    auth:
+      api_key: "${OPENAI_API_KEY}"
+    settings:
+      model: "whisper-1"
+      response_format: "text"
+    performance:
+      timeout_sec: 60
+      rate_limit_rpm: 50
+
+orchestrator:
+  fallback_chain: ["whisper_cpp", "openai"]
+  prefer_local: true
+  router_rules:
+    by_file_size:
+      small: "whisper_cpp"
+      large: "openai"
+```
+
+### Provider Management CLI
+
+**List all available providers:**
+```bash
+v2t providers list
+```
+
+**Check provider health:**
+```bash
+v2t providers status
+```
+
+**Get provider details:**
+```bash
+v2t providers info openai
+```
+
+**Test a provider:**
+```bash
+v2t providers test whisper_cpp --file test.wav
+```
+
+**Show configuration:**
+```bash
+v2t providers config
+```
+
+### Enhanced Features
+
+**Intelligent Orchestration:**
+- Automatic provider selection based on file characteristics
+- Fallback chains for reliability
+- Load balancing and cost optimization
+
+**Comprehensive Monitoring:**
+- Health checks for all providers
+- Usage statistics and performance metrics
+- Error tracking with retry suggestions
+
+**Advanced Configuration:**
+- Environment variable expansion
+- YAML-based configuration with validation
+- Runtime provider switching
+
+### Backward Compatibility
+
+The framework maintains 100% backward compatibility:
+- All existing CLI commands work unchanged
+- Default behavior remains local whisper.cpp
+- Original `Transcriber` interface still supported
+- Automatic fallback if provider framework fails
 
 ### Database Support
 
