@@ -1,69 +1,70 @@
 # Documentation Overview
 
-This directory contains technical documentation for the tiktok-whisper project.
+Welcome to the tiktok-whisper documentation. The documentation is organized into numbered categories for easy navigation.
 
-## 📚 Active Documentation
+## 📚 Documentation Structure
 
-### System Architecture
-- **`PROVIDER_FRAMEWORK_ARCHITECTURE.md`** - Provider framework comprehensive design
-- **`SSH_WHISPER_PROVIDER.md`** - SSH-based remote whisper provider
-- **`WHISPER_SERVER_PROVIDER.md`** - HTTP whisper-server provider
-- **`PROVIDER_QUICK_START.md`** - Quick start guide for providers
+### [01 - Architecture](01-architecture/)
+System architecture and design documentation
+- Provider Framework Architecture
+- SSH Whisper Provider
+- HTTP Whisper Server Provider
 
-### Features
-- **`DUAL_EMBEDDING_TDD_PLAN.md`** - TDD implementation plan for dual embedding system
-- **`TRACKPAD_GESTURE_SYSTEM.md`** - Jon Ive-level trackpad interaction system
+### [02 - Features](02-features/)
+Main features and their implementations
+- Dual Embedding System (OpenAI + Gemini)
+- Trackpad Gesture System
+- Implementation Summary
 
-### Implementation & Status
-- **`IMPLEMENTATION_SUMMARY.md`** - Embedding system implementation summary
-- **`DATABASE_MIGRATION_COMPLETED.md`** - Database migration final report
-- **`CURRENT_PGVECTOR_STATUS.md`** - PostgreSQL pgvector database status
+### [03 - Guides](03-guides/)
+User guides and tutorials
+- Provider Quick Start Guide
+- (More guides coming soon)
 
-### Testing & Quality
-- **`COMPREHENSIVE_TEST_PLAN.md`** - Testing strategy and plan
-- **`INTEGRATION_TESTING.md`** - Integration testing guide
+### [04 - Development](04-development/)
+Developer documentation
+- Comprehensive Test Plan
+- Integration Testing Guide
+- Maintainability Review
 
-### Maintenance
-- **`FINAL_CLEANUP_SUMMARY.md`** - Final cleanup and maintainability summary
-- **`MAINTAINABILITY_REVIEW.md`** - Code maintainability analysis
+### [05 - Operations](05-operations/)
+Operations and maintenance documentation
+- Database Migration Reports
+- System Maintenance Guides
 
-## 📂 Archived Documents
+### [06 - Reference](06-reference/)
+Reference documentation and system status
+- Current pgvector Status
+- API Reference (coming soon)
 
-### Migration History (`archive/migration_20250803/`)
-- `DATABASE_OPTIMIZATION_PLAN.md` - Original optimization plan
-- `DATABASE_MIGRATION_PLAN.md` - Original migration plan
-- `DATABASE_MIGRATION_REVIEW.md` - Migration review report
+## 🗂️ Archive
 
-### Provider Design (`archive/provider_design/`)
-- `PROVIDER_FRAMEWORK_DESIGN.md` - Early provider framework design
+Historical and deprecated documentation is stored in the [archive](archive/) directory:
+- `migration_20250803/` - Database migration history
+- `provider_design/` - Early provider framework designs
+- `embedding_design/` - Deprecated embedding designs
+- `cleanup_20250803/` - Cleanup process documentation
 
-### Embedding Design (`archive/embedding_design/`)
-- `TRANSCRIPTION_EMBEDDINGS_DESIGN.md` - Early embedding design (deprecated)
-- `EMBEDDING_IMPLEMENTATION_PLAN.md` - Original implementation plan (deprecated)
+## 🎨 Assets
 
-### Cleanup History (`archive/cleanup_20250803/`)
-- `CLEANUP_SUMMARY_20250803.md` - Initial cleanup summary
-- `CLEANUP_REVIEW_20250803.md` - Mid-process cleanup review
-
-## 🗂️ Documentation Categories
-
-### Current Features
-1. **Provider System** - Complete documentation for the provider framework
-2. **Embedding System** - Dual embedding with OpenAI and Gemini
-3. **Database** - SQLite with migration to enhanced schema
-4. **UI/UX** - Advanced trackpad gesture system
-
-### Development Guides
-1. **Integration Testing** - How to run and add tests
-2. **Provider Quick Start** - Getting started with providers
-3. **Maintenance** - Code quality and cleanup guidelines
+Media files and images are stored in the [assets](assets/) directory.
 
 ## 📝 Documentation Standards
 
-- **Status**: Mark deprecated documents clearly
-- **Archive**: Move outdated docs to appropriate archive folders
-- **Updates**: Include dates in filenames for time-sensitive docs
-- **Cross-references**: Link related documents
+### File Naming
+- Use descriptive names in UPPERCASE with underscores
+- Include dates for time-sensitive documents (YYYYMMDD format)
+- Mark deprecated documents clearly
+
+### Organization
+- Place active documents in appropriate numbered directories
+- Move outdated documents to archive with proper categorization
+- Keep README.md in each directory for navigation
+
+### Cross-References
+- Use relative links between documents
+- Update references when moving files
+- Maintain the main README.md as the entry point
 
 ---
 
