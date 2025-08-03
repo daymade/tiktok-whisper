@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"tiktok-whisper/internal/app/util/files"
 )
 
 func TestGetAPIKeys(t *testing.T) {
@@ -218,7 +219,7 @@ func TestRequireAPIKeys(t *testing.T) {
 }
 
 func TestGetProjectRoot(t *testing.T) {
-	root, err := GetProjectRoot()
+	root, err := files.GetProjectRoot()
 	require.NoError(t, err)
 	assert.NotEmpty(t, root)
 
