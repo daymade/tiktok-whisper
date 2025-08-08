@@ -52,6 +52,7 @@ func init() {
 	
 	Cmd.Flags().StringVar(&providerName, "provider", "",
 		"Transcription provider to use (whisper_cpp, openai, elevenlabs, whisper_server, etc.)")
+	
 }
 
 // Cmd represents the convert command
@@ -87,6 +88,7 @@ var Cmd = &cobra.Command{
 			cmd.Help()
 			return
 		}
+
 
 		// Set runtime configuration for provider selection
 		if providerName != "" {
@@ -180,3 +182,4 @@ var Cmd = &cobra.Command{
 		cmd.Help()
 	},
 }
+

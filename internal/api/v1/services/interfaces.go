@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"io"
 
 	"tiktok-whisper/internal/api/v1/dto"
 )
@@ -32,15 +33,20 @@ type DownloadService interface {
 
 // EmbeddingService defines the interface for embedding operations
 type EmbeddingService interface {
-	CreateEmbedding(ctx context.Context, req interface{}) (interface{}, error)
-	GetEmbedding(ctx context.Context, id string) (interface{}, error)
-	SearchEmbeddings(ctx context.Context, req interface{}) (interface{}, error)
+	ListEmbeddings(ctx context.Context, req dto.EmbeddingListRequest) ([]dto.EmbeddingData, error)
+	SearchEmbeddings(ctx context.Context, req dto.EmbeddingSearchRequest) ([]dto.SearchResult, error)
+	GenerateEmbeddings(ctx context.Context, req dto.EmbeddingGenerateRequest) (*dto.EmbeddingGenerateResponse, error)
+}
+
+// StatsService defines the interface for statistics operations
+type StatsService interface {
+	GetSystemStats(ctx context.Context) (*dto.SystemStats, error)
+	GetUserStats(ctx context.Context, req dto.StatsRequest) ([]dto.UserStats, error)
 }
 
 // ExportService defines the interface for export operations
 type ExportService interface {
-	CreateExport(ctx context.Context, req interface{}) (interface{}, error)
-	GetExport(ctx context.Context, id string) (interface{}, error)
+	ExportTranscriptions(ctx context.Context, req dto.ExportRequest, writer io.Writer) error
 }
 
 // ConfigService defines the interface for configuration operations

@@ -1,0 +1,200 @@
+# golangci-lint configuration
+# Run with: golangci-lint run
+
+# Options for analysis running
+run:
+  # Timeout for analysis
+  timeout: 5m
+  
+  # Include test files
+  tests: true
+  
+  # Skip directories
+  skip-dirs:
+    - _deprecated
+    - _deprecated_backup_20250806
+    - vendor
+
+# Output configuration
+output:
+  # Format of output
+  formats:
+    - format: colored-line-number
+  
+  # Print lines of code with issue
+  print-issued-lines: true
+  
+  # Print linter name in the end of issue text
+  print-linter-name: true
+
+# All available linters and their configuration
+linters:
+  enable:
+    # Detect code duplication
+    - dupl
+    
+    # Check for inefficient assignments
+    - ineffassign
+    
+    # Check for unused code
+    - unused
+    - deadcode
+    - structcheck
+    - varcheck
+    
+    # Error handling
+    - errcheck
+    - errorlint
+    
+    # Code complexity
+    - gocyclo
+    - gocognit
+    - maintidx
+    
+    # Best practices
+    - govet
+    - staticcheck
+    - gosimple
+    
+    # Style and formatting
+    - gofmt
+    - goimports
+    
+    # Performance
+    - prealloc
+    
+    # Security
+    - gosec
+    
+    # Comments
+    - godot
+    - misspell
+
+  disable:
+    # Too strict for now
+    - golint
+    - stylecheck
+    - wsl
+    - nlreturn
+
+# Linter-specific settings
+linters-settings:
+  dupl:
+    # Tokens to trigger duplication detection
+    threshold: 100
+    
+  gocyclo:
+    # Minimal cyclomatic complexity to report
+    min-complexity: 15
+    
+  gocognit:
+    # Minimal cognitive complexity to report
+    min-complexity: 20
+    
+  maintidx:
+    # Minimal maintainability index to report
+    under: 20
+    
+  errcheck:
+    # Report about not checking errors in type assertions
+    check-type-assertions: true
+    
+    # Report about assignment of errors to blank identifier
+    check-blank: true
+    
+  govet:
+    # Enable all checks
+    enable-all: true
+    
+  gosec:
+    # Include specific rules
+    includes:
+      - G101 # Look for hard coded credentials
+      - G102 # Bind to all interfaces
+      - G103 # Audit the use of unsafe block
+      - G104 # Audit errors not checked
+      - G106 # Audit the use of ssh.InsecureIgnoreHostKey
+      - G107 # Url provided to HTTP request as taint input
+      - G108 # Profiling endpoint automatically exposed on /debug/pprof
+      - G201 # SQL query construction using format string
+      - G202 # SQL query construction using string concatenation
+      - G203 # Use of unescaped data in HTML templates
+      - G204 # Audit use of command execution
+      - G301 # Poor file permissions used when creating a directory
+      - G302 # Poor file permissions used with chmod
+      - G303 # Creating tempfile using a predictable path
+      - G304 # File path provided as taint input
+      - G305 # File traversal when extracting zip archive
+      - G401 # Detect the usage of DES, RC4, MD5 or SHA1
+      - G402 # Look for bad TLS connection settings
+      - G403 # Ensure minimum RSA key length of 2048 bits
+      - G404 # Insecure random number source (rand)
+      - G501 # Import blocklist: crypto/md5
+      - G502 # Import blocklist: crypto/des
+      - G503 # Import blocklist: crypto/rc4
+      - G504 # Import blocklist: net/http/cgi
+      - G505 # Import blocklist: crypto/sha1
+
+issues:
+  # Maximum issues count per one linter
+  max-issues-per-linter: 50
+  
+  # Maximum count of issues with the same text
+  max-same-issues: 3
+  
+  # Show only new issues
+  new: false
+  
+  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-rules:
+    # Exclude test files from some linters
+    - path: _test\.go
+      linters:
+        - dupl
+        - gosec
+        - errcheck
+    
+    # Exclude generated files
+    - path: wire_gen\.go
+      linters:
+        - dupl
+        - gosec
+        - errcheck
+        - govet
+    
+    # Exclude vendor
+    - path: vendor/
+      linters:
+        - dupl
+        - gosec
+        
+    # Allow fmt.Printf in main files
+    - path: cmd/
+      linters:
+        - forbidigo
+
+# Custom rules for code duplication prevention
+custom:
+  rules:
+    - name: no-duplicate-provider-info
+      description: "Providers should use BaseProvider for GetProviderInfo"
+      pattern: |
+        func.*GetProviderInfo.*provider.ProviderInfo.*{
+          return provider.ProviderInfo{
+      message: "Use common.BaseProvider instead of implementing GetProviderInfo directly"
+      
+    - name: no-duplicate-constants
+      description: "Use common package constants"
+      pattern: |
+        const.*WhisperBinary.*=
+        const.*WhisperModel.*=
+        const.*MinIOEndpoint.*=
+      message: "Use constants from internal/app/common/constants.go"
+      
+    - name: no-duplicate-file-utils
+      description: "Use common package file utilities"
+      pattern: |
+        func.*SaveTranscriptionToFile
+        func.*EnsureAbsolutePath
+        func.*ValidateFileExists
+      message: "Use file utilities from internal/app/common/fileutils.go"

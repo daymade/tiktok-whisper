@@ -131,6 +131,55 @@ func (h *TranscriptionHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// Upload handles POST /api/v1/transcriptions/upload
+// Uploads an audio file for transcription
+//
+// @Summary Upload audio file for transcription
+// @Description Upload an audio file and create a transcription job
+// @Tags transcriptions
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "Audio file to transcribe"
+// @Param provider formData string false "Provider to use for transcription"
+// @Param language formData string false "Language code"
+// @Success 200 {object} dto.TranscriptionResponse "Upload successful and transcription started"
+// @Failure 400 {object} errors.APIError "Bad request - invalid file"
+// @Failure 500 {object} errors.APIError "Internal server error"
+// @Router /transcriptions/upload [post]
+func (h *TranscriptionHandler) Upload(c *gin.Context) {
+	// Get file from request
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		middleware.HandleError(c, errors.NewBadRequestError("No file uploaded"))
+		return
+	}
+	defer file.Close()
+
+	// Get optional parameters
+	provider := c.PostForm("provider")
+	language := c.PostForm("language")
+	
+	// TODO: Save file to temporary storage
+	// For now, create a transcription request with the file info
+	req := &dto.CreateTranscriptionRequest{
+		Provider: provider,
+		Language: language,
+		Options: map[string]interface{}{
+			"filename": header.Filename,
+			"size":     header.Size,
+		},
+	}
+	
+	// Create transcription
+	response, err := h.service.CreateTranscription(c.Request.Context(), req)
+	if err != nil {
+		middleware.HandleError(c, errors.NewInternalError("Failed to create transcription"))
+		return
+	}
+	
+	c.JSON(http.StatusOK, response)
+}
+
 // Delete handles DELETE /api/v1/transcriptions/:id
 // Deletes a transcription by ID
 //

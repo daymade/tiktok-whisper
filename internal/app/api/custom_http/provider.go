@@ -12,10 +12,12 @@ import (
 	"time"
 
 	"tiktok-whisper/internal/app/api/provider"
+	"tiktok-whisper/internal/app/common"
 )
 
 // CustomHTTPProvider implements a generic HTTP-based transcription provider
 type CustomHTTPProvider struct {
+	common.BaseProvider
 	endpoint    string
 	apiKey      string
 	headers     map[string]string
@@ -70,7 +72,37 @@ func NewCustomHTTPProvider(settings map[string]interface{}) (*CustomHTTPProvider
 		timeout = time.Duration(t) * time.Second
 	}
 
+	// Create base provider
+	baseProvider := common.NewBaseProvider(
+		"custom_http",
+		"Custom HTTP Whisper Service",
+		provider.ProviderTypeRemote,
+		"1.0.0",
+	)
+
+	// Set specific attributes for Custom HTTP provider
+	baseProvider.SupportedFormats = []provider.AudioFormat{
+		provider.FormatWAV,
+		provider.FormatMP3,
+		provider.FormatM4A,
+		provider.FormatFLAC,
+	}
+	baseProvider.SupportedLanguages = []string{} // Depends on underlying service
+	baseProvider.MaxFileSizeMB = 0 // Depends on underlying service
+	baseProvider.MaxDurationSec = 0 // Depends on underlying service
+	baseProvider.SupportsTimestamps = false // Generic implementation
+	baseProvider.SupportsWordLevel = false // Generic implementation
+	baseProvider.SupportsConfidence = false // Generic implementation
+	baseProvider.SupportsLanguageDetection = false // Depends on service
+	baseProvider.SupportsStreaming = false
+	baseProvider.RequiresInternet = true
+	baseProvider.RequiresAPIKey = apiKey != "" // Based on configuration
+	baseProvider.RequiresBinary = false
+	baseProvider.DefaultModel = "" // Depends on service
+	baseProvider.AvailableModels = []string{} // Depends on service
+
 	return &CustomHTTPProvider{
+		BaseProvider: baseProvider,
 		endpoint:    endpoint,
 		apiKey:      apiKey,
 		headers:     headers,
@@ -186,18 +218,50 @@ func (p *CustomHTTPProvider) TranscriptWithOptions(ctx context.Context, request 
 	}, nil
 }
 
-// GetProviderInfo returns information about this provider
+// GetProviderInfo method is now inherited from BaseProvider with additional metadata
 func (p *CustomHTTPProvider) GetProviderInfo() provider.ProviderInfo {
-	return provider.ProviderInfo{
-		Name:               "custom_http",
-		DisplayName:        "Custom HTTP Whisper Service",
-		Type:               provider.ProviderTypeRemote,
-		Version:            "1.0.0",
-		SupportedFormats:   []provider.AudioFormat{provider.FormatWAV, provider.FormatMP3, provider.FormatM4A, provider.FormatFLAC},
-		SupportsTimestamps: false,
-		RequiresInternet:   true,
-		RequiresAPIKey:     false, // Depends on configuration
+	info := p.BaseProvider.GetProviderInfo()
+
+	// Add Custom HTTP-specific metadata
+	info.ConfigSchema = map[string]interface{}{
+		"endpoint": map[string]string{
+			"type":        "string",
+			"description": "HTTP endpoint URL for the transcription service",
+			"required":    "true",
+		},
+		"api_key": map[string]string{
+			"type":        "string",
+			"description": "API key for authentication (optional)",
+			"required":    "false",
+		},
+		"method": map[string]string{
+			"type":        "string",
+			"description": "HTTP method to use",
+			"default":     "POST",
+		},
+		"field_name": map[string]string{
+			"type":        "string",
+			"description": "Form field name for the audio file",
+			"default":     "file",
+		},
+		"timeout": map[string]string{
+			"type":        "number",
+			"description": "Request timeout in seconds",
+			"default":     "300",
+		},
+		"headers": map[string]string{
+			"type":        "object",
+			"description": "Custom HTTP headers",
+			"required":    "false",
+		},
+		"extra_params": map[string]string{
+			"type":        "object",
+			"description": "Extra form parameters to send",
+			"required":    "false",
+		},
 	}
+
+	return info
 }
 
 // ValidateConfiguration checks if the provider configuration is valid

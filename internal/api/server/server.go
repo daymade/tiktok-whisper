@@ -71,10 +71,34 @@ func NewServer(
 	})
 
 	// Create services
+	transcriptionService := services.NewTranscriptionService(orchestrator, repository)
+	providerService := services.NewProviderService(providerRegistry)
+	
+	// Create storage service (use MinIO if available, otherwise mock)
+	var storageService services.StorageService
+	if os.Getenv("ENABLE_MINIO") == "true" || os.Getenv("MINIO_ENDPOINT") != "" {
+		minioService, err := services.NewMinioStorageService()
+		if err != nil {
+			logger.Warn("Failed to create MinIO storage service, using mock", zap.Error(err))
+			storageService = services.NewMockStorageService()
+		} else {
+			storageService = minioService
+			logger.Info("MinIO storage service initialized")
+		}
+	} else {
+		storageService = services.NewMockStorageService()
+		logger.Info("Using mock storage service")
+	}
+	
 	serviceContainer := &v1routes.ServiceContainer{
-		TranscriptionService: services.NewTranscriptionService(orchestrator, repository),
-		ProviderService:      services.NewProviderService(providerRegistry),
-		// TODO: Initialize other services
+		TranscriptionService: transcriptionService,
+		ProviderService:      providerService,
+		EmbeddingService:     services.NewEmbeddingService(repository),
+		StatsService:         services.NewStatsService(repository),
+		ExportService:        services.NewExportService(repository),
+		WhisperJobService:    services.NewWhisperJobService(repository, transcriptionService, providerService),
+		StorageService:       storageService,
+		// TODO: Initialize other services (Download, Config)
 	}
 
 	// Register API routes
@@ -83,6 +107,10 @@ func NewServer(
 		// V1 routes
 		v1 := api.Group("/v1")
 		v1routes.RegisterRoutes(v1, serviceContainer)
+		
+		// Whisper compatibility routes (for frontend)
+		whisper := api.Group("/whisper")
+		v1routes.RegisterRoutes(whisper, serviceContainer)
 	}
 
 	// Swagger documentation routes

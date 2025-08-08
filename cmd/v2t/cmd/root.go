@@ -7,8 +7,11 @@ import (
 	"tiktok-whisper/cmd/v2t/cmd/convert"
 	"tiktok-whisper/cmd/v2t/cmd/download"
 	"tiktok-whisper/cmd/v2t/cmd/embed"
+	"tiktok-whisper/cmd/v2t/cmd/etl"
 	"tiktok-whisper/cmd/v2t/cmd/export"
+	"tiktok-whisper/cmd/v2t/cmd/job"
 	"tiktok-whisper/cmd/v2t/cmd/providers"
+	"tiktok-whisper/cmd/v2t/cmd/temporal"
 	"tiktok-whisper/cmd/v2t/cmd/version"
 )
 
@@ -39,8 +42,11 @@ func init() {
 	rootCmd.AddCommand(download.Cmd)
 	rootCmd.AddCommand(convert.Cmd)
 	rootCmd.AddCommand(embed.Cmd)
+	rootCmd.AddCommand(etl.NewETLCommand())
 	rootCmd.AddCommand(export.Cmd)
+	rootCmd.AddCommand(job.NewJobCommand())
 	rootCmd.AddCommand(providers.ProvidersCmd)
+	rootCmd.AddCommand(temporal.TemporalCmd)
 	rootCmd.AddCommand(version.Cmd)
 
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "V", false, "verbose output")
