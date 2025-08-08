@@ -1,0 +1,47 @@
+[project]
+name = "v2t-python-worker"
+version = "0.1.0"
+description = "Python worker for v2t distributed transcription with faster-whisper"
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    "temporalio>=1.8.0",
+    "faster-whisper>=1.1.0",
+    "minio>=7.2.11",
+    "python-dotenv>=1.0.1",
+    "yt-dlp>=2024.1.1",
+    "ffmpeg-python>=0.2.0",
+    "torch>=2.0.0",
+    "numpy>=1.24.0",
+    "ctranslate2>=4.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.7.0",
+    "ruff>=0.1.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "ipython>=8.12.0",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "N", "W"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+packages = ["."]

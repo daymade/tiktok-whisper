@@ -147,23 +147,6 @@ type DefaultTranscriptionOrchestrator struct {
 	stats    OrchestratorStats
 }
 
-// OrchestratorConfig contains configuration for the orchestrator
-type OrchestratorConfig struct {
-	FallbackChain    []string      `yaml:"fallback_chain"`
-	HealthCheckInterval time.Duration `yaml:"health_check_interval"`
-	MaxRetries       int           `yaml:"max_retries"`
-	RetryDelay       time.Duration `yaml:"retry_delay"`
-	PreferLocal      bool          `yaml:"prefer_local"`
-	RouterRules      RouterRules   `yaml:"router_rules"`
-}
-
-// RouterRules define routing logic based on file characteristics
-type RouterRules struct {
-	ByFileSize   map[string]string `yaml:"by_file_size"`   // e.g., "small": "local", "large": "remote"
-	ByLanguage   map[string]string `yaml:"by_language"`    // e.g., "zh": "local", "en": "openai"
-	ByFormat     map[string]string `yaml:"by_format"`      // e.g., "mp3": "openai", "wav": "local"
-	ByDuration   map[string]string `yaml:"by_duration"`    // e.g., "short": "local", "long": "remote"
-}
 
 // NewTranscriptionOrchestrator creates a new transcription orchestrator
 func NewTranscriptionOrchestrator(registry ProviderRegistry, metrics ProviderMetrics, config OrchestratorConfig) *DefaultTranscriptionOrchestrator {

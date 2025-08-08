@@ -1,0 +1,63 @@
+# Build stage
+FROM golang:1.23-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git gcc musl-dev sqlite-dev
+
+# Set working directory
+WORKDIR /build
+
+# Copy go mod files
+COPY go.mod go.sum ./
+COPY temporal/go.mod temporal/go.sum ./temporal/
+
+# Download dependencies
+RUN go mod download
+RUN cd temporal && go mod download
+
+# Copy source code
+COPY . .
+
+# Build the worker binary
+RUN cd temporal/worker && \
+    CGO_ENABLED=1 go build -o /build/v2t-worker \
+    -ldflags="-s -w" \
+    .
+
+# Runtime stage
+FROM alpine:3.20
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    ffmpeg \
+    tzdata \
+    sqlite-libs \
+    curl \
+    bash
+
+# Create non-root user
+RUN addgroup -g 1000 v2t && \
+    adduser -u 1000 -G v2t -s /bin/sh -D v2t
+
+# Create necessary directories
+RUN mkdir -p /app/config /tmp/v2t-temporal /models && \
+    chown -R v2t:v2t /app /tmp/v2t-temporal
+
+# Copy binary from builder
+COPY --from=builder /build/v2t-worker /app/v2t-worker
+
+# Make binary executable
+RUN chmod +x /app/v2t-worker
+
+# Switch to non-root user
+USER v2t
+
+WORKDIR /app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8081/health || exit 1
+
+# Default command
+ENTRYPOINT ["/app/v2t-worker"]

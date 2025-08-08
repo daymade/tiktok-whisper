@@ -3,28 +3,31 @@ package provider
 import (
 	"context"
 	"time"
+	"tiktok-whisper/internal/app/common"
 )
 
-// AudioFormat defines supported audio formats
-type AudioFormat string
+// AudioFormat is re-exported from common package for backward compatibility
+type AudioFormat = common.AudioFormat
 
+// Re-export audio format constants
 const (
-	FormatWAV   AudioFormat = "wav"
-	FormatMP3   AudioFormat = "mp3"
-	FormatM4A   AudioFormat = "m4a"
-	FormatFLAC  AudioFormat = "flac"
-	FormatOGG   AudioFormat = "ogg"
-	FormatAMR   AudioFormat = "amr"
-	FormatWEBM  AudioFormat = "webm"
+	FormatWAV   = common.FormatWAV
+	FormatMP3   = common.FormatMP3
+	FormatM4A   = common.FormatM4A
+	FormatFLAC  = common.FormatFLAC
+	FormatOGG   = common.FormatOGG
+	FormatAMR   = common.FormatAMR
+	FormatWEBM  = common.FormatWEBM
 )
 
-// ProviderType defines the type of transcription provider
-type ProviderType string
+// ProviderType is re-exported from common package for backward compatibility
+type ProviderType = common.ProviderType
 
+// Re-export provider type constants
 const (
-	ProviderTypeLocal  ProviderType = "local"
-	ProviderTypeRemote ProviderType = "remote"
-	ProviderTypeHybrid ProviderType = "hybrid"
+	ProviderTypeLocal  = common.ProviderTypeLocal
+	ProviderTypeRemote = common.ProviderTypeRemote
+	ProviderTypeHybrid = common.ProviderTypeHybrid
 )
 
 // TranscriptionRequest represents a transcription request with all possible options
@@ -94,47 +97,23 @@ type TranscriptionWord struct {
 	Probability float64 `json:"probability,omitempty"`
 }
 
-// ProviderInfo contains metadata about a transcription provider
-type ProviderInfo struct {
-	// Basic info
-	Name        string       `json:"name"`        // Provider name (e.g., "whisper_cpp", "openai", "elevenlabs")
-	DisplayName string       `json:"display_name"` // Human-readable name
-	Type        ProviderType `json:"type"`        // local, remote, hybrid
-	Version     string       `json:"version,omitempty"`
-	
-	// Capabilities
-	SupportedFormats   []AudioFormat `json:"supported_formats"`
-	SupportedLanguages []string      `json:"supported_languages,omitempty"` // Empty means all languages
-	MaxFileSizeMB      int           `json:"max_file_size_mb,omitempty"`     // 0 means no limit
-	MaxDurationSec     int           `json:"max_duration_sec,omitempty"`     // 0 means no limit
-	
-	// Features
-	SupportsTimestamps   bool `json:"supports_timestamps"`
-	SupportsWordLevel    bool `json:"supports_word_level"`
-	SupportsConfidence   bool `json:"supports_confidence"`
-	SupportsLanguageDetection bool `json:"supports_language_detection"`
-	SupportsStreaming    bool `json:"supports_streaming"`
-	
-	// Requirements
-	RequiresInternet bool `json:"requires_internet"`
-	RequiresAPIKey   bool `json:"requires_api_key"`
-	RequiresBinary   bool `json:"requires_binary"`
-	
-	// Configuration
-	DefaultModel     string                 `json:"default_model,omitempty"`
-	AvailableModels  []string              `json:"available_models,omitempty"`
-	ConfigSchema     map[string]interface{} `json:"config_schema,omitempty"`
-	
-	// Performance characteristics
-	TypicalLatencyMs int `json:"typical_latency_ms,omitempty"` // Typical processing time per minute of audio
-	CostPerMinute    string `json:"cost_per_minute,omitempty"`  // Cost information if applicable
-}
+// ProviderInfo is re-exported from common package for backward compatibility
+type ProviderInfo = common.ProviderInfo
 
 // ConfigInfo represents configuration validation information
 type ConfigInfo struct {
 	Required []string               `json:"required"` // Required configuration fields
 	Optional []string               `json:"optional"` // Optional configuration fields
 	Schema   map[string]interface{} `json:"schema"`   // JSON schema for validation
+}
+
+// ProviderHealthStatus represents the health status of a provider
+type ProviderHealthStatus struct {
+	ProviderName string    `json:"provider_name"`
+	IsHealthy    bool      `json:"is_healthy"`
+	LastChecked  time.Time `json:"last_checked"`
+	LastError    string    `json:"last_error,omitempty"`
+	ResponseTime time.Duration `json:"response_time,omitempty"`
 }
 
 // TranscriptionError represents provider-specific errors

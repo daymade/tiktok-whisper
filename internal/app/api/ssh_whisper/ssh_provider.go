@@ -9,10 +9,12 @@ import (
 	"strings"
 	"time"
 	"tiktok-whisper/internal/app/api/provider"
+	"tiktok-whisper/internal/app/common"
 )
 
 // SSHWhisperProvider implements transcription via SSH to a remote whisper.cpp instance
 type SSHWhisperProvider struct {
+	common.BaseProvider
 	config SSHWhisperConfig
 }
 
@@ -40,8 +42,82 @@ func NewSSHWhisperProvider(config SSHWhisperConfig) *SSHWhisperProvider {
 		config.Threads = 4
 	}
 
+	baseProvider := common.NewBaseProvider(
+		"ssh_whisper",
+		"SSH Remote Whisper.cpp",
+		provider.ProviderTypeRemote,
+		"1.0.0",
+	)
+	
+	// Set specific attributes for SSH whisper provider
+	baseProvider.SupportedFormats = []provider.AudioFormat{
+		provider.FormatWAV,
+		provider.FormatMP3,
+		provider.FormatM4A,
+		provider.FormatFLAC,
+	}
+	baseProvider.MaxFileSizeMB = 1000
+	baseProvider.MaxDurationSec = 3600
+	baseProvider.SupportsTimestamps = true
+	baseProvider.SupportsWordLevel = false
+	baseProvider.SupportsConfidence = false
+	baseProvider.SupportsLanguageDetection = true
+	baseProvider.SupportsStreaming = false
+	baseProvider.RequiresInternet = false
+	baseProvider.RequiresAPIKey = false
+	baseProvider.RequiresBinary = true
+	baseProvider.DefaultModel = "models/ggml-base.en.bin"
+	baseProvider.AvailableModels = []string{
+		"models/ggml-tiny.bin",
+		"models/ggml-tiny.en.bin",
+		"models/ggml-base.bin",
+		"models/ggml-base.en.bin",
+		"models/ggml-small.bin",
+		"models/ggml-small.en.bin",
+		"models/ggml-medium.bin",
+		"models/ggml-medium.en.bin",
+		"models/ggml-large-v1.bin",
+		"models/ggml-large-v2.bin",
+		"models/ggml-large-v3.bin",
+	}
+	
+	// Set config schema for SSH provider
+	baseProvider.ConfigSchema = map[string]interface{}{
+		"host": map[string]string{
+			"type":        "string",
+			"description": "SSH host (e.g., 'user@hostname')",
+			"required":    "true",
+		},
+		"remote_dir": map[string]string{
+			"type":        "string",
+			"description": "Remote whisper.cpp directory",
+			"required":    "true",
+		},
+		"binary_path": map[string]string{
+			"type":        "string",
+			"description": "Remote binary path (relative to remote_dir)",
+			"default":     "./build/bin/whisper-cli",
+		},
+		"model_path": map[string]string{
+			"type":        "string",
+			"description": "Remote model path (relative to remote_dir)",
+			"default":     "models/ggml-base.en.bin",
+		},
+		"language": map[string]string{
+			"type":        "string",
+			"description": "Language code (e.g., 'zh', 'en')",
+			"default":     "",
+		},
+		"threads": map[string]string{
+			"type":        "integer",
+			"description": "Number of threads for processing",
+			"default":     "4",
+		},
+	}
+
 	return &SSHWhisperProvider{
-		config: config,
+		BaseProvider: baseProvider,
+		config:       config,
 	}
 }
 
@@ -303,83 +379,7 @@ func (ssp *SSHWhisperProvider) getPrompt(request *provider.TranscriptionRequest)
 	return ssp.config.Prompt
 }
 
-// GetProviderInfo returns metadata about the SSH whisper provider
-func (ssp *SSHWhisperProvider) GetProviderInfo() provider.ProviderInfo {
-	return provider.ProviderInfo{
-		Name:        "ssh_whisper",
-		DisplayName: "SSH Remote Whisper.cpp",
-		Type:        provider.ProviderTypeRemote,
-		Version:     "1.0.0",
-		SupportedFormats: []provider.AudioFormat{
-			provider.FormatWAV,
-			provider.FormatMP3,
-			provider.FormatM4A,
-			provider.FormatFLAC,
-		},
-		SupportedLanguages:        []string{}, // Whisper supports all languages
-		MaxFileSizeMB:             1000,       // Limited by SSH transfer
-		MaxDurationSec:            3600,       // 1 hour
-		SupportsTimestamps:        true,
-		SupportsWordLevel:         false, // Current implementation doesn't parse detailed output
-		SupportsConfidence:        false,
-		SupportsLanguageDetection: true,
-		SupportsStreaming:         false,
-		RequiresInternet:          false, // Requires SSH access
-		RequiresAPIKey:            false,
-		RequiresBinary:            true,  // Requires remote binary
-		DefaultModel:              "models/ggml-base.en.bin",
-		AvailableModels: []string{
-			"models/ggml-tiny.bin",
-			"models/ggml-tiny.en.bin",
-			"models/ggml-base.bin",
-			"models/ggml-base.en.bin",
-			"models/ggml-small.bin",
-			"models/ggml-small.en.bin",
-			"models/ggml-medium.bin",
-			"models/ggml-medium.en.bin",
-			"models/ggml-large-v1.bin",
-			"models/ggml-large-v2.bin",
-			"models/ggml-large-v3.bin",
-		},
-		TypicalLatencyMs: 5000, // Includes file transfer time
-		CostPerMinute:    "Free (SSH + Compute)",
-		ConfigSchema: map[string]interface{}{
-			"host": map[string]string{
-				"type":        "string",
-				"description": "SSH host (user@hostname)",
-				"required":    "true",
-			},
-			"remote_dir": map[string]string{
-				"type":        "string",
-				"description": "Remote whisper.cpp directory",
-				"required":    "true",
-			},
-			"binary_path": map[string]string{
-				"type":        "string",
-				"description": "Remote binary path (relative to remote_dir)",
-				"default":     "./build/bin/whisper-cli",
-			},
-			"model_path": map[string]string{
-				"type":        "string",
-				"description": "Remote model path (relative to remote_dir)",
-				"default":     "models/ggml-base.en.bin",
-			},
-			"language": map[string]string{
-				"type":        "string",
-				"description": "Language code (auto-detect if not specified)",
-			},
-			"prompt": map[string]string{
-				"type":        "string",
-				"description": "Prompt to improve transcription quality",
-			},
-			"threads": map[string]string{
-				"type":        "number",
-				"description": "Number of threads for processing",
-				"default":     "4",
-			},
-		},
-	}
-}
+// GetProviderInfo method is now inherited from BaseProvider
 
 // ValidateConfiguration validates the provider configuration
 func (ssp *SSHWhisperProvider) ValidateConfiguration() error {

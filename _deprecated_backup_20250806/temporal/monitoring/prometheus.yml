@@ -1,0 +1,48 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Temporal metrics
+  - job_name: 'temporal'
+    static_configs:
+      - targets: ['temporal:8233']
+        labels:
+          service: 'temporal-server'
+
+  # v2t Workers
+  - job_name: 'v2t-workers'
+    static_configs:
+      # Main node workers
+      - targets: ['v2t-worker:8081']
+        labels:
+          node: 'm2'
+          worker_type: 'main'
+      
+      # M4 workers (add as deployed)
+      - targets: ['192.168.1.101:8081', '192.168.1.102:8081']
+        labels:
+          node: 'm4'
+          worker_type: 'compute'
+
+  # MinIO metrics
+  - job_name: 'minio'
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets: ['minio1:9000', 'minio2:9000', 'minio3:9000']
+
+  # Node Exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          node: 'control'
+
+# Alerting rules
+rule_files:
+  - '/etc/prometheus/alerts/*.yml'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']

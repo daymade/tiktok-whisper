@@ -429,8 +429,49 @@ func (f *DefaultProviderFactory) getWhisperServerInfo() ProviderInfo {
 
 // BuildProviderFromConfig builds a provider from ProviderConfig
 func BuildProviderFromConfig(name string, config ProviderConfig) (TranscriptionProvider, error) {
-	// TODO: Implement provider creation without import cycles
-	// This function should be implemented in a higher-level package that can import
-	// both the provider interfaces and the concrete implementations
-	return nil, fmt.Errorf("provider creation from config not yet implemented due to import cycle constraints")
+	// Determine the provider type from the config
+	providerType := config.Type
+	if providerType == "" {
+		// Try to infer from the name
+		providerType = name
+	}
+	
+	// Get the creator function from the registry
+	creator, err := GetProviderCreator(providerType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider creator for '%s': %w", providerType, err)
+	}
+	
+	// Convert ProviderConfig to map[string]interface{} for the creator
+	configMap := make(map[string]interface{})
+	
+	// Add settings
+	if config.Settings != nil {
+		configMap["settings"] = config.Settings
+	}
+	
+	// Add auth configuration
+	// Check if Auth has any non-zero values
+	if config.Auth.APIKey != "" || config.Auth.BaseURL != "" || len(config.Auth.Headers) > 0 {
+		configMap["auth"] = config.Auth
+	}
+	
+	// Add performance configuration
+	// Check if Performance has any non-zero values
+	if config.Performance.TimeoutSec > 0 || config.Performance.MaxConcurrency > 0 || 
+	   config.Performance.RateLimitRPM > 0 {
+		configMap["performance"] = config.Performance
+	}
+	
+	// Add the type and enabled flags
+	configMap["type"] = config.Type
+	configMap["enabled"] = config.Enabled
+	
+	// Create the provider using the registered creator
+	provider, err := creator(configMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create provider '%s': %w", name, err)
+	}
+	
+	return provider, nil
 }

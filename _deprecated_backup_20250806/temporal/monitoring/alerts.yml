@@ -1,0 +1,76 @@
+groups:
+  - name: v2t_alerts
+    interval: 30s
+    rules:
+      # Worker availability
+      - alert: V2TWorkerDown
+        expr: up{job="v2t-workers"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "v2t Worker is down"
+          description: "Worker {{ $labels.instance }} on node {{ $labels.node }} has been down for more than 5 minutes."
+
+      # No providers available
+      - alert: V2TNoProvidersAvailable
+        expr: v2t_worker_providers_total == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No transcription providers available"
+          description: "Worker {{ $labels.instance }} has no available transcription providers."
+
+      # Temporal disconnected
+      - alert: V2TTemporalDisconnected
+        expr: v2t_worker_temporal_connected == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Worker disconnected from Temporal"
+          description: "Worker {{ $labels.instance }} is disconnected from Temporal server."
+
+      # MinIO disconnected
+      - alert: V2TMinIODisconnected
+        expr: v2t_worker_minio_connected == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Worker disconnected from MinIO"
+          description: "Worker {{ $labels.instance }} is disconnected from MinIO storage."
+
+      # High workflow failure rate
+      - alert: V2THighWorkflowFailureRate
+        expr: |
+          rate(temporal_workflow_failed_total[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High workflow failure rate"
+          description: "Workflow failure rate is above 10% for the last 10 minutes."
+
+      # Long-running workflows
+      - alert: V2TLongRunningWorkflow
+        expr: |
+          temporal_workflow_endtoend_latency_seconds{quantile="0.99"} > 1800
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Workflows taking too long"
+          description: "99th percentile workflow latency is above 30 minutes."
+
+      # MinIO storage issues
+      - alert: V2TMinIOStorageHigh
+        expr: |
+          minio_disk_storage_used_bytes / minio_disk_storage_total_bytes > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MinIO storage usage high"
+          description: "MinIO storage usage is above 90% on {{ $labels.instance }}."

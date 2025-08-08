@@ -13,10 +13,12 @@ import (
 	"strings"
 	"time"
 	"tiktok-whisper/internal/app/api/provider"
+	"tiktok-whisper/internal/app/common"
 )
 
 // ElevenLabsSTTProvider implements the TranscriptionProvider interface for ElevenLabs Speech-to-Text API
 type ElevenLabsSTTProvider struct {
+	common.BaseProvider
 	config ElevenLabsConfig
 	client *http.Client
 }
@@ -61,7 +63,40 @@ func NewElevenLabsSTTProvider(config ElevenLabsConfig) *ElevenLabsSTTProvider {
 		Timeout: time.Duration(config.Timeout) * time.Second,
 	}
 	
+	// Create base provider
+	baseProvider := common.NewBaseProvider(
+		"elevenlabs",
+		"ElevenLabs Speech-to-Text",
+		provider.ProviderTypeRemote,
+		"1.0.0",
+	)
+	
+	// Set specific attributes for ElevenLabs provider
+	baseProvider.SupportedFormats = []provider.AudioFormat{
+		provider.FormatMP3,
+		provider.FormatWAV,
+		provider.FormatFLAC,
+		provider.FormatM4A,
+	}
+	baseProvider.SupportedLanguages = []string{} // ElevenLabs supports many languages
+	baseProvider.MaxFileSizeMB = 25
+	baseProvider.MaxDurationSec = 0 // No specific limit mentioned
+	baseProvider.SupportsTimestamps = false // Basic implementation doesn't include segments
+	baseProvider.SupportsWordLevel = true  // ElevenLabs provides word-level alignment
+	baseProvider.SupportsConfidence = false // Not in basic response
+	baseProvider.SupportsLanguageDetection = true
+	baseProvider.SupportsStreaming = false
+	baseProvider.RequiresInternet = true
+	baseProvider.RequiresAPIKey = true
+	baseProvider.RequiresBinary = false
+	baseProvider.DefaultModel = "whisper-large-v3"
+	baseProvider.AvailableModels = []string{
+		"whisper-large-v3",
+		"whisper-large-v2",
+	}
+	
 	return &ElevenLabsSTTProvider{
+		BaseProvider: baseProvider,
 		config: config,
 		client: client,
 	}
@@ -370,60 +405,37 @@ func (el *ElevenLabsSTTProvider) convertAlignment(alignment []Word) []provider.T
 	return words
 }
 
-// GetProviderInfo returns metadata about the ElevenLabs provider
+// GetProviderInfo method is now inherited from BaseProvider with additional metadata
 func (el *ElevenLabsSTTProvider) GetProviderInfo() provider.ProviderInfo {
-	return provider.ProviderInfo{
-		Name:        "elevenlabs",
-		DisplayName: "ElevenLabs Speech-to-Text",
-		Type:        provider.ProviderTypeRemote,
-		Version:     "1.0.0",
-		SupportedFormats: []provider.AudioFormat{
-			provider.FormatMP3,
-			provider.FormatWAV,
-			provider.FormatFLAC,
-			provider.FormatM4A,
+	info := el.BaseProvider.GetProviderInfo()
+	
+	// Add ElevenLabs-specific metadata
+	info.TypicalLatencyMs = 3000 // Estimate: 3 seconds per minute
+	info.CostPerMinute = "Variable" // ElevenLabs pricing varies
+	info.ConfigSchema = map[string]interface{}{
+		"api_key": map[string]string{
+			"type":        "string",
+			"description": "ElevenLabs API key",
+			"required":    "true",
 		},
-		SupportedLanguages:        []string{}, // ElevenLabs supports many languages
-		MaxFileSizeMB:             25,
-		MaxDurationSec:            0, // No specific limit mentioned
-		SupportsTimestamps:        false, // Basic implementation doesn't include segments
-		SupportsWordLevel:         true,  // ElevenLabs provides word-level alignment
-		SupportsConfidence:        false, // Not in basic response
-		SupportsLanguageDetection: true,
-		SupportsStreaming:         false,
-		RequiresInternet:          true,
-		RequiresAPIKey:            true,
-		RequiresBinary:            false,
-		DefaultModel:              "whisper-large-v3",
-		AvailableModels: []string{
-			"whisper-large-v3",
-			"whisper-large-v2",
+		"model": map[string]string{
+			"type":        "string",
+			"description": "Model to use",
+			"default":     "whisper-large-v3",
 		},
-		TypicalLatencyMs: 3000, // Estimate: 3 seconds per minute
-		CostPerMinute:    "Variable", // ElevenLabs pricing varies
-		ConfigSchema: map[string]interface{}{
-			"api_key": map[string]string{
-				"type":        "string",
-				"description": "ElevenLabs API key",
-				"required":    "true",
-			},
-			"model": map[string]string{
-				"type":        "string",
-				"description": "Model to use",
-				"default":     "whisper-large-v3",
-			},
-			"base_url": map[string]string{
-				"type":        "string",
-				"description": "Base URL for ElevenLabs API",
-				"default":     "https://api.elevenlabs.io/v1",
-			},
-			"timeout_sec": map[string]string{
-				"type":        "number",
-				"description": "Request timeout in seconds",
-				"default":     "120",
-			},
+		"base_url": map[string]string{
+			"type":        "string",
+			"description": "Base URL for ElevenLabs API",
+			"default":     "https://api.elevenlabs.io/v1",
+		},
+		"timeout_sec": map[string]string{
+			"type":        "number",
+			"description": "Request timeout in seconds",
+			"default":     "120",
 		},
 	}
+	
+	return info
 }
 
 // ValidateConfiguration validates the provider configuration

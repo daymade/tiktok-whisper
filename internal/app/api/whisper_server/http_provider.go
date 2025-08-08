@@ -14,10 +14,12 @@ import (
 	"strings"
 	"time"
 	"tiktok-whisper/internal/app/api/provider"
+	"tiktok-whisper/internal/app/common"
 )
 
 // WhisperServerProvider implements transcription via HTTP to a whisper-server instance
 type WhisperServerProvider struct {
+	common.BaseProvider
 	config WhisperServerConfig
 	client *http.Client
 }
@@ -90,6 +92,36 @@ func NewWhisperServerProvider(config WhisperServerConfig) *WhisperServerProvider
 		config.CustomHeaders = make(map[string]string)
 	}
 
+	// Create base provider
+	baseProvider := common.NewBaseProvider(
+		"whisper_server",
+		"Whisper Server (HTTP API)",
+		provider.ProviderTypeRemote,
+		"1.0.0",
+	)
+	
+	// Set specific attributes for whisper server provider
+	baseProvider.SupportedFormats = []provider.AudioFormat{
+		provider.FormatWAV,
+		provider.FormatMP3,
+		provider.FormatM4A,
+		provider.FormatFLAC,
+		provider.FormatOGG,
+		provider.FormatWEBM,
+	}
+	baseProvider.MaxFileSizeMB = 100
+	baseProvider.MaxDurationSec = 3600
+	baseProvider.SupportsTimestamps = true
+	baseProvider.SupportsWordLevel = true
+	baseProvider.SupportsConfidence = true
+	baseProvider.SupportsLanguageDetection = true
+	baseProvider.SupportsStreaming = false
+	baseProvider.RequiresInternet = true
+	baseProvider.RequiresAPIKey = false
+	baseProvider.RequiresBinary = false
+	baseProvider.DefaultModel = "whisper-server"
+	baseProvider.AvailableModels = []string{"whisper-server"}
+
 	// Create HTTP client
 	client := &http.Client{
 		Timeout: config.Timeout,
@@ -101,8 +133,9 @@ func NewWhisperServerProvider(config WhisperServerConfig) *WhisperServerProvider
 	}
 
 	return &WhisperServerProvider{
-		config: config,
-		client: client,
+		BaseProvider: baseProvider,
+		config:       config,
+		client:       client,
 	}
 }
 
@@ -515,81 +548,7 @@ func (wsp *WhisperServerProvider) getMaxLength(request *provider.TranscriptionRe
 	return wsp.config.MaxLength
 }
 
-// GetProviderInfo returns metadata about the whisper-server provider
-func (wsp *WhisperServerProvider) GetProviderInfo() provider.ProviderInfo {
-	return provider.ProviderInfo{
-		Name:        "whisper_server",
-		DisplayName: "Whisper Server (HTTP API)",
-		Type:        provider.ProviderTypeRemote,
-		Version:     "1.0.0",
-		SupportedFormats: []provider.AudioFormat{
-			provider.FormatWAV,
-			provider.FormatMP3,
-			provider.FormatM4A,
-			provider.FormatFLAC,
-			provider.FormatOGG,
-			provider.FormatWEBM,
-		},
-		SupportedLanguages:        []string{}, // Whisper supports all languages
-		MaxFileSizeMB:             100,        // Typical server limit
-		MaxDurationSec:            3600,       // 1 hour
-		SupportsTimestamps:        true,
-		SupportsWordLevel:         true,
-		SupportsConfidence:        true,
-		SupportsLanguageDetection: true,
-		SupportsStreaming:         false,
-		RequiresInternet:          true, // Requires network access to server
-		RequiresAPIKey:            false, // Basic whisper-server doesn't require auth
-		RequiresBinary:            false,
-		DefaultModel:              "whisper-server",
-		AvailableModels: []string{
-			"whisper-server", // Server manages model internally
-		},
-		TypicalLatencyMs: 2000, // Depends on server performance
-		CostPerMinute:    "Free (Self-hosted)",
-		ConfigSchema: map[string]interface{}{
-			"base_url": map[string]string{
-				"type":        "string",
-				"description": "Base URL of whisper-server (e.g., http://192.168.1.100:8080)",
-				"required":    "true",
-			},
-			"inference_path": map[string]string{
-				"type":        "string",
-				"description": "Inference endpoint path",
-				"default":     "/inference",
-			},
-			"timeout": map[string]string{
-				"type":        "number",
-				"description": "Request timeout in seconds",
-				"default":     "60",
-			},
-			"language": map[string]string{
-				"type":        "string",
-				"description": "Default language code (auto-detect if not specified)",
-			},
-			"response_format": map[string]string{
-				"type":        "string",
-				"description": "Response format (json, text, srt, vtt, verbose_json)",
-				"default":     "json",
-			},
-			"temperature": map[string]string{
-				"type":        "number",
-				"description": "Decoding temperature (0.0-1.0)",
-				"default":     "0.0",
-			},
-			"translate": map[string]string{
-				"type":        "boolean",
-				"description": "Translate to English",
-				"default":     "false",
-			},
-			"no_timestamps": map[string]string{
-				"type":        "boolean",
-				"description": "Disable timestamps",
-				"default":     "false",
-			},
-		},
-	}
-}
+// GetProviderInfo method is now inherited from BaseProvider
 
 // ValidateConfiguration validates the provider configuration
 func (wsp *WhisperServerProvider) ValidateConfiguration() error {
