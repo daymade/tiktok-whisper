@@ -370,8 +370,12 @@ celerybeat.pid
 
 # Environments and API Keys
 .env
+.env.*
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.development
 .venv
 env/
 venv/

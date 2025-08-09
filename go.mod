@@ -14,6 +14,8 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.28
+	github.com/minio/minio-go/v7 v7.0.95
+	github.com/redis/go-redis/v9 v9.12.0
 	github.com/samber/lo v1.51.0
 	github.com/sashabaranov/go-openai v1.40.5
 	github.com/spf13/cobra v1.9.1
@@ -24,6 +26,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	github.com/tealeg/xlsx v1.0.5
 	github.com/vbauerster/mpb/v8 v8.10.2
+	go.temporal.io/api v1.49.1
 	go.temporal.io/sdk v1.35.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/genai v1.16.0
@@ -79,14 +82,12 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/minio/crc64nvme v1.0.2 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
-	github.com/minio/minio-go/v7 v7.0.95 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nexus-rpc/sdk-go v0.3.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/redis/go-redis/v9 v9.12.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/robfig/cron v1.2.0 // indirect
 	github.com/rs/xid v1.6.0 // indirect
@@ -99,7 +100,6 @@ require (
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
-	go.temporal.io/api v1.49.1 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/arch v0.19.0 // indirect
 	golang.org/x/crypto v0.40.0 // indirect

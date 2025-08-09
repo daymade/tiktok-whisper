@@ -172,7 +172,7 @@ func (s *MinioStorageService) GeneratePresignedURL(ctx context.Context, operatio
 	case "PUT", "upload":
 		presignedURL, err = s.client.PresignedPutObject(ctx, s.bucket, key, expiration)
 	case "GET", "download":
-		presignedURL, err = s.client.PresignedGetObject(ctx, s.bucket, key, url.Values{}, expiration)
+		presignedURL, err = s.client.PresignedGetObject(ctx, s.bucket, key, expiration, url.Values{})
 	default:
 		return nil, fmt.Errorf("unsupported operation: %s", operation)
 	}
@@ -217,7 +217,7 @@ func NewMockStorageService() StorageService {
 
 func (s *MockStorageService) UploadFile(ctx context.Context, file multipart.File, header *multipart.FileHeader, userID string) (*FileUploadResult, error) {
 	timestamp := time.Now().Unix()
-	fileID := uuid.New().String()[:8]
+	_ = uuid.New().String()[:8] // Generate but don't use fileID
 	key := fmt.Sprintf("whisper/%s/%d-%s", userID, timestamp, header.Filename)
 
 	return &FileUploadResult{
@@ -231,7 +231,7 @@ func (s *MockStorageService) UploadFile(ctx context.Context, file multipart.File
 
 func (s *MockStorageService) GeneratePresignedURL(ctx context.Context, operation string, userID string, filename string) (*PresignedURLResult, error) {
 	timestamp := time.Now().Unix()
-	fileID := uuid.New().String()[:8]
+	_ = uuid.New().String()[:8] // Generate but don't use fileID
 	key := fmt.Sprintf("whisper/%s/%d-%s", userID, timestamp, filename)
 
 	return &PresignedURLResult{

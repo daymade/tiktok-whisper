@@ -11,7 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/swaggo/files"
 	"github.com/swaggo/gin-swagger"
+	"go.uber.org/zap"
 	"tiktok-whisper/internal/api/middleware"
+	authmiddleware "tiktok-whisper/internal/api/middleware"
 	v1routes "tiktok-whisper/internal/api/v1/routes"
 	"tiktok-whisper/internal/api/v1/services"
 	"tiktok-whisper/internal/app/api/provider"
@@ -61,6 +63,15 @@ func NewServer(
 	router.Use(middleware.ErrorHandler(logger))
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORS(middleware.DefaultCORSConfig()))
+	
+	// Add security middleware for production
+	if config.Environment == "production" {
+		router.Use(authmiddleware.SecurityHeaders())
+		router.Use(authmiddleware.CORSMiddleware())
+	}
+	
+	// Create authentication middleware
+	auth := authmiddleware.NewAuthMiddleware()
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
@@ -106,11 +117,26 @@ func NewServer(
 	{
 		// V1 routes
 		v1 := api.Group("/v1")
+		// Public routes (no auth required)
+		public := v1.Group("")
+		public.GET("/health", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		})
+		
+		// Protected routes (auth required)
+		// For development, skip auth requirement
+		if config.Environment == "production" {
+			v1.Use(auth.AuthRequired())
+		}
 		v1routes.RegisterRoutes(v1, serviceContainer)
 		
 		// Whisper compatibility routes (for frontend)
-		whisper := api.Group("/whisper")
-		v1routes.RegisterRoutes(whisper, serviceContainer)
+		// COMMENTED OUT: Duplicate registration causing conflicts
+		// whisper := api.Group("/whisper")
+		// if config.Environment == "production" {
+		// 	whisper.Use(auth.OptionalAuth())
+		// }
+		// v1routes.RegisterRoutes(whisper, serviceContainer)
 	}
 
 	// Swagger documentation routes

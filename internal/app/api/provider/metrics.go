@@ -72,7 +72,22 @@ func (m *DefaultProviderMetrics) GetProviderMetrics(provider string) ProviderSta
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	
-	stats := m.getOrCreateStats(provider)
+	// Check if providerStats map is initialized
+	if m.providerStats == nil {
+		return ProviderStats{
+			Provider: provider,
+			ErrorBreakdown: make(map[string]int64),
+		}
+	}
+	
+	stats, exists := m.providerStats[provider]
+	if !exists {
+		// Return empty stats for non-existent provider (don't create during read)
+		return ProviderStats{
+			Provider: provider,
+			ErrorBreakdown: make(map[string]int64),
+		}
+	}
 	
 	// Return a copy to avoid race conditions
 	return ProviderStats{
@@ -100,6 +115,20 @@ func (m *DefaultProviderMetrics) GetOverallMetrics() OverallStats {
 	activeProviders := 0
 	
 	providerStats := make(map[string]ProviderStats)
+	
+	// Check if providerStats map is initialized
+	if m.providerStats == nil {
+		return OverallStats{
+			TotalProviders:       0,
+			ActiveProviders:      0,
+			TotalRequests:        0,
+			SuccessfulRequests:   0,
+			OverallSuccessRate:   0,
+			FastestProvider:      "",
+			MostReliableProvider: "",
+			ProviderStats:        providerStats,
+		}
+	}
 	
 	for name, stats := range m.providerStats {
 		totalRequests += stats.TotalRequests
@@ -143,8 +172,13 @@ func (m *DefaultProviderMetrics) GetOverallMetrics() OverallStats {
 	}
 }
 
-// getOrCreateStats gets existing stats or creates new ones (must be called with lock held)
+// getOrCreateStats gets existing stats or creates new ones (must be called with write lock held)
 func (m *DefaultProviderMetrics) getOrCreateStats(provider string) *ProviderStats {
+	// Ensure the map is initialized
+	if m.providerStats == nil {
+		m.providerStats = make(map[string]*ProviderStats)
+	}
+	
 	stats, exists := m.providerStats[provider]
 	if !exists {
 		stats = &ProviderStats{
@@ -181,6 +215,11 @@ func (m *DefaultProviderMetrics) ResetStats() {
 func (m *DefaultProviderMetrics) GetProviderNames() []string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
+	
+	// Check if providerStats map is initialized
+	if m.providerStats == nil {
+		return []string{}
+	}
 	
 	names := make([]string, 0, len(m.providerStats))
 	for name := range m.providerStats {

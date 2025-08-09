@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"tiktok-whisper/internal/api/v1/dto"
 	"tiktok-whisper/internal/api/v1/services"
 )

@@ -36,6 +36,7 @@ func RegisterWhisperRoutes(router *gin.RouterGroup, handler *handlers.WhisperJob
 		// This should be registered last as a catch-all
 		proxyHandler := handlers.NewWhisperProxyHandler()
 		whisper.GET("/health", proxyHandler.HealthCheck)
-		whisper.Any("/*path", proxyHandler.ProxyRequest)
+		// COMMENTED OUT: Conflicting wildcard route causing panic
+		// whisper.Any("/*path", proxyHandler.ProxyRequest)
 	}
 }

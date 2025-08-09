@@ -27,6 +27,8 @@ type WhisperJobServiceImpl struct {
 	transcriptionService TranscriptionService
 	providerService      ProviderService
 	jobs                 map[string]*model.WhisperJob // In-memory storage for now
+	redisService         *RedisJobService           // Redis storage for production
+	useRedis             bool                       // Whether to use Redis storage
 }
 
 // NewWhisperJobService creates a new whisper job service
@@ -35,17 +37,65 @@ func NewWhisperJobService(
 	transcriptionService TranscriptionService,
 	providerService ProviderService,
 ) *WhisperJobServiceImpl {
+	// Check if Redis is available
+	redisService := NewRedisJobService(repo)
+	
+	// Test Redis connection
+	ctx := context.Background()
+	if _, err := redisService.redisClient.Ping(ctx).Result(); err != nil {
+		// Redis not available, use in-memory storage
+		return &WhisperJobServiceImpl{
+			repo:                 repo,
+			transcriptionService: transcriptionService,
+			providerService:      providerService,
+			jobs:                 make(map[string]*model.WhisperJob),
+			useRedis:             false,
+		}
+	}
+	
+	// Redis is available
 	return &WhisperJobServiceImpl{
 		repo:                 repo,
 		transcriptionService: transcriptionService,
 		providerService:      providerService,
-		jobs:                 make(map[string]*model.WhisperJob),
+		jobs:                 make(map[string]*model.WhisperJob), // Fallback
+		redisService:         redisService,
+		useRedis:             true,
 	}
 }
 
 // CreateJob creates a new transcription job
 func (s *WhisperJobServiceImpl) CreateJob(ctx context.Context, userID string, req *dto.CreateWhisperJobRequest) (*dto.WhisperJobResponse, error) {
-	// Generate job ID
+	if s.useRedis {
+		// Use Redis storage
+		redisJob, err := s.redisService.CreateJob(ctx, userID, req.FileURL, req.FileName, req.FileSize, req.Provider, req.Language)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create job in Redis: %w", err)
+		}
+		
+		// Convert Redis job to WhisperJob for compatibility
+		job := &model.WhisperJob{
+			ID:            redisJob.ID,
+			UserID:        redisJob.UserID,
+			Status:        redisJob.Status,
+			FileName:      redisJob.FileName,
+			FileURL:       redisJob.FileKey,
+			FileSize:      redisJob.FileSize,
+			Provider:      redisJob.Provider,
+			Language:      redisJob.Language,
+			CreditCost:    max(5, (req.AudioDuration/60)*10),
+			Metadata:      redisJob.Metadata,
+			CreatedAt:     redisJob.CreatedAt,
+			UpdatedAt:     redisJob.UpdatedAt,
+		}
+		
+		// Start async processing
+		go s.ProcessJob(context.Background(), redisJob.ID)
+		
+		return s.jobToResponse(job), nil
+	}
+	
+	// Fallback to in-memory storage
 	jobID := uuid.New().String()
 	
 	// Calculate credit cost (10 credits per minute, minimum 5)
@@ -72,7 +122,7 @@ func (s *WhisperJobServiceImpl) CreateJob(ctx context.Context, userID string, re
 		UpdatedAt:     time.Now(),
 	}
 	
-	// Store in memory (in production, this would be database)
+	// Store in memory
 	s.jobs[jobID] = job
 	
 	// Start async processing
@@ -83,6 +133,32 @@ func (s *WhisperJobServiceImpl) CreateJob(ctx context.Context, userID string, re
 
 // GetJob retrieves a job by ID
 func (s *WhisperJobServiceImpl) GetJob(ctx context.Context, jobID string) (*dto.WhisperJobResponse, error) {
+	if s.useRedis {
+		redisJob, err := s.redisService.GetJob(ctx, jobID)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Convert Redis job to WhisperJob for compatibility
+		job := &model.WhisperJob{
+			ID:            redisJob.ID,
+			UserID:        redisJob.UserID,
+			Status:        redisJob.Status,
+			FileName:      redisJob.FileName,
+			FileURL:       redisJob.FileKey,
+			FileSize:      redisJob.FileSize,
+			Provider:      redisJob.Provider,
+			Language:      redisJob.Language,
+			CreditCost:    5, // Default if not available
+			Metadata:      redisJob.Metadata,
+			CreatedAt:     redisJob.CreatedAt,
+			UpdatedAt:     redisJob.UpdatedAt,
+		}
+		
+		return s.jobToResponse(job), nil
+	}
+	
+	// Fallback to in-memory storage
 	job, exists := s.jobs[jobID]
 	if !exists {
 		return nil, fmt.Errorf("job not found: %s", jobID)
@@ -93,7 +169,36 @@ func (s *WhisperJobServiceImpl) GetJob(ctx context.Context, jobID string) (*dto.
 
 // ListJobs lists jobs for a user
 func (s *WhisperJobServiceImpl) ListJobs(ctx context.Context, userID string, page, limit int, status string) ([]dto.WhisperJobResponse, int, error) {
-	// Filter jobs by user and status
+	if s.useRedis {
+		redisJobs, total, err := s.redisService.ListJobs(ctx, userID, status, page, limit)
+		if err != nil {
+			return nil, 0, err
+		}
+		
+		// Convert Redis jobs to WhisperJob responses
+		responses := make([]dto.WhisperJobResponse, 0)
+		for _, redisJob := range redisJobs {
+			job := &model.WhisperJob{
+				ID:            redisJob.ID,
+				UserID:        redisJob.UserID,
+				Status:        redisJob.Status,
+				FileName:      redisJob.FileName,
+				FileURL:       redisJob.FileKey,
+				FileSize:      redisJob.FileSize,
+				Provider:      redisJob.Provider,
+				Language:      redisJob.Language,
+				CreditCost:    5, // Default if not available
+				Metadata:      redisJob.Metadata,
+				CreatedAt:     redisJob.CreatedAt,
+				UpdatedAt:     redisJob.UpdatedAt,
+			}
+			responses = append(responses, *s.jobToResponse(job))
+		}
+		
+		return responses, total, nil
+	}
+	
+	// Fallback to in-memory storage
 	var userJobs []*model.WhisperJob
 	for _, job := range s.jobs {
 		if job.UserID == userID {
@@ -123,6 +228,16 @@ func (s *WhisperJobServiceImpl) ListJobs(ctx context.Context, userID string, pag
 
 // DeleteJob deletes/cancels a job
 func (s *WhisperJobServiceImpl) DeleteJob(ctx context.Context, jobID string) error {
+	if s.useRedis {
+		// Update job status to cancelled in Redis
+		err := s.redisService.UpdateJob(ctx, jobID, "cancelled", 0, "")
+		if err != nil {
+			return fmt.Errorf("failed to cancel job: %w", err)
+		}
+		return nil
+	}
+	
+	// Fallback to in-memory storage
 	job, exists := s.jobs[jobID]
 	if !exists {
 		return fmt.Errorf("job not found: %s", jobID)
@@ -131,8 +246,6 @@ func (s *WhisperJobServiceImpl) DeleteJob(ctx context.Context, jobID string) err
 	// Mark as cancelled
 	job.Status = string(dto.JobStatusCancelled)
 	job.UpdatedAt = time.Now()
-	
-	// In production, would also cancel actual processing
 	
 	return nil
 }
@@ -173,19 +286,49 @@ func (s *WhisperJobServiceImpl) GetUserStats(ctx context.Context, userID string)
 
 // ProcessJob processes a transcription job asynchronously
 func (s *WhisperJobServiceImpl) ProcessJob(ctx context.Context, jobID string) error {
-	job, exists := s.jobs[jobID]
-	if !exists {
-		return fmt.Errorf("job not found: %s", jobID)
+	var job *model.WhisperJob
+	var err error
+	
+	if s.useRedis {
+		// Get job from Redis
+		redisJob, err := s.redisService.GetJob(ctx, jobID)
+		if err != nil {
+			return fmt.Errorf("job not found: %s", jobID)
+		}
+		
+		// Update status to processing in Redis
+		if err := s.redisService.UpdateJob(ctx, jobID, "processing", 0, ""); err != nil {
+			return fmt.Errorf("failed to update job status: %w", err)
+		}
+		
+		// Convert Redis job to WhisperJob for processing
+		job = &model.WhisperJob{
+			ID:            redisJob.ID,
+			UserID:        redisJob.UserID,
+			Status:        redisJob.Status,
+			FileName:      redisJob.FileName,
+			FileURL:       redisJob.FileKey,
+			FileSize:      redisJob.FileSize,
+			Provider:      redisJob.Provider,
+			Language:      redisJob.Language,
+			Metadata:      redisJob.Metadata,
+			CreatedAt:     redisJob.CreatedAt,
+			UpdatedAt:     redisJob.UpdatedAt,
+		}
+	} else {
+		// Fallback to in-memory storage
+		var exists bool
+		job, exists = s.jobs[jobID]
+		if !exists {
+			return fmt.Errorf("job not found: %s", jobID)
+		}
+		
+		// Update status to processing
+		job.Status = string(dto.JobStatusProcessing)
+		now := time.Now()
+		job.StartedAt = &now
+		job.UpdatedAt = now
 	}
-	
-	// Update status to processing
-	job.Status = string(dto.JobStatusProcessing)
-	now := time.Now()
-	job.StartedAt = &now
-	job.UpdatedAt = now
-	
-	// Simulate processing delay
-	time.Sleep(5 * time.Second)
 	
 	// Create transcription request
 	transcriptionReq := &dto.CreateTranscriptionRequest{
@@ -201,19 +344,31 @@ func (s *WhisperJobServiceImpl) ProcessJob(ctx context.Context, jobID string) er
 	// Call transcription service
 	transcription, err := s.transcriptionService.CreateTranscription(ctx, transcriptionReq)
 	if err != nil {
-		job.Status = string(dto.JobStatusFailed)
-		job.Error = err.Error()
-		job.UpdatedAt = time.Now()
+		if s.useRedis {
+			// Update status in Redis
+			s.redisService.UpdateJob(ctx, jobID, "failed", 0, err.Error())
+		} else {
+			// Update status in memory
+			job.Status = string(dto.JobStatusFailed)
+			job.Error = err.Error()
+			job.UpdatedAt = time.Now()
+		}
 		return err
 	}
 	
 	// Update job with results
-	job.Status = string(dto.JobStatusCompleted)
-	job.WhisperJobID = &transcription.ID
-	job.TranscriptionText = transcription.Transcription
-	completedAt := time.Now()
-	job.CompletedAt = &completedAt
-	job.UpdatedAt = completedAt
+	if s.useRedis {
+		// Update status in Redis
+		s.redisService.UpdateJob(ctx, jobID, "completed", 100, "")
+	} else {
+		// Update status in memory
+		job.Status = string(dto.JobStatusCompleted)
+		job.WhisperJobID = &transcription.ID
+		job.TranscriptionText = transcription.Transcription
+		completedAt := time.Now()
+		job.CompletedAt = &completedAt
+		job.UpdatedAt = completedAt
+	}
 	
 	return nil
 }
