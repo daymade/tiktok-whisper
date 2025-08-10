@@ -1,0 +1,16 @@
+FROM alpine:latest
+
+# Install dependencies
+RUN apk add --no-cache ca-certificates
+
+# Copy the v2t binary
+COPY v2t /usr/local/bin/v2t
+
+# Make it executable
+RUN chmod +x /usr/local/bin/v2t
+
+# Expose the API port
+EXPOSE 8085
+
+# Run the API server
+CMD ["v2t", "api", "--port", "8085", "--host", "0.0.0.0"]
