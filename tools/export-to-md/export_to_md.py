@@ -175,6 +175,10 @@ class ExportManager:
     def verify_html2md_tool(self):
         """验证 html2md 工具"""
         html2md_path = self.config.get('html2md_path')
+        # Resolve relative paths against the config file's directory
+        if not os.path.isabs(html2md_path):
+            html2md_path = str((Path(__file__).parent / html2md_path).resolve())
+            self.config.set('html2md_path', html2md_path)
         if not os.path.exists(html2md_path):
             raise FileNotFoundError(f"html2md 工具不存在: {html2md_path}")
     
@@ -233,8 +237,8 @@ class ExportManager:
                 # 调用 html2md 工具
                 colorprint("正在转换为 Markdown...", Colors.BLUE)
                 result = subprocess.run([
-                    'python', 
-                    self.config.get('html2md_path'), 
+                    sys.executable,
+                    self.config.get('html2md_path'),
                     temp_json_name
                 ], capture_output=True, text=True, cwd=str(output_path))
                 
