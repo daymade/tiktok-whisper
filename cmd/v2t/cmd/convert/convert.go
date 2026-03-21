@@ -20,6 +20,7 @@ var convertCount int
 var parallel int
 var noProgress bool
 var providerName string
+var forceRetranscribe bool
 
 var inputFile string
 
@@ -52,7 +53,10 @@ func init() {
 	
 	Cmd.Flags().StringVar(&providerName, "provider", "",
 		"Transcription provider to use (whisper_cpp, openai, elevenlabs, whisper_server, etc.)")
-	
+
+	Cmd.Flags().BoolVar(&forceRetranscribe, "force", false,
+		"Force re-transcription of already processed files (deletes existing records first)")
+
 }
 
 // Cmd represents the convert command
@@ -90,11 +94,12 @@ var Cmd = &cobra.Command{
 		}
 
 
-		// Set runtime configuration for provider selection
-		if providerName != "" {
+		// Set runtime configuration for provider selection and force mode
+		if providerName != "" || forceRetranscribe {
 			provider.InitializeRuntimeConfig()
 			provider.SetRuntimeConfig(&provider.RuntimeConfig{
-				ProviderName: providerName,
+				ProviderName:      providerName,
+				ForceRetranscribe: forceRetranscribe,
 			})
 		}
 		

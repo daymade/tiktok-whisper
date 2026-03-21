@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"tiktok-whisper/internal/app/api"
+	"tiktok-whisper/internal/app/api/provider"
 	"tiktok-whisper/internal/app/audio"
 	"tiktok-whisper/internal/app/model"
 	"tiktok-whisper/internal/app/repository"
@@ -202,14 +203,27 @@ func (c *Converter) ConvertVideos(fileFullpaths []string, userNickname string, c
 }
 
 func (c *Converter) filterUnProcessedFiles(fileInfos []model.FileInfo, convertCount int) []model.FileInfo {
+	// Check if force re-transcription is requested
+	forceMode := false
+	if cfg := provider.GetRuntimeConfig(); cfg != nil && cfg.ForceRetranscribe {
+		forceMode = true
+		log.Printf("Force mode: will re-transcribe already processed files")
+	}
+
 	filesToProcess := make([]model.FileInfo, 0, convertCount)
 
 	for _, fileInfo := range fileInfos {
 		// Check if the file has been processed
 		id, err := c.db.CheckIfFileProcessed(fileInfo.Name)
 		if err == nil {
-			log.Printf("File '%s' with '%d' has already been processed, skipping...\n", fileInfo.Name, id)
-			continue
+			if forceMode {
+				log.Printf("File '%s' (id=%d) already processed, will re-transcribe (--force)\n", fileInfo.Name, id)
+				// Delete old record so the new one can be inserted
+				c.db.DeleteByID(id)
+			} else {
+				log.Printf("File '%s' with '%d' has already been processed, skipping...\n", fileInfo.Name, id)
+				continue
+			}
 		}
 
 		filesToProcess = append(filesToProcess, fileInfo)

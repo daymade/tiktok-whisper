@@ -34,6 +34,11 @@ func (pdb *PostgresDB) CheckIfFileProcessed(fileName string) (int, error) {
 	return id, err
 }
 
+func (pdb *PostgresDB) DeleteByID(id int) error {
+	_, err := pdb.db.Exec(`DELETE FROM transcriptions WHERE id = $1`, id)
+	return err
+}
+
 func (pdb *PostgresDB) RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string,
 	lastConversionTime time.Time, hasError int, errorMessage string) {
 	insertSQL := `INSERT INTO transcriptions (user, input_dir, file_name, mp3_file_name, audio_duration, transcription, last_conversion_time, has_error, error_message) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`

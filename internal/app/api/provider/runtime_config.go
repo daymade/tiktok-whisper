@@ -4,7 +4,8 @@ import "sync"
 
 // RuntimeConfig holds runtime configuration for provider selection
 type RuntimeConfig struct {
-	ProviderName string
+	ProviderName       string
+	ForceRetranscribe  bool
 }
 
 var (

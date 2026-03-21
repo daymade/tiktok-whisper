@@ -12,6 +12,8 @@ type TranscriptionDAO interface {
 
 	CheckIfFileProcessed(fileName string) (int, error)
 
+	DeleteByID(id int) error
+
 	RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string,
 		lastConversionTime time.Time, hasError int, errorMessage string)
 }

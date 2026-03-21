@@ -34,6 +34,11 @@ func (sdb *SQLiteDB) CheckIfFileProcessed(fileName string) (int, error) {
 	return id, err
 }
 
+func (sdb *SQLiteDB) DeleteByID(id int) error {
+	_, err := sdb.db.Exec(`DELETE FROM transcriptions WHERE id = ?`, id)
+	return err
+}
+
 func (sdb *SQLiteDB) RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string,
 	lastConversionTime time.Time, hasError int, errorMessage string) {
 	insertSQL := `INSERT INTO transcriptions (user, input_dir, file_name, mp3_file_name, audio_duration, transcription, last_conversion_time, has_error, error_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`

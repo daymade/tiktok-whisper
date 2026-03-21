@@ -22,17 +22,39 @@ func NewSimpleProviderTranscriber() api.Transcriber {
 	// Determine config path - priority order:
 	// 1. Local providers.yaml
 	// 2. Home directory ~/.tiktok-whisper/providers.yaml
-	var configPath string
-	if _, err := os.Stat("providers.yaml"); err == nil {
-		configPath = "providers.yaml"
-	} else {
-		configPath = filepath.Join(os.Getenv("HOME"), ".tiktok-whisper", "providers.yaml")
+	localConfig := "providers.yaml"
+	homeConfig := filepath.Join(os.Getenv("HOME"), ".tiktok-whisper", "providers.yaml")
+	_, localErr := os.Stat(localConfig)
+	_, homeErr := os.Stat(homeConfig)
+	localExists := localErr == nil
+	homeExists := homeErr == nil
+
+	// Fail fast if both exist — ambiguous config is worse than no config
+	if localExists && homeExists {
+		absLocal, _ := filepath.Abs(localConfig)
+		log.Fatalf("CONFLICT: Two provider configs found. Remove one or use --config to specify:\n"+
+			"  ./providers.yaml  → %s\n"+
+			"  ~/.tiktok-whisper/providers.yaml → %s\n",
+			absLocal, homeConfig)
 	}
-	
+
+	var configPath string
+	switch {
+	case localExists:
+		configPath = localConfig
+	case homeExists:
+		configPath = homeConfig
+	default:
+		log.Fatalf("No providers.yaml found. Expected at ./providers.yaml or %s", homeConfig)
+	}
+
+	absConfigPath, _ := filepath.Abs(configPath)
+	log.Printf("Loading provider config: %s", absConfigPath)
+
 	configManager := NewConfigManager(configPath)
 	config, err := configManager.LoadConfig()
 	if err != nil {
-		log.Fatalf("Failed to load provider configuration from %s: %v", configPath, err)
+		log.Fatalf("Failed to load provider configuration from %s: %v", absConfigPath, err)
 	}
 
 	// Get the provider name - priority order:
@@ -59,10 +81,22 @@ func NewSimpleProviderTranscriber() api.Transcriber {
 	factory := NewProviderFactory()
 	
 	// Convert ProviderConfig to map for factory
+	// Auth must be a map[string]interface{}, not AuthConfig struct,
+	// because provider creators use type assertions like auth["api_key"].(string)
+	authMap := make(map[string]interface{})
+	if providerConfig.Auth.APIKey != "" {
+		authMap["api_key"] = providerConfig.Auth.APIKey
+	}
+	if providerConfig.Auth.BaseURL != "" {
+		authMap["base_url"] = providerConfig.Auth.BaseURL
+	}
+	if len(providerConfig.Auth.Headers) > 0 {
+		authMap["headers"] = providerConfig.Auth.Headers
+	}
 	configMap := map[string]interface{}{
 		"type":     providerConfig.Type,
 		"settings": providerConfig.Settings,
-		"auth":     providerConfig.Auth,
+		"auth":     authMap,
 	}
 
 	// Create the provider
