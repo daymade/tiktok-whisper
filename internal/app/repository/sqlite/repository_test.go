@@ -198,6 +198,7 @@ func TestSQLiteDB_RecordToDB(t *testing.T) {
 					time.Now(),
 					tc.hasError,
 					tc.errorMessage,
+				"whisper_cpp",
 				)
 
 				// Verify the record was inserted
@@ -343,6 +344,7 @@ func TestSQLiteDB_ConcurrentAccess(t *testing.T) {
 						time.Now(),
 						0,
 						"",
+						"whisper_cpp",
 					)
 
 					// Also test concurrent reads
@@ -423,6 +425,7 @@ func TestSQLiteDB_DataIntegrity(t *testing.T) {
 					time.Now(),
 					0,
 					"",
+					"whisper_cpp",
 				)
 
 				// Verify data was stored correctly
@@ -481,6 +484,7 @@ func BenchmarkSQLiteDB_RecordToDB(b *testing.B) {
 				time.Now(),
 				0,
 				"",
+				"whisper_cpp",
 			)
 		}
 	})
@@ -503,6 +507,7 @@ func BenchmarkSQLiteDB_GetAllByUser(b *testing.B) {
 				time.Now(),
 				0,
 				"",
+				"whisper_cpp",
 			)
 		}
 
@@ -560,6 +565,7 @@ func TestSQLiteDB_MemoryUsage(t *testing.T) {
 					time.Now(),
 					0,
 					"",
+					"whisper_cpp",
 				)
 			}
 		})

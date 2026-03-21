@@ -15,5 +15,5 @@ type TranscriptionDAO interface {
 	DeleteByID(id int) error
 
 	RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string,
-		lastConversionTime time.Time, hasError int, errorMessage string)
+		lastConversionTime time.Time, hasError int, errorMessage string, providerType string)
 }

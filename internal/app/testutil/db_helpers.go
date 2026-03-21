@@ -283,7 +283,8 @@ func createTestTables(db *sql.DB) error {
 		transcription TEXT NOT NULL,
 		last_conversion_time DATETIME NOT NULL,
 		has_error INTEGER NOT NULL DEFAULT 0,
-		error_message TEXT
+		error_message TEXT,
+		provider_type TEXT DEFAULT 'whisper_cpp'
 	);`
 
 	_, err := db.Exec(createTableSQL)

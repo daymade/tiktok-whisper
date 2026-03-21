@@ -224,7 +224,7 @@ func (m *MockTranscriptionDAO) DeleteByID(id int) error {
 }
 
 // RecordToDB implements the TranscriptionDAO interface
-func (m *MockTranscriptionDAO) RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string, lastConversionTime time.Time, hasError int, errorMessage string) {
+func (m *MockTranscriptionDAO) RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string, lastConversionTime time.Time, hasError int, errorMessage string, providerType string) {
 	call := RecordCall{
 		User:               user,
 		InputDir:           inputDir,

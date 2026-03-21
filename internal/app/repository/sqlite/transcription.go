@@ -40,9 +40,9 @@ func (sdb *SQLiteDB) DeleteByID(id int) error {
 }
 
 func (sdb *SQLiteDB) RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string,
-	lastConversionTime time.Time, hasError int, errorMessage string) {
-	insertSQL := `INSERT INTO transcriptions (user, input_dir, file_name, mp3_file_name, audio_duration, transcription, last_conversion_time, has_error, error_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`
-	_, err := sdb.db.Exec(insertSQL, user, inputDir, fileName, mp3FileName, audioDuration, transcription, lastConversionTime, hasError, errorMessage)
+	lastConversionTime time.Time, hasError int, errorMessage string, providerType string) {
+	insertSQL := `INSERT INTO transcriptions (user, input_dir, file_name, mp3_file_name, audio_duration, transcription, last_conversion_time, has_error, error_message, provider_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	_, err := sdb.db.Exec(insertSQL, user, inputDir, fileName, mp3FileName, audioDuration, transcription, lastConversionTime, hasError, errorMessage, providerType)
 	if err != nil {
 		log.Fatalf("Failed to insert data into database: %v\n", err)
 	}

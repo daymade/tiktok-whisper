@@ -101,16 +101,21 @@ func (c *Converter) ConvertAudios(audioFiles []string, outputDirectory string, u
 func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory string, userNickname string) {
 	log.Printf("Start to process %s\n", audioAbsPath)
 
+	// Determine provider type for recording
+	providerType := "whisper_cpp"
+	if cfg := provider.GetRuntimeConfig(); cfg != nil && cfg.ProviderName != "" {
+		providerType = cfg.ProviderName
+	}
+
 	// Start transcription
 	log.Printf("Starting transcription of file %s\n", audioAbsPath)
-	
+
 	transcription, err := c.transcriber.Transcript(audioAbsPath)
 	if err != nil {
 		log.Printf("Transcription error: %v\n", err)
-		// Record error to database
 		fileName := filepath.Base(audioAbsPath)
-		c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, 0, "", 
-			time.Now(), 1, fmt.Sprintf("Transcription error: %v", err))
+		c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, 0, "",
+			time.Now(), 1, fmt.Sprintf("Transcription error: %v", err), providerType)
 		return
 	}
 
@@ -122,22 +127,21 @@ func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory stri
 	err = files.WriteToFile(transcription, transcriptionFilepath)
 	if err != nil {
 		log.Printf("Error writing to audioAbsPath: %v\n", err)
-		// Record error to database
 		c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, 0, transcription,
-			time.Now(), 1, fmt.Sprintf("File write error: %v", err))
+			time.Now(), 1, fmt.Sprintf("File write error: %v", err), providerType)
 		return
 	}
-	
+
 	// Get audio duration
 	duration, err := audio.GetAudioDuration(audioAbsPath)
 	if err != nil {
 		log.Printf("Failed to get audio duration: %v\n", err)
 		duration = 0 // Use 0 if we can't get duration
 	}
-	
+
 	// Save successful transcription to database
-	c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, duration, transcription, 
-		time.Now(), 0, "")
+	c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, duration, transcription,
+		time.Now(), 0, "", providerType)
 	
 	log.Printf("Transcription saved to: %s\n", transcriptionFilepath)
 }
@@ -237,6 +241,12 @@ func (c *Converter) filterUnProcessedFiles(fileInfos []model.FileInfo, convertCo
 func (c *Converter) convertToText(userNickname string, fileName string, fileFullPath string) error {
 	log.Printf("Processing file '%s'\n", fileName)
 
+	// Determine provider type for recording
+	providerType := "whisper_cpp"
+	if cfg := provider.GetRuntimeConfig(); cfg != nil && cfg.ProviderName != "" {
+		providerType = cfg.ProviderName
+	}
+
 	// Convert MP4 to MP3 using FFmpeg
 	mp3FileName := strings.TrimSuffix(fileName, ".mp4") + ".mp3"
 	mp3FilePath := filepath.Join(files.GetUserMp3Dir(userNickname), mp3FileName)
@@ -245,7 +255,7 @@ func (c *Converter) convertToText(userNickname string, fileName string, fileFull
 	err := audio.ConvertToMp3(fileName, fileFullPath, mp3FilePath)
 	if err != nil {
 		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, 0, "",
-			time.Now(), 1, fmt.Sprintf("FFmpeg error: %v", err))
+			time.Now(), 1, fmt.Sprintf("FFmpeg error: %v", err), providerType)
 		return fmt.Errorf("FFmpeg error: %v", err)
 	}
 
@@ -253,7 +263,7 @@ func (c *Converter) convertToText(userNickname string, fileName string, fileFull
 	duration, err := audio.GetAudioDuration(mp3FilePath)
 	if err != nil {
 		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, 0, "",
-			time.Now(), 1, fmt.Sprintf("Failed to get audio duration: %v", err))
+			time.Now(), 1, fmt.Sprintf("Failed to get audio duration: %v", err), providerType)
 		return fmt.Errorf("failed to get audio duration: %v", err)
 	}
 
@@ -263,13 +273,13 @@ func (c *Converter) convertToText(userNickname string, fileName string, fileFull
 		log.Printf("transcripting failed for %v, err: %v", fileName, err)
 
 		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, duration, "",
-			time.Now(), 1, fmt.Sprintf("Transcription error: %v", err))
+			time.Now(), 1, fmt.Sprintf("Transcription error: %v", err), providerType)
 
 		return fmt.Errorf("transcription error: %v", err)
 	}
 
 	// Save conversion results to database
-	c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, duration, transcription, time.Now(), 0, "")
+	c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, duration, transcription, time.Now(), 0, "", providerType)
 
 	log.Println("transcription completed for file: ", fileName)
 	fmt.Println(transcription)
