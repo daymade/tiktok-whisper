@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"tiktok-whisper/internal/app/api"
@@ -130,6 +131,7 @@ func (m *MockTranscriber) Reset() {
 
 // MockTranscriptionDAO is a mock implementation of the TranscriptionDAO interface
 type MockTranscriptionDAO struct {
+	mu               sync.Mutex
 	transcriptions   []model.Transcription
 	processedFiles   map[string]int
 	closeFunc        func() error
@@ -208,6 +210,9 @@ func (m *MockTranscriptionDAO) GetAllByUser(userNickname string) ([]model.Transc
 
 // CheckIfFileProcessed implements the TranscriptionDAO interface
 func (m *MockTranscriptionDAO) CheckIfFileProcessed(fileName string) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.checkFileFunc != nil {
 		return m.checkFileFunc(fileName)
 	}
@@ -225,6 +230,9 @@ func (m *MockTranscriptionDAO) DeleteByID(id int) error {
 
 // RecordToDB implements the TranscriptionDAO interface
 func (m *MockTranscriptionDAO) RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string, lastConversionTime time.Time, hasError int, errorMessage string, providerType string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	call := RecordCall{
 		User:               user,
 		InputDir:           inputDir,
