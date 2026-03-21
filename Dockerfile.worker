@@ -1,0 +1,50 @@
+# Multi-stage build for Temporal worker
+FROM golang:1.23-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache gcc musl-dev sqlite-dev
+
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the worker binary
+RUN CGO_ENABLED=1 go build -o temporal-worker ./internal/app/temporal/worker
+
+# Runtime stage
+FROM alpine:latest
+
+# Install runtime dependencies
+RUN apk add --no-cache ca-certificates ffmpeg
+
+# Create app user
+RUN adduser -D -g '' appuser
+
+WORKDIR /app
+
+# Copy worker binary and required files from builder
+COPY --from=builder /app/temporal-worker /app/temporal-worker
+# Use Docker-specific provider configuration with hardcoded values
+# This ensures correct endpoint configuration without relying on environment variables
+COPY --from=builder /app/providers.docker-whisper.yaml /app/config/providers.yaml
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/logs /app/config /tmp/whisper-audio && \
+    chown -R appuser:appuser /app /tmp/whisper-audio
+
+USER appuser
+
+# Expose health check port
+EXPOSE 8081
+
+# Health check for worker
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8081/health || exit 1
+
+# Run the Temporal worker
+CMD ["./temporal-worker"]

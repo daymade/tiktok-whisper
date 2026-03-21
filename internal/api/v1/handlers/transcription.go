@@ -1,10 +1,15 @@
 package handlers
 
 import (
+	"io"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"tiktok-whisper/internal/api/errors"
 	"tiktok-whisper/internal/api/middleware"
 	"tiktok-whisper/internal/api/v1/dto"
@@ -158,24 +163,105 @@ func (h *TranscriptionHandler) Upload(c *gin.Context) {
 	// Get optional parameters
 	provider := c.PostForm("provider")
 	language := c.PostForm("language")
-	
-	// TODO: Save file to temporary storage
-	// For now, create a transcription request with the file info
+
+	log.Printf("[DEBUG Upload] Extracted parameters - Provider: '%s', Language: '%s'", provider, language)
+
+	// Debug: check all form values
+	log.Printf("[DEBUG Upload] All form values: %+v", c.Request.Form)
+	log.Printf("[DEBUG Upload] All post form values: %+v", c.Request.PostForm)
+
+	// Get user ID from context (set by auth middleware)
+	userID := c.GetString("user_id")
+	if userID == "" {
+		userID = "anonymous" // Default for testing
+	}
+
+	log.Printf("[DEBUG Upload] Starting upload for user: %s, file: %s, size: %d", userID, header.Filename, header.Size)
+
+	// Get DATA_PATH from environment for file storage
+	dataPath := os.Getenv("DATA_PATH")
+	if dataPath == "" {
+		log.Printf("[ERROR Upload] DATA_PATH not set")
+		middleware.HandleError(c, errors.NewInternalError("DATA_PATH environment variable not set"))
+		return
+	}
+
+	log.Printf("[DEBUG Upload] Using DATA_PATH: %s", dataPath)
+
+	// Create uploads directory if it doesn't exist
+	uploadsDir := filepath.Join(dataPath, "uploads")
+	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
+		log.Printf("[ERROR Upload] Failed to create uploads directory: %v", err)
+		middleware.HandleError(c, errors.NewInternalError("Failed to create uploads directory"))
+		return
+	}
+
+	log.Printf("[DEBUG Upload] Created uploads directory: %s", uploadsDir)
+
+	// Generate unique filename to avoid conflicts
+	fileExt := filepath.Ext(header.Filename)
+	uniqueID := uuid.New().String()
+	savedFileName := uniqueID + fileExt
+	savedFilePath := filepath.Join(uploadsDir, savedFileName)
+
+	log.Printf("[DEBUG Upload] Generated file path: %s", savedFilePath)
+
+	// Create destination file
+	dest, err := os.Create(savedFilePath)
+	if err != nil {
+		log.Printf("[ERROR Upload] Failed to create destination file: %v", err)
+		middleware.HandleError(c, errors.NewInternalError("Failed to create destination file"))
+		return
+	}
+
+	log.Printf("[DEBUG Upload] Created destination file, starting copy...")
+
+	// Copy uploaded file content to destination
+	bytesWritten, err := io.Copy(dest, file)
+	if err != nil {
+		log.Printf("[ERROR Upload] Failed to copy file content: %v", err)
+		// Clean up the partial file on error
+		os.Remove(savedFilePath)
+		middleware.HandleError(c, errors.NewInternalError("Failed to save uploaded file"))
+		return
+	}
+
+	log.Printf("[DEBUG Upload] Copied %d bytes to file", bytesWritten)
+
+	// Explicitly close the file to ensure all data is written
+	if err := dest.Close(); err != nil {
+		log.Printf("[ERROR Upload] Failed to close file: %v", err)
+		os.Remove(savedFilePath)
+		middleware.HandleError(c, errors.NewInternalError("Failed to finalize uploaded file"))
+		return
+	}
+
+	log.Printf("[DEBUG Upload] File saved successfully: %s", savedFilePath)
+
+	// Create transcription request with saved file path
 	req := &dto.CreateTranscriptionRequest{
+		FilePath: savedFilePath,
 		Provider: provider,
 		Language: language,
+		UserID:   userID,
 		Options: map[string]interface{}{
-			"filename": header.Filename,
-			"size":     header.Size,
+			"original_filename": header.Filename,
+			"file_size":        header.Size,
+			"saved_filename":   savedFileName,
 		},
 	}
-	
+
+	log.Printf("[DEBUG Upload] Creating transcription request - FilePath: %s, Provider: %s, UserID: %s", savedFilePath, provider, userID)
+
 	// Create transcription
 	response, err := h.service.CreateTranscription(c.Request.Context(), req)
 	if err != nil {
+		log.Printf("[ERROR Upload] CreateTranscription failed: %v", err)
 		middleware.HandleError(c, errors.NewInternalError("Failed to create transcription"))
 		return
 	}
+
+	log.Printf("[DEBUG Upload] Transcription created successfully with ID: %d", response.ID)
 	
 	c.JSON(http.StatusOK, response)
 }

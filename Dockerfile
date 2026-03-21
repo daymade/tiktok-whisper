@@ -1,5 +1,5 @@
 # Multi-stage build for v2t API
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache gcc musl-dev sqlite-dev
@@ -13,8 +13,8 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the binary
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o v2t ./cmd/v2t/main.go
+# Build the binary for native platform
+RUN CGO_ENABLED=1 go build -o v2t ./cmd/v2t/main.go
 
 # Runtime stage
 FROM alpine:latest
@@ -27,9 +27,10 @@ RUN adduser -D -g '' appuser
 
 WORKDIR /app
 
-# Copy binary from builder
+# Copy binary and required files from builder
 COPY --from=builder /app/v2t /app/v2t
-COPY --from=builder /app/providers.yaml /app/providers.yaml
+COPY --from=builder /app/providers.docker.yaml /app/providers.yaml
+COPY --from=builder /app/go.mod /app/go.mod
 
 # Create necessary directories
 RUN mkdir -p /app/data /app/logs && \

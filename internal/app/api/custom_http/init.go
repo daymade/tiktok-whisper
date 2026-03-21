@@ -9,12 +9,7 @@ func init() {
 }
 
 func createCustomHTTPProvider(config map[string]interface{}) (provider.TranscriptionProvider, error) {
-	// Extract settings
-	settings, ok := config["settings"].(map[string]interface{})
-	if !ok {
-		settings = make(map[string]interface{})
-	}
-
-	// Create provider with settings
-	return NewCustomHTTPProvider(settings)
+	// The config passed from the factory is already the settings map
+	// No need to extract nested settings
+	return NewCustomHTTPProvider(config)
 }

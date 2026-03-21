@@ -34,7 +34,8 @@ const (
 type TranscriptionRequest struct {
 	// Core fields
 	InputFilePath string `json:"input_file_path"`
-	
+	Provider      string `json:"provider,omitempty"`   // Provider name for multipart form
+
 	// Language and model options
 	Language    string `json:"language,omitempty"`    // "zh", "en", "auto", etc.
 	Model       string `json:"model,omitempty"`       // Provider-specific model ID

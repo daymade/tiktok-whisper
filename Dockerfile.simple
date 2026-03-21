@@ -1,0 +1,10 @@
+FROM alpine:latest
+RUN apk add --no-cache ca-certificates ffmpeg
+RUN adduser -D -g '' appuser
+WORKDIR /app
+COPY v2t-temporal-worker .
+COPY v2t .
+RUN chmod +x v2t-temporal-worker v2t
+USER appuser
+EXPOSE 8080
+CMD ["./v2t-temporal-worker"]

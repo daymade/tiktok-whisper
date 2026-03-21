@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -16,38 +14,21 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
-	
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
+
 	"tiktok-whisper/internal/app/api/provider"
+	_ "tiktok-whisper/internal/app/api/custom_http" // Register custom_http provider
+	_ "tiktok-whisper/internal/app/api/whisper_server" // Register whisper_server provider
+	_ "tiktok-whisper/internal/app/api/openai/whisper" // Register openai provider
 	"tiktok-whisper/internal/app/config"
 	"tiktok-whisper/internal/app/temporal/activities"
 	"tiktok-whisper/internal/app/temporal/pkg/common"
+	"tiktok-whisper/internal/app/temporal/pkg/metrics"
 	"tiktok-whisper/internal/app/temporal/workflows"
 )
 
-// HealthStatus represents the worker health status
-type HealthStatus struct {
-	WorkerID  string             `json:"worker_id"`
-	TaskQueue string             `json:"task_queue"`
-	StartedAt time.Time          `json:"started_at"`
-	Status    string             `json:"status"`
-	Temporal  ConnectionStatus   `json:"temporal"`
-	MinIO     ConnectionStatus   `json:"minio"`
-	Providers []ProviderStatus   `json:"providers"`
-}
-
-// ConnectionStatus represents a connection status
-type ConnectionStatus struct {
-	Connected bool   `json:"connected"`
-	Endpoint  string `json:"endpoint"`
-}
-
-// ProviderStatus represents a provider status
-type ProviderStatus struct {
-	Name      string `json:"name"`
-	Type      string `json:"type"`
-	Available bool   `json:"available"`
-	Error     string `json:"error,omitempty"`
-}
 
 func main() {
 	// Load environment variables
@@ -92,7 +73,7 @@ func main() {
 
 	// Create activities
 	transcribeActivities := activities.NewTranscribeActivities(providerRegistry)
-	
+
 	storageActivities, err := activities.NewStorageActivities(
 		minioEndpoint,
 		minioAccessKey,
@@ -103,11 +84,38 @@ func main() {
 		logger.Fatal("Failed to create storage activities", zap.Error(err))
 	}
 
-	// Ensure MinIO bucket exists
-	ctx := context.Background()
-	if err := storageActivities.EnsureBucketExists(ctx); err != nil {
-		logger.Warn("Failed to ensure MinIO bucket exists", zap.Error(err))
+	// Create Douyin activities
+	douyinAPIEndpoint := common.GetEnv("DOUYIN_API_ENDPOINT", "")
+	douyinAPIKey := common.GetEnv("DOUYIN_API_KEY", "")
+	tempDir := common.GetEnv("V2T_TEMP_DIR", "/tmp/whisper-audio")
+	whisperProvider := common.GetEnv("WHISPER_PROVIDER", "") // Empty = use default
+
+	var douyinActivities *activities.DouyinActivities
+	if douyinAPIEndpoint != "" && douyinAPIKey != "" {
+		douyinActivities, err = activities.NewDouyinActivities(
+			douyinAPIEndpoint,
+			douyinAPIKey,
+			tempDir,
+			whisperProvider,
+		)
+		if err != nil {
+			logger.Warn("Failed to create Douyin activities, Douyin workflows will not be available", zap.Error(err))
+		} else {
+			logger.Info("Douyin activities initialized", zap.String("apiEndpoint", douyinAPIEndpoint))
+		}
+	} else {
+		logger.Warn("DOUYIN_API_ENDPOINT or DOUYIN_API_KEY not set, Douyin workflows will not be available")
 	}
+
+	// Create context for worker
+	ctx := context.Background()
+	
+	// Ensure MinIO bucket exists
+	// NOTE: Commented out as EnsureBucketExists uses activity logger which doesn't work outside activity context
+	// The bucket will be created when first activity runs
+	// if err := storageActivities.EnsureBucketExists(ctx); err != nil {
+	// 	logger.Warn("Failed to ensure MinIO bucket exists", zap.Error(err))
+	// }
 
 	// Create worker
 	w := worker.New(temporalClient, config.TaskQueue, worker.Options{
@@ -125,6 +133,17 @@ func main() {
 	w.RegisterWorkflow(workflows.TranscriptionWithFallbackWorkflow)
 	w.RegisterWorkflow(workflows.SmartFallbackWorkflow)
 
+	// Register Douyin workflows if available
+	if douyinActivities != nil {
+		w.RegisterWorkflow(workflows.ImportVideoWorkflow)
+		w.RegisterWorkflow(workflows.BatchImportVideosWorkflow)
+		w.RegisterWorkflow(workflows.ScrapeEngagementWorkflow)
+		w.RegisterWorkflow(workflows.ScrapeCommentsWorkflow)
+		w.RegisterWorkflow(workflows.GenerateReportWorkflow)
+		w.RegisterWorkflow(workflows.BatchGenerateReportsWorkflow)
+		logger.Info("Douyin workflows registered")
+	}
+
 	// Register activities
 	w.RegisterActivity(transcribeActivities.TranscribeFile)
 	w.RegisterActivity(transcribeActivities.GetProviderStatus)
@@ -136,6 +155,26 @@ func main() {
 	w.RegisterActivity(storageActivities.CleanupTempFile)
 	w.RegisterActivity(storageActivities.ListFiles)
 	w.RegisterActivity(storageActivities.EnsureBucketExists)
+
+	// Register Douyin activities if available
+	if douyinActivities != nil {
+		w.RegisterActivity(douyinActivities.DownloadDouyinVideo)
+		w.RegisterActivity(douyinActivities.ExtractAudioFromVideo)
+		w.RegisterActivity(douyinActivities.TranscribeDouyinAudio)
+		w.RegisterActivity(douyinActivities.UpdateDouyinVideoRecord)
+		w.RegisterActivity(douyinActivities.ScrapeDouyinEngagement)
+		w.RegisterActivity(douyinActivities.UpdateEngagementRecord)
+		w.RegisterActivity(douyinActivities.ScrapeDouyinComments)
+		w.RegisterActivity(douyinActivities.UpdateCommentsRecord)
+		w.RegisterActivity(douyinActivities.GenerateAIReport)
+		w.RegisterActivity(douyinActivities.UpdateReportRecord)
+		logger.Info("Douyin activities registered")
+	}
+
+	// Register DLQ activities (always available)
+	dlqActivities := activities.NewDLQActivities()
+	w.RegisterActivity(dlqActivities.ReportFailedWorkflow)
+	logger.Info("DLQ activities registered")
 
 	// Initialize health status
 	healthStatus := &HealthStatus{
@@ -177,6 +216,24 @@ func main() {
 		healthStatus.Providers = append(healthStatus.Providers, status)
 	}
 	
+	// Initialize Prometheus metrics
+	promRegistry := prometheus.NewRegistry()
+	douyinMetrics := metrics.NewDouyinMetrics(promRegistry)
+	metrics.SetGlobalDouyinMetrics(douyinMetrics) // Set global for activities to access
+	logger.Info("Prometheus metrics initialized")
+
+	// Start metrics server
+	metricsPort := getEnv("METRICS_PORT", ":9090")
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{}))
+
+		logger.Info("Starting Prometheus metrics server", zap.String("port", metricsPort))
+		if err := http.ListenAndServe(metricsPort, mux); err != nil {
+			logger.Error("Metrics server failed", zap.Error(err))
+		}
+	}()
+
 	// Start health server
 	healthPort := getEnv("HEALTH_PORT", ":8081")
 	startHealthServer(healthPort, healthStatus)
@@ -243,22 +300,24 @@ func initializeProviderRegistry(logger *zap.Logger) (provider.ProviderRegistry, 
 		// Convert config to map for factory
 		configMap := make(map[string]interface{})
 		
-		// Copy settings
-		for k, v := range providerConfig.Settings {
-			configMap[k] = v
+		// Add settings as nested map
+		if providerConfig.Settings != nil {
+			configMap["settings"] = providerConfig.Settings
 		}
 		
-		// Add auth if present
+		// Add auth as nested map if present
 		if providerConfig.Auth != nil {
+			authMap := make(map[string]interface{})
 			for k, v := range providerConfig.Auth {
 				// Expand environment variables
 				if strVal, ok := v.(string); ok && strings.HasPrefix(strVal, "${") {
 					envVar := strings.TrimSuffix(strings.TrimPrefix(strVal, "${"), "}")
-					configMap[k] = os.Getenv(envVar)
+					authMap[k] = os.Getenv(envVar)
 				} else {
-					configMap[k] = v
+					authMap[k] = v
 				}
 			}
+			configMap["auth"] = authMap
 		}
 		
 		// Create provider
@@ -334,6 +393,23 @@ func createDefaultConfig() *config.ProvidersConfig {
 		}
 	}
 	
+	// Configure whisper_server (HTTP API provider)
+	if whisperBackendURL := os.Getenv("WHISPER_BACKEND_URL"); whisperBackendURL != "" {
+		cfg.Providers["whisper_server"] = config.ProviderConfig{
+			Type:    "whisper_server",
+			Enabled: true,
+			Settings: map[string]interface{}{
+				"base_url":        whisperBackendURL,
+				"server_url":      whisperBackendURL,
+				"inference_path":  "/inference",
+				"response_format": "json",
+			},
+		}
+		
+		// Use whisper_server as default if available
+		cfg.DefaultProvider = "whisper_server"
+	}
+	
 	// Configure ElevenLabs if API key exists
 	if apiKey := os.Getenv("ELEVENLABS_API_KEY"); apiKey != "" {
 		cfg.Providers["elevenlabs"] = config.ProviderConfig{
@@ -395,25 +471,3 @@ func toZapFields(keyvals []interface{}) []zap.Field {
 	return fields
 }
 
-// getEnv gets environment variable with default value
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
-// startHealthServer starts the health check HTTP server
-func startHealthServer(port string, status *HealthStatus) {
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(status)
-	})
-	
-	go func() {
-		if err := http.ListenAndServe(port, nil); err != nil {
-			log.Printf("Health server failed: %v", err)
-		}
-	}()
-}

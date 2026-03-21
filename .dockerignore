@@ -1,0 +1,31 @@
+# Ignore data directories with large files and long filenames
+data/
+logs/
+*.log
+.DS_Store
+
+# Ignore audio files
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.ogg
+
+# Ignore build artifacts (commented out to allow v2t binary for Dockerfile.api)
+# v2t
+# v2t.exe
+
+# Ignore Git and other VCS
+.git
+.gitignore
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Ignore test files
+*_test.go
+
+# Ignore documentation markdown files but keep generated docs
+*.md
+# docs/ - Keep this as it contains generated swagger docs needed for build

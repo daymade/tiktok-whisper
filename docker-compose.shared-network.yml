@@ -1,0 +1,6 @@
+# Override to use shared network for cross-project communication
+
+networks:
+  v2t-network:
+    external: true
+    name: shared-network

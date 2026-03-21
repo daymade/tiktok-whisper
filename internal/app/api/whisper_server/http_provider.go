@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -309,6 +310,12 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 			Retryable: false,
 		}
 	}
+	
+	// Log detected language if available
+	if detectedLang, ok := metadata["language"].(string); ok && detectedLang != "" {
+		log.Printf("Whisper server detected language: %s (requested: %s) for file: %s",
+			detectedLang, wsp.getLanguage(request, nil), request.InputFilePath)
+	}
 
 	if transcriptionText == "" {
 		return nil, &provider.TranscriptionError{
@@ -317,6 +324,21 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 			Provider:  "whisper_server",
 			Retryable: false,
 			Suggestions: []string{"Check audio file format", "Verify whisper-server is running correctly"},
+		}
+	}
+
+	// Detect and reject hallucinated/nonsensical transcriptions
+	if wsp.isHallucinatedTranscription(transcriptionText) {
+		return nil, &provider.TranscriptionError{
+			Code:      "hallucinated_transcription",
+			Message:   fmt.Sprintf("transcription appears to be hallucinated or nonsensical: %s", transcriptionText),
+			Provider:  "whisper_server",
+			Retryable: true,
+			Suggestions: []string{
+				"Audio file may be corrupted or empty",
+				"Whisper model may be hallucinating",
+				"Try a different provider or model",
+			},
 		}
 	}
 
@@ -378,9 +400,21 @@ func (wsp *WhisperServerProvider) createMultipartForm(request *provider.Transcri
 		"temperature":     fmt.Sprintf("%.2f", wsp.getTemperature(request)),
 	}
 
+	// Add provider if specified (for API compatibility)
+	if request.Provider != "" {
+		params["provider"] = request.Provider
+		log.Printf("Setting provider parameter for whisper server: %s for file: %s",
+			request.Provider, request.InputFilePath)
+	}
+
 	// Add language if specified
 	if language := wsp.getLanguage(request, nil); language != "" {
 		params["language"] = language
+		log.Printf("Setting language parameter for whisper server: %s for file: %s",
+			language, request.InputFilePath)
+	} else {
+		log.Printf("No language specified for file %s, whisper server will use default",
+			request.InputFilePath)
 	}
 
 	// Add translate if enabled
@@ -621,6 +655,87 @@ func (wsp *WhisperServerProvider) HealthCheck(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// isHallucinatedTranscription detects if a transcription is likely hallucinated
+func (wsp *WhisperServerProvider) isHallucinatedTranscription(text string) bool {
+	// FAIL FAST: Immediately reject known hallucination patterns
+	lowerText := strings.ToLower(text)
+	
+	// Critical patterns that should never appear in real transcriptions
+	criticalPatterns := []string{
+		"speaking in foreign language",
+		"(speaking in foreign language)",
+	}
+	
+	for _, pattern := range criticalPatterns {
+		if strings.Contains(lowerText, pattern) {
+			return true // Fail fast - this is definitely hallucinated
+		}
+	}
+	
+	// Detect common hallucination patterns
+	// 1. Excessive repetition of the same phrase
+	lines := strings.Split(text, "\n")
+	if len(lines) >= 2 { // Lowered threshold from 3 to 2
+		phraseCount := make(map[string]int)
+		for _, line := range lines {
+			normalized := strings.TrimSpace(strings.ToLower(line))
+			if normalized != "" {
+				phraseCount[normalized]++
+			}
+		}
+		
+		// If any phrase repeats more than 30% of the lines, it's likely hallucinated
+		maxRepetition := 0
+		for _, count := range phraseCount {
+			if count > maxRepetition {
+				maxRepetition = count
+			}
+		}
+		// Lowered line threshold from 5 to 2 for aggressive detection
+		if float64(maxRepetition) > float64(len(lines))*0.3 && len(lines) >= 2 {
+			return true
+		}
+	}
+	
+	// 2. Known hallucination patterns
+	hallucinationPatterns := []string{
+		"i'm a good person",
+		"i'm not a good person",
+		"thank you for watching",
+		"please subscribe",
+		"like and subscribe",
+		"please like and subscribe",
+		"don't forget to subscribe",
+	}
+	
+	for _, pattern := range hallucinationPatterns {
+		if strings.Contains(lowerText, pattern) {
+			return true // Fail fast on ANY hallucination pattern
+		}
+	}
+	
+	// 3. Check for nonsensical repetitive content
+	words := strings.Fields(text)
+	if len(words) > 20 {
+		wordCount := make(map[string]int)
+		for _, word := range words {
+			normalized := strings.ToLower(strings.Trim(word, ".,!?;:"))
+			if len(normalized) > 2 { // Ignore small words
+				wordCount[normalized]++
+			}
+		}
+		
+		// If any word appears more than 20% of the time, it's suspicious
+		for _, count := range wordCount {
+			if float64(count) > float64(len(words))*0.2 {
+				return true
+			}
+		}
+	}
+	
+	return false
 }
 
 // LoadModel loads a new model on the remote server (if supported)

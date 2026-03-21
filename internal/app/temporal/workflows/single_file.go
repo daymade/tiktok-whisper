@@ -9,6 +9,7 @@ import (
 
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
+	"tiktok-whisper/internal/app/audio"
 	"tiktok-whisper/internal/app/common"
 	"tiktok-whisper/internal/app/temporal/activities"
 )
@@ -20,7 +21,13 @@ type SingleFileWorkflowResult = common.SingleFileWorkflowResult
 // SingleFileTranscriptionWorkflow processes a single file transcription
 func SingleFileTranscriptionWorkflow(ctx workflow.Context, req SingleFileWorkflowRequest) (SingleFileWorkflowResult, error) {
 	logger := workflow.GetLogger(ctx)
-	logger.Info("Starting single file transcription workflow", "fileId", req.FileID)
+	logger.Info("Starting single file transcription workflow", 
+		"fileId", req.FileID,
+		"filePath", req.FilePath,
+		"provider", req.Provider,
+		"language", req.Language,
+		"outputFormat", req.OutputFormat,
+		"useMinIO", req.UseMinIO)
 
 	startTime := workflow.Now(ctx)
 
@@ -40,13 +47,45 @@ func SingleFileTranscriptionWorkflow(ctx workflow.Context, req SingleFileWorkflo
 	var localFilePath string
 	var err error
 
-	// Step 1: Handle file location (download from MinIO if needed)
-	if req.UseMinIO && strings.HasPrefix(req.FilePath, "minio://") {
-		// Parse MinIO URL
-		objectKey := strings.TrimPrefix(req.FilePath, "minio://")
-		parts := strings.SplitN(objectKey, "/", 2)
-		if len(parts) == 2 {
-			objectKey = parts[1]
+	// Step 1: Handle file location (download from MinIO or HTTP URL if needed)
+	if req.UseMinIO {
+		// Handle MinIO URLs (both minio:// and HTTP pre-signed URLs)
+		var objectKey string
+		
+		if strings.HasPrefix(req.FilePath, "minio://") {
+			// Parse minio:// URL
+			objectKey = strings.TrimPrefix(req.FilePath, "minio://")
+			parts := strings.SplitN(objectKey, "/", 2)
+			if len(parts) == 2 {
+				objectKey = parts[1]
+			}
+		} else if strings.HasPrefix(req.FilePath, "http://") || strings.HasPrefix(req.FilePath, "https://") {
+			// For HTTP URLs from MinIO, extract the object key from the URL path
+			// Example: http://minio:9000/pod0-storage/whisper/user/file.mp3?signature=...
+			// We need to extract "whisper/user/file.mp3"
+			
+			// Parse URL to get path
+			urlParts := strings.SplitN(req.FilePath, "?", 2) // Remove query parameters
+			urlPath := urlParts[0]
+			
+			// Extract object key from path (assuming format: /bucket-name/object-key)
+			pathParts := strings.Split(urlPath, "/")
+			if len(pathParts) >= 5 { // http://host:port/bucket/path...
+				// Skip protocol, host, port, and bucket to get object key
+				objectKey = strings.Join(pathParts[4:], "/")
+			} else {
+				logger.Error("Invalid MinIO URL format", "url", req.FilePath)
+				return SingleFileWorkflowResult{
+					FileID: req.FileID,
+					Error:  fmt.Sprintf("Invalid MinIO URL format: %s", req.FilePath),
+				}, fmt.Errorf("invalid MinIO URL format")
+			}
+		} else {
+			logger.Error("Unsupported file path format with UseMinIO=true", "path", req.FilePath)
+			return SingleFileWorkflowResult{
+				FileID: req.FileID,
+				Error:  fmt.Sprintf("Unsupported file path format: %s", req.FilePath),
+			}, fmt.Errorf("unsupported file path format")
 		}
 
 		// Download file from MinIO
@@ -55,7 +94,7 @@ func SingleFileTranscriptionWorkflow(ctx workflow.Context, req SingleFileWorkflo
 			ObjectKey: objectKey,
 		}).Get(ctx, &downloadResult)
 		if err != nil {
-			logger.Error("Failed to download file from MinIO", "error", err)
+			logger.Error("Failed to download file from MinIO", "error", err, "objectKey", objectKey)
 			return SingleFileWorkflowResult{
 				FileID: req.FileID,
 				Error:  fmt.Sprintf("Failed to download file: %v", err),
@@ -71,11 +110,37 @@ func SingleFileTranscriptionWorkflow(ctx workflow.Context, req SingleFileWorkflo
 			})
 			_ = workflow.ExecuteActivity(cleanupCtx, "CleanupTempFile", localFilePath).Get(cleanupCtx, nil)
 		}()
+	} else if strings.HasPrefix(req.FilePath, "http://") || strings.HasPrefix(req.FilePath, "https://") {
+		// Handle HTTP URLs when UseMinIO is false
+		// This shouldn't normally happen, but handle it gracefully
+		logger.Error("HTTP URL provided but UseMinIO is false", "url", req.FilePath)
+		return SingleFileWorkflowResult{
+			FileID: req.FileID,
+			Error:  "HTTP URLs require UseMinIO flag to be set",
+		}, fmt.Errorf("HTTP URLs require UseMinIO flag")
 	} else {
+		// Local file path
 		localFilePath = req.FilePath
 	}
 
-	// Step 2: Perform transcription
+	// Step 2: Calculate audio duration
+	var audioDuration int
+	// Use SideEffect to execute the audio duration calculation deterministically
+	err = workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
+		duration, err := audio.GetAudioDuration(localFilePath)
+		if err != nil {
+			logger.Warn("Failed to get audio duration, using 0", "error", err)
+			return 0
+		}
+		return duration
+	}).Get(&audioDuration)
+	if err != nil {
+		logger.Warn("Failed to get audio duration from side effect", "error", err)
+		audioDuration = 0
+	}
+	logger.Info("Audio duration calculated", "fileId", req.FileID, "duration", audioDuration)
+
+	// Step 3: Perform transcription
 	var transcriptionResult activities.TranscriptionResult
 	err = workflow.ExecuteActivity(ctx, "TranscribeFile", activities.TranscriptionRequest{
 		FileID:       req.FileID,
@@ -103,7 +168,17 @@ func SingleFileTranscriptionWorkflow(ctx workflow.Context, req SingleFileWorkflo
 			req.FileID)
 
 		// Create temp file for transcription
-		tempPath := fmt.Sprintf("/tmp/v2t-temporal/%s.txt", req.FileID)
+		// V2T_TEMP_DIR environment variable is required for shared temp directory
+		tempDir := os.Getenv("V2T_TEMP_DIR")
+		if tempDir == "" {
+			err := fmt.Errorf("V2T_TEMP_DIR environment variable is required")
+			logger.Error("Missing required environment variable", "error", err)
+			return SingleFileWorkflowResult{
+				FileID: req.FileID,
+				Error:  err.Error(),
+			}, err
+		}
+		tempPath := fmt.Sprintf("%s/%s.txt", tempDir, req.FileID)
 		err = workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
 			return saveTranscriptionContent(tempPath, transcriptionResult.Transcription)
 		}).Get(&err)
@@ -164,15 +239,18 @@ func SingleFileTranscriptionWorkflow(ctx workflow.Context, req SingleFileWorkflo
 
 	result := SingleFileWorkflowResult{
 		FileID:           req.FileID,
+		Transcription:    transcriptionResult.Transcription,  // Include the actual transcription text
 		TranscriptionURL: transcriptionURL,
 		Provider:         transcriptionResult.Provider,
 		ProcessingTime:   processingTime,
+		AudioDuration:    audioDuration,
 	}
 
 	logger.Info("Single file transcription completed", 
 		"fileId", req.FileID,
 		"provider", result.Provider,
-		"duration", result.ProcessingTime)
+		"processingTime", result.ProcessingTime,
+		"audioDuration", result.AudioDuration)
 
 	return result, nil
 }

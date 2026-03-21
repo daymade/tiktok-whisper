@@ -1,0 +1,80 @@
+# Unified Provider Configuration - Single Source of Truth
+# Environment-specific behavior controlled via environment variables
+#
+# Deployment patterns:
+# - Docker/Container: Uses whisper_server (host.docker.internal:8080)
+# - Local Development: Uses whisper_cpp (local binary)
+# - Cloud/API: Uses openai (with API key)
+#
+# ⚠️  CRITICAL ARCHITECTURE NOTE:
+# - whisper_server provider connects DIRECTLY to Whisper Server on host machine
+# - v2t-api is a SEPARATE CLI tool API, NOT a proxy for web application
+# - Web App Flow: Next.js → Temporal → Worker → Whisper Server (host:8080)
+# - CLI Flow: v2t CLI → v2t-api → Provider (may use different Whisper instance)
+
+default_provider: "whisper_server"
+
+providers:
+  # Whisper Server Provider - Direct Connection to Host Machine
+  # This provider is used by Temporal Workers in the web application flow
+  whisper_server:
+    type: "whisper_server"
+    enabled: true
+    settings:
+      # ✅ CORRECT: Direct connection to Whisper Server on host machine
+      # Workers access host via special DNS name: host.docker.internal
+      base_url: "http://host.docker.internal:8080"
+      server_url: "http://host.docker.internal:8080"
+
+      # ✅ CORRECT: Whisper Server's actual inference endpoint
+      # NOT v2t-api's application endpoint (/api/v1/transcriptions/upload)
+      inference_path: "/inference"
+
+      model: "base"
+      language: "auto"
+      response_format: "json"
+      output_format: "json"
+      timeout: 300  # 5 minutes for large files
+
+  # Whisper.cpp Local Binary - Development/Local
+  whisper_cpp:
+    type: "whisper_cpp"
+    enabled: false
+    settings:
+      binary_path: "${WHISPER_CPP_BINARY:-/path/to/whisper.cpp/build/bin/whisper-cli}"
+      model_path: "${WHISPER_CPP_MODELS:-/path/to/whisper.cpp/models}"
+      language: "${WHISPER_LANGUAGE:-auto}"
+      response_format: "json"
+      output_format: "json"
+
+  # OpenAI Whisper API - Cloud/Backup
+  openai:
+    type: "openai"
+    enabled: true
+    auth:
+      api_key: "${OPENAI_API_KEY}"
+    settings:
+      model: "${OPENAI_WHISPER_MODEL:-whisper-1}"
+      language: "${WHISPER_LANGUAGE:-auto}"
+      response_format: "json"
+      temperature: 0
+
+# Environment-specific defaults:
+#
+# Docker/Container (.env or compose):
+#   DEFAULT_PROVIDER=whisper_server
+#   WHISPER_SERVER_URL=http://host.docker.internal:8080  # ← CORRECTED
+#   WHISPER_CPP_ENABLED=false
+#
+# Local Development (.env):
+#   DEFAULT_PROVIDER=whisper_cpp
+#   WHISPER_CPP_ENABLED=true
+#   WHISPER_CPP_BINARY=/path/to/whisper-cli
+#
+# Production (.env):
+#   DEFAULT_PROVIDER=openai
+#   OPENAI_API_KEY=sk-...
+#
+# ARCHITECTURE VALIDATION:
+# If you see Worker logs containing "v2t-api" or "/transcriptions/upload",
+# that indicates misconfiguration. Worker should only call host.docker.internal:8080/inference

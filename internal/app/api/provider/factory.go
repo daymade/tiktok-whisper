@@ -453,7 +453,19 @@ func BuildProviderFromConfig(name string, config ProviderConfig) (TranscriptionP
 	// Add auth configuration
 	// Check if Auth has any non-zero values
 	if config.Auth.APIKey != "" || config.Auth.BaseURL != "" || len(config.Auth.Headers) > 0 {
-		configMap["auth"] = config.Auth
+		authMap := make(map[string]interface{})
+		
+		if config.Auth.APIKey != "" {
+			authMap["api_key"] = config.Auth.APIKey
+		}
+		if config.Auth.BaseURL != "" {
+			authMap["base_url"] = config.Auth.BaseURL
+		}
+		if len(config.Auth.Headers) > 0 {
+			authMap["headers"] = config.Auth.Headers
+		}
+		
+		configMap["auth"] = authMap
 	}
 	
 	// Add performance configuration

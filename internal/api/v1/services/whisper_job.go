@@ -330,19 +330,29 @@ func (s *WhisperJobServiceImpl) ProcessJob(ctx context.Context, jobID string) er
 		job.UpdatedAt = now
 	}
 	
-	// Create transcription request
-	transcriptionReq := &dto.CreateTranscriptionRequest{
-		FilePath: job.FileURL,
-		UserID:   job.UserID,
-		Language: job.Language,
-		Provider: job.Provider,
-		Options: map[string]interface{}{
-			"output_format": job.OutputFormat,
-		},
+	// Use the new processor for whisper_server provider
+	if job.Provider == "whisper_server" {
+		err = ProcessWhisperJobWithProvider(job)
+	} else {
+		// Fallback to original transcription service for other providers
+		transcriptionReq := &dto.CreateTranscriptionRequest{
+			FilePath: job.FileURL,
+			UserID:   job.UserID,
+			Language: job.Language,
+			Provider: job.Provider,
+			Options: map[string]interface{}{
+				"output_format": job.OutputFormat,
+			},
+		}
+		
+		// Call transcription service
+		transcription, err := s.transcriptionService.CreateTranscription(ctx, transcriptionReq)
+		if err == nil && transcription != nil {
+			job.WhisperJobID = &transcription.ID
+			job.TranscriptionText = transcription.Transcription
+		}
 	}
 	
-	// Call transcription service
-	transcription, err := s.transcriptionService.CreateTranscription(ctx, transcriptionReq)
 	if err != nil {
 		if s.useRedis {
 			// Update status in Redis
@@ -363,8 +373,7 @@ func (s *WhisperJobServiceImpl) ProcessJob(ctx context.Context, jobID string) er
 	} else {
 		// Update status in memory
 		job.Status = string(dto.JobStatusCompleted)
-		job.WhisperJobID = &transcription.ID
-		job.TranscriptionText = transcription.Transcription
+		// Note: transcription data is already set by ProcessWhisperJobWithProvider
 		completedAt := time.Now()
 		job.CompletedAt = &completedAt
 		job.UpdatedAt = completedAt

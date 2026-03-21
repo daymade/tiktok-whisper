@@ -32,7 +32,11 @@ func NewStorageActivities(endpoint, accessKey, secretKey, bucket string) (*Stora
 	}
 
 	// Create temp directory for downloads
-	tempDir := "/tmp/v2t-temporal"
+	// V2T_TEMP_DIR must be set to a shared volume path
+	tempDir := os.Getenv("V2T_TEMP_DIR")
+	if tempDir == "" {
+		return nil, fmt.Errorf("V2T_TEMP_DIR environment variable is required")
+	}
 	if err := os.MkdirAll(tempDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}

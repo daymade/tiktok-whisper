@@ -15,10 +15,31 @@ type TemporalConfig struct {
 
 // DefaultTemporalConfig returns default Temporal configuration
 func DefaultTemporalConfig() TemporalConfig {
+	// NO FALLBACK - Check TEMPORAL_ADDRESS first (standard), then TEMPORAL_HOST (legacy)
+	hostPort := GetEnv("TEMPORAL_ADDRESS", "")
+	if hostPort == "" {
+		hostPort = GetEnv("TEMPORAL_HOST", "")
+	}
+	
+	// FAIL FAST - no defaults anywhere
+	if hostPort == "" {
+		panic("TEMPORAL_ADDRESS or TEMPORAL_HOST must be set")
+	}
+	
+	namespace := GetEnv("TEMPORAL_NAMESPACE", "")
+	if namespace == "" {
+		panic("TEMPORAL_NAMESPACE must be set")
+	}
+	
+	taskQueue := GetEnv("TASK_QUEUE", "")
+	if taskQueue == "" {
+		panic("TASK_QUEUE must be set")
+	}
+	
 	return TemporalConfig{
-		HostPort:  GetEnv("TEMPORAL_HOST", DefaultTemporalHost),
-		Namespace: GetEnv("TEMPORAL_NAMESPACE", DefaultNamespace),
-		TaskQueue: GetEnv("TASK_QUEUE", DefaultTaskQueue),
+		HostPort:  hostPort,
+		Namespace: namespace,
+		TaskQueue: taskQueue,
 	}
 }
 

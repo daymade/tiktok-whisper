@@ -3,11 +3,17 @@ FROM alpine:latest
 # Install dependencies
 RUN apk add --no-cache ca-certificates
 
-# Copy the v2t binary
-COPY v2t /usr/local/bin/v2t
+# Copy the v2t binary (using Linux ARM64 build for Docker on Apple Silicon)
+COPY v2t-linux-arm64 /usr/local/bin/v2t
 
 # Make it executable
 RUN chmod +x /usr/local/bin/v2t
+
+# Create app directory and set as working directory
+WORKDIR /app
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/logs
 
 # Expose the API port
 EXPOSE 8085

@@ -4,21 +4,23 @@ import "time"
 
 // SingleFileWorkflowRequest represents the input for single file transcription workflow
 type SingleFileWorkflowRequest struct {
-	FileID       string                 `json:"file_id"`
-	FilePath     string                 `json:"file_path"`     // Can be local path or MinIO URL
+	FileID       string                 `json:"fileId"`
+	FilePath     string                 `json:"filePath"`     // Can be local path or MinIO URL
 	Provider     string                 `json:"provider"`      // Optional, uses default if empty
 	Language     string                 `json:"language"`
-	OutputFormat string                 `json:"output_format"`
+	OutputFormat string                 `json:"outputFormat"`
 	Options      map[string]interface{} `json:"options"`
-	UseMinIO     bool                   `json:"use_minio"`    // Whether to use MinIO for storage
+	UseMinIO     bool                   `json:"useMinIO"`    // Whether to use MinIO for storage
 }
 
 // SingleFileWorkflowResult represents the output of single file transcription workflow
 type SingleFileWorkflowResult struct {
-	FileID           string        `json:"file_id"`
-	TranscriptionURL string        `json:"transcription_url"`
+	FileID           string        `json:"fileId"`
+	Transcription    string        `json:"transcription"`     // The actual transcription text
+	TranscriptionURL string        `json:"transcriptionUrl"`  // URL/path where transcription is stored
 	Provider         string        `json:"provider"`
-	ProcessingTime   time.Duration `json:"processing_time"`
+	ProcessingTime   time.Duration `json:"processingTime"`
+	AudioDuration    int           `json:"audioDuration"`    // Audio duration in seconds
 	Error            string        `json:"error,omitempty"`
 }
 
