@@ -218,6 +218,11 @@ func (m *MockTranscriptionDAO) CheckIfFileProcessed(fileName string) (int, error
 	return 0, sql.ErrNoRows
 }
 
+// DeleteByID implements the TranscriptionDAO interface
+func (m *MockTranscriptionDAO) DeleteByID(id int) error {
+	return nil
+}
+
 // RecordToDB implements the TranscriptionDAO interface
 func (m *MockTranscriptionDAO) RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string, lastConversionTime time.Time, hasError int, errorMessage string) {
 	call := RecordCall{
