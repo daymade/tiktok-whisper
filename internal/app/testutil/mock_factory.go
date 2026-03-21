@@ -153,6 +153,7 @@ type RecordCall struct {
 	LastConversionTime time.Time
 	HasError           int
 	ErrorMessage       string
+	ProviderType       string
 }
 
 // NewMockTranscriptionDAO creates a new MockTranscriptionDAO
@@ -195,6 +196,9 @@ func (m *MockTranscriptionDAO) Close() error {
 
 // GetAllByUser implements the TranscriptionDAO interface
 func (m *MockTranscriptionDAO) GetAllByUser(userNickname string) ([]model.Transcription, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.getAllByUserFunc != nil {
 		return m.getAllByUserFunc(userNickname)
 	}
@@ -243,6 +247,7 @@ func (m *MockTranscriptionDAO) RecordToDB(user, inputDir, fileName, mp3FileName 
 		LastConversionTime: lastConversionTime,
 		HasError:           hasError,
 		ErrorMessage:       errorMessage,
+		ProviderType:       providerType,
 	}
 	m.recordCalls = append(m.recordCalls, call)
 
@@ -269,12 +274,20 @@ func (m *MockTranscriptionDAO) RecordToDB(user, inputDir, fileName, mp3FileName 
 
 // GetRecordCalls returns all calls made to RecordToDB
 func (m *MockTranscriptionDAO) GetRecordCalls() []RecordCall {
-	return m.recordCalls
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	result := make([]RecordCall, len(m.recordCalls))
+	copy(result, m.recordCalls)
+	return result
 }
 
 // GetTranscriptions returns all transcriptions in the mock
 func (m *MockTranscriptionDAO) GetTranscriptions() []model.Transcription {
-	return m.transcriptions
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	result := make([]model.Transcription, len(m.transcriptions))
+	copy(result, m.transcriptions)
+	return result
 }
 
 // WasCloseCalled returns true if Close was called

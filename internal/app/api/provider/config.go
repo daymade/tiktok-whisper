@@ -48,14 +48,28 @@ type ProviderConfig struct {
 
 // AuthConfig represents authentication configuration
 type AuthConfig struct {
-	// API key (can be environment variable reference like ${OPENAI_API_KEY})
-	APIKey string `yaml:"api_key,omitempty"`
-	
-	// Additional headers for HTTP-based providers
+	APIKey  string            `yaml:"api_key,omitempty"`
 	Headers map[string]string `yaml:"headers,omitempty"`
-	
-	// Base URL for custom HTTP providers
-	BaseURL string `yaml:"base_url,omitempty"`
+	BaseURL string            `yaml:"base_url,omitempty"`
+}
+
+// ToMap converts AuthConfig to map[string]interface{} for provider creators.
+// Returns nil if all fields are zero-valued.
+func (a AuthConfig) ToMap() map[string]interface{} {
+	if a.APIKey == "" && a.BaseURL == "" && len(a.Headers) == 0 {
+		return nil
+	}
+	m := make(map[string]interface{})
+	if a.APIKey != "" {
+		m["api_key"] = a.APIKey
+	}
+	if a.BaseURL != "" {
+		m["base_url"] = a.BaseURL
+	}
+	if len(a.Headers) > 0 {
+		m["headers"] = a.Headers
+	}
+	return m
 }
 
 // PerformanceConfig represents performance-related configuration

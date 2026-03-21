@@ -80,18 +80,9 @@ func NewSimpleProviderTranscriber() api.Transcriber {
 	// Create provider factory
 	factory := NewProviderFactory()
 	
-	// Convert ProviderConfig to map for factory
-	// Auth must be a map[string]interface{}, not AuthConfig struct,
-	// because provider creators use type assertions like auth["api_key"].(string)
-	authMap := make(map[string]interface{})
-	if providerConfig.Auth.APIKey != "" {
-		authMap["api_key"] = providerConfig.Auth.APIKey
-	}
-	if providerConfig.Auth.BaseURL != "" {
-		authMap["base_url"] = providerConfig.Auth.BaseURL
-	}
-	if len(providerConfig.Auth.Headers) > 0 {
-		authMap["headers"] = providerConfig.Auth.Headers
+	authMap := providerConfig.Auth.ToMap()
+	if authMap == nil {
+		authMap = make(map[string]interface{})
 	}
 	configMap := map[string]interface{}{
 		"type":     providerConfig.Type,

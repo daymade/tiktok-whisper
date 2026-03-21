@@ -101,13 +101,8 @@ func (c *Converter) ConvertAudios(audioFiles []string, outputDirectory string, u
 func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory string, userNickname string) {
 	log.Printf("Start to process %s\n", audioAbsPath)
 
-	// Determine provider type for recording
-	providerType := "whisper_cpp"
-	if cfg := provider.GetRuntimeConfig(); cfg != nil && cfg.ProviderName != "" {
-		providerType = cfg.ProviderName
-	}
+	providerType := provider.ResolveProviderType()
 
-	// Start transcription
 	log.Printf("Starting transcription of file %s\n", audioAbsPath)
 
 	transcription, err := c.transcriber.Transcript(audioAbsPath)
@@ -132,14 +127,12 @@ func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory stri
 		return
 	}
 
-	// Get audio duration
 	duration, err := audio.GetAudioDuration(audioAbsPath)
 	if err != nil {
 		log.Printf("Failed to get audio duration: %v\n", err)
-		duration = 0 // Use 0 if we can't get duration
+		duration = 0
 	}
 
-	// Save successful transcription to database
 	c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, duration, transcription,
 		time.Now(), 0, "", providerType)
 	
@@ -241,17 +234,11 @@ func (c *Converter) filterUnProcessedFiles(fileInfos []model.FileInfo, convertCo
 func (c *Converter) convertToText(userNickname string, fileName string, fileFullPath string) error {
 	log.Printf("Processing file '%s'\n", fileName)
 
-	// Determine provider type for recording
-	providerType := "whisper_cpp"
-	if cfg := provider.GetRuntimeConfig(); cfg != nil && cfg.ProviderName != "" {
-		providerType = cfg.ProviderName
-	}
+	providerType := provider.ResolveProviderType()
 
-	// Convert MP4 to MP3 using FFmpeg
 	mp3FileName := strings.TrimSuffix(fileName, ".mp4") + ".mp3"
 	mp3FilePath := filepath.Join(files.GetUserMp3Dir(userNickname), mp3FileName)
 
-	// Check if the MP3 file already exists
 	err := audio.ConvertToMp3(fileName, fileFullPath, mp3FilePath)
 	if err != nil {
 		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, 0, "",
@@ -259,7 +246,6 @@ func (c *Converter) convertToText(userNickname string, fileName string, fileFull
 		return fmt.Errorf("FFmpeg error: %v", err)
 	}
 
-	// Get audio duration
 	duration, err := audio.GetAudioDuration(mp3FilePath)
 	if err != nil {
 		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, 0, "",
@@ -267,7 +253,6 @@ func (c *Converter) convertToText(userNickname string, fileName string, fileFull
 		return fmt.Errorf("failed to get audio duration: %v", err)
 	}
 
-	// Call Whisper with a new MP3 file path
 	transcription, err := c.transcriber.Transcript(mp3FilePath)
 	if err != nil {
 		log.Printf("transcripting failed for %v, err: %v", fileName, err)
@@ -278,7 +263,6 @@ func (c *Converter) convertToText(userNickname string, fileName string, fileFull
 		return fmt.Errorf("transcription error: %v", err)
 	}
 
-	// Save conversion results to database
 	c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, duration, transcription, time.Now(), 0, "", providerType)
 
 	log.Println("transcription completed for file: ", fileName)

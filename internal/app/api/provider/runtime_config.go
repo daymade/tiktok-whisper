@@ -36,3 +36,11 @@ func InitializeRuntimeConfig() {
 		}
 	})
 }
+
+// ResolveProviderType returns the active provider name, defaulting to "whisper_cpp".
+func ResolveProviderType() string {
+	if cfg := GetRuntimeConfig(); cfg != nil && cfg.ProviderName != "" {
+		return cfg.ProviderName
+	}
+	return "whisper_cpp"
+}
