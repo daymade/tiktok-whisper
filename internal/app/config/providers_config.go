@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"tiktok-whisper/internal/app/api/provider"
 )
 
 // ProvidersConfig represents the overall configuration for all providers
@@ -145,8 +147,8 @@ func (c *ProvidersConfig) setDefaults() {
 	// Set default provider if not specified
 	if c.DefaultProvider == "" && len(c.Providers) > 0 {
 		// Try to find whisper_cpp first
-		if _, ok := c.Providers["whisper_cpp"]; ok {
-			c.DefaultProvider = "whisper_cpp"
+		if _, ok := c.Providers[provider.ProviderNameWhisperCpp]; ok {
+			c.DefaultProvider = provider.ProviderNameWhisperCpp
 		} else {
 			// Use the first enabled provider
 			for name, provider := range c.Providers {
@@ -204,12 +206,12 @@ func (c *ProvidersConfig) Validate() error {
 	
 	// Validate provider types
 	validTypes := map[string]bool{
-		"whisper_cpp":    true,
-		"openai":         true,
-		"elevenlabs":     true,
-		"ssh_whisper":    true,
-		"whisper_server": true,
-		"custom_http":    true,
+		provider.ProviderNameWhisperCpp:    true,
+		provider.ProviderNameOpenAI:        true,
+		provider.ProviderNameElevenLabs:    true,
+		provider.ProviderNameSSHWhisper:    true,
+		provider.ProviderNameWhisperServer: true,
+		provider.ProviderNameCustomHTTP:    true,
 	}
 	
 	for name, provider := range c.Providers {
@@ -240,10 +242,10 @@ func GetDefaultConfigPath() string {
 // CreateDefaultConfig creates a default configuration
 func CreateDefaultConfig() *ProvidersConfig {
 	return &ProvidersConfig{
-		DefaultProvider: "whisper_cpp",
+		DefaultProvider: provider.ProviderNameWhisperCpp,
 		Providers: map[string]ProviderConfig{
-			"whisper_cpp": {
-				Type:    "whisper_cpp",
+			provider.ProviderNameWhisperCpp: {
+				Type:    provider.ProviderNameWhisperCpp,
 				Enabled: true,
 				Settings: map[string]interface{}{
 					"binary_path": "/usr/local/bin/whisper",
@@ -256,8 +258,8 @@ func CreateDefaultConfig() *ProvidersConfig {
 					MaxConcurrency: 2,
 				},
 			},
-			"openai": {
-				Type:    "openai",
+			provider.ProviderNameOpenAI: {
+				Type:    provider.ProviderNameOpenAI,
 				Enabled: false,
 				Auth: map[string]interface{}{
 					"api_key": "${OPENAI_API_KEY}",
@@ -271,8 +273,8 @@ func CreateDefaultConfig() *ProvidersConfig {
 					RateLimitRPM: 50,
 				},
 			},
-			"elevenlabs": {
-				Type:    "elevenlabs",
+			provider.ProviderNameElevenLabs: {
+				Type:    provider.ProviderNameElevenLabs,
 				Enabled: false,
 				Auth: map[string]interface{}{
 					"api_key": "${ELEVENLABS_API_KEY}",
@@ -283,12 +285,12 @@ func CreateDefaultConfig() *ProvidersConfig {
 			},
 		},
 		Orchestrator: OrchestratorConfig{
-			FallbackChain: []string{"whisper_cpp", "openai"},
+			FallbackChain: []string{provider.ProviderNameWhisperCpp, provider.ProviderNameOpenAI},
 			PreferLocal:   true,
 			RouterRules: RouterRulesConfig{
 				ByFileSize: map[string]string{
-					"small": "whisper_cpp",
-					"large": "openai",
+					"small": provider.ProviderNameWhisperCpp,
+					"large": provider.ProviderNameOpenAI,
 				},
 			},
 		},

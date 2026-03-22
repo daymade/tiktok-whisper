@@ -100,7 +100,7 @@ func (elt *EnhancedLocalTranscriber) TranscriptWithOptions(ctx context.Context, 
 		return nil, &provider.TranscriptionError{
 			Code:      "invalid_input",
 			Message:   "input file path is required",
-			Provider:  "whisper_cpp",
+			Provider:  provider.ProviderNameWhisperCpp,
 			Retryable: false,
 		}
 	}
@@ -110,7 +110,7 @@ func (elt *EnhancedLocalTranscriber) TranscriptWithOptions(ctx context.Context, 
 		return nil, &provider.TranscriptionError{
 			Code:      "file_not_found",
 			Message:   fmt.Sprintf("input file not found: %s", request.InputFilePath),
-			Provider:  "whisper_cpp",
+			Provider:  provider.ProviderNameWhisperCpp,
 			Retryable: false,
 		}
 	}
@@ -132,7 +132,7 @@ func (elt *EnhancedLocalTranscriber) TranscriptWithOptions(ctx context.Context, 
 		return nil, &provider.TranscriptionError{
 			Code:      "temp_dir_error",
 			Message:   fmt.Sprintf("failed to create temp directory: %v", err),
-			Provider:  "whisper_cpp",
+			Provider:  provider.ProviderNameWhisperCpp,
 			Retryable: true,
 		}
 	}
@@ -152,7 +152,7 @@ func (elt *EnhancedLocalTranscriber) TranscriptWithOptions(ctx context.Context, 
 		return nil, &provider.TranscriptionError{
 			Code:      "audio_check_error",
 			Message:   fmt.Sprintf("error checking input file: %v", err),
-			Provider:  "whisper_cpp",
+			Provider:  provider.ProviderNameWhisperCpp,
 			Retryable: true,
 		}
 	}
@@ -166,7 +166,7 @@ func (elt *EnhancedLocalTranscriber) TranscriptWithOptions(ctx context.Context, 
 			return nil, &provider.TranscriptionError{
 				Code:      "audio_conversion_error",
 				Message:   fmt.Sprintf("error converting input file: %v", err),
-				Provider:  "whisper_cpp",
+				Provider:  provider.ProviderNameWhisperCpp,
 				Retryable: true,
 			}
 		}
@@ -252,7 +252,7 @@ func (elt *EnhancedLocalTranscriber) executeTranscription(ctx context.Context, a
 		return "", &provider.TranscriptionError{
 			Code:      "transcription_failed",
 			Message:   fmt.Sprintf("transcription failed: %v", err),
-			Provider:  "whisper_cpp",
+			Provider:  provider.ProviderNameWhisperCpp,
 			Retryable: true,
 		}
 	case result := <-resultChan:
@@ -263,7 +263,7 @@ func (elt *EnhancedLocalTranscriber) executeTranscription(ctx context.Context, a
 // GetProviderInfo returns metadata about the whisper.cpp provider
 func (elt *EnhancedLocalTranscriber) GetProviderInfo() provider.ProviderInfo {
 	return provider.ProviderInfo{
-		Name:        "whisper_cpp",
+		Name:        provider.ProviderNameWhisperCpp,
 		DisplayName: "Whisper.cpp (Local)",
 		Type:        provider.ProviderTypeLocal,
 		Version:     "1.0.0",

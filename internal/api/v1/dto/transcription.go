@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"tiktok-whisper/internal/api/errors"
+	"tiktok-whisper/internal/app/api/provider"
 	"tiktok-whisper/internal/app/model"
 )
 
@@ -28,7 +29,7 @@ func (r *CreateTranscriptionRequest) Validate() error {
 
 	// Validate provider if specified
 	if r.Provider != "" {
-		validProviders := []string{"whisper_cpp", "openai/whisper", "elevenlabs", "ssh_whisper", "whisper_server", "custom_http"}
+		validProviders := []string{provider.ProviderNameWhisperCpp, "openai/whisper", provider.ProviderNameElevenLabs, provider.ProviderNameSSHWhisper, provider.ProviderNameWhisperServer, provider.ProviderNameCustomHTTP}
 		valid := false
 		for _, p := range validProviders {
 			if r.Provider == p {

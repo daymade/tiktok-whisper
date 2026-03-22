@@ -65,7 +65,7 @@ func NewElevenLabsSTTProvider(config ElevenLabsConfig) *ElevenLabsSTTProvider {
 	
 	// Create base provider
 	baseProvider := common.NewBaseProvider(
-		"elevenlabs",
+		provider.ProviderNameElevenLabs,
 		"ElevenLabs Speech-to-Text",
 		provider.ProviderTypeRemote,
 		"1.0.0",
@@ -146,7 +146,7 @@ func (el *ElevenLabsSTTProvider) TranscriptWithOptions(ctx context.Context, requ
 		return nil, &provider.TranscriptionError{
 			Code:      "invalid_input",
 			Message:   "input file path is required",
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: false,
 		}
 	}
@@ -157,7 +157,7 @@ func (el *ElevenLabsSTTProvider) TranscriptWithOptions(ctx context.Context, requ
 		return nil, &provider.TranscriptionError{
 			Code:      "file_not_found",
 			Message:   fmt.Sprintf("input file not found: %s", request.InputFilePath),
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: false,
 		}
 	}
@@ -167,7 +167,7 @@ func (el *ElevenLabsSTTProvider) TranscriptWithOptions(ctx context.Context, requ
 		return nil, &provider.TranscriptionError{
 			Code:        "file_too_large",
 			Message:     "file size exceeds 25MB limit",
-			Provider:    "elevenlabs",
+			Provider:    provider.ProviderNameElevenLabs,
 			Retryable:   false,
 			Suggestions: []string{"Reduce file size", "Split into smaller chunks"},
 		}
@@ -185,7 +185,7 @@ func (el *ElevenLabsSTTProvider) TranscriptWithOptions(ctx context.Context, requ
 		return nil, &provider.TranscriptionError{
 			Code:      "network_error",
 			Message:   fmt.Sprintf("failed to call ElevenLabs API: %v", err),
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: true,
 		}
 	}
@@ -202,7 +202,7 @@ func (el *ElevenLabsSTTProvider) TranscriptWithOptions(ctx context.Context, requ
 		return nil, &provider.TranscriptionError{
 			Code:      "response_parse_error",
 			Message:   fmt.Sprintf("failed to parse API response: %v", err),
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: false,
 		}
 	}
@@ -236,7 +236,7 @@ func (el *ElevenLabsSTTProvider) createHTTPRequest(ctx context.Context, request 
 		return nil, &provider.TranscriptionError{
 			Code:      "file_open_error",
 			Message:   fmt.Sprintf("failed to open audio file: %v", err),
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: false,
 		}
 	}
@@ -252,7 +252,7 @@ func (el *ElevenLabsSTTProvider) createHTTPRequest(ctx context.Context, request 
 		return nil, &provider.TranscriptionError{
 			Code:      "form_creation_error",
 			Message:   fmt.Sprintf("failed to create form: %v", err),
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: false,
 		}
 	}
@@ -261,7 +261,7 @@ func (el *ElevenLabsSTTProvider) createHTTPRequest(ctx context.Context, request 
 		return nil, &provider.TranscriptionError{
 			Code:      "file_copy_error",
 			Message:   fmt.Sprintf("failed to copy file data: %v", err),
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: false,
 		}
 	}
@@ -271,7 +271,7 @@ func (el *ElevenLabsSTTProvider) createHTTPRequest(ctx context.Context, request 
 		return nil, &provider.TranscriptionError{
 			Code:      "form_field_error",
 			Message:   fmt.Sprintf("failed to add model field: %v", err),
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: false,
 		}
 	}
@@ -282,7 +282,7 @@ func (el *ElevenLabsSTTProvider) createHTTPRequest(ctx context.Context, request 
 			return nil, &provider.TranscriptionError{
 				Code:      "form_field_error",
 				Message:   fmt.Sprintf("failed to add language field: %v", err),
-				Provider:  "elevenlabs",
+				Provider:  provider.ProviderNameElevenLabs,
 				Retryable: false,
 			}
 		}
@@ -297,7 +297,7 @@ func (el *ElevenLabsSTTProvider) createHTTPRequest(ctx context.Context, request 
 		return nil, &provider.TranscriptionError{
 			Code:      "form_field_error",
 			Message:   fmt.Sprintf("failed to add response format field: %v", err),
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: false,
 		}
 	}
@@ -311,7 +311,7 @@ func (el *ElevenLabsSTTProvider) createHTTPRequest(ctx context.Context, request 
 		return nil, &provider.TranscriptionError{
 			Code:      "request_creation_error",
 			Message:   fmt.Sprintf("failed to create HTTP request: %v", err),
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: false,
 		}
 	}
@@ -333,7 +333,7 @@ func (el *ElevenLabsSTTProvider) handleHTTPError(resp *http.Response) error {
 		return &provider.TranscriptionError{
 			Code:        "authentication_failed",
 			Message:     "ElevenLabs API key is invalid or missing",
-			Provider:    "elevenlabs",
+			Provider:    provider.ProviderNameElevenLabs,
 			Retryable:   false,
 			Suggestions: []string{"Check your ELEVENLABS_API_KEY environment variable"},
 		}
@@ -341,7 +341,7 @@ func (el *ElevenLabsSTTProvider) handleHTTPError(resp *http.Response) error {
 		return &provider.TranscriptionError{
 			Code:        "rate_limit_exceeded",
 			Message:     "ElevenLabs API rate limit exceeded",
-			Provider:    "elevenlabs",
+			Provider:    provider.ProviderNameElevenLabs,
 			Retryable:   true,
 			Suggestions: []string{"Wait a moment and try again"},
 		}
@@ -349,7 +349,7 @@ func (el *ElevenLabsSTTProvider) handleHTTPError(resp *http.Response) error {
 		return &provider.TranscriptionError{
 			Code:        "file_too_large",
 			Message:     "Audio file is too large",
-			Provider:    "elevenlabs",
+			Provider:    provider.ProviderNameElevenLabs,
 			Retryable:   false,
 			Suggestions: []string{"Reduce file size", "Split into smaller chunks"},
 		}
@@ -357,21 +357,21 @@ func (el *ElevenLabsSTTProvider) handleHTTPError(resp *http.Response) error {
 		return &provider.TranscriptionError{
 			Code:        "invalid_request",
 			Message:     fmt.Sprintf("Invalid request: %s", string(body)),
-			Provider:    "elevenlabs",
+			Provider:    provider.ProviderNameElevenLabs,
 			Retryable:   false,
 		}
 	case 500, 502, 503, 504:
 		return &provider.TranscriptionError{
 			Code:      "server_error",
 			Message:   "ElevenLabs server error",
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: true,
 		}
 	default:
 		return &provider.TranscriptionError{
 			Code:      "unknown_error",
 			Message:   fmt.Sprintf("Unexpected HTTP status %d: %s", resp.StatusCode, string(body)),
-			Provider:  "elevenlabs",
+			Provider:  provider.ProviderNameElevenLabs,
 			Retryable: true,
 		}
 	}

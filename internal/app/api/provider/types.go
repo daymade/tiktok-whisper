@@ -30,6 +30,17 @@ const (
 	ProviderTypeHybrid = common.ProviderTypeHybrid
 )
 
+// Provider name constants — canonical identifiers for transcription providers.
+// Use these instead of raw string literals to avoid typos and enable compile-time checks.
+const (
+	ProviderNameWhisperCpp    = "whisper_cpp"
+	ProviderNameOpenAI        = "openai"
+	ProviderNameElevenLabs    = "elevenlabs"
+	ProviderNameSSHWhisper    = "ssh_whisper"
+	ProviderNameWhisperServer = "whisper_server"
+	ProviderNameCustomHTTP    = "custom_http"
+)
+
 // TranscriptionRequest represents a transcription request with all possible options
 type TranscriptionRequest struct {
 	// Core fields

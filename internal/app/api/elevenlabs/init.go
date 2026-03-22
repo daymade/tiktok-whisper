@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	provider.RegisterProvider("elevenlabs", createElevenLabsProvider)
+	provider.RegisterProvider(provider.ProviderNameElevenLabs, createElevenLabsProvider)
 }
 
 func createElevenLabsProvider(config map[string]interface{}) (provider.TranscriptionProvider, error) {

@@ -95,7 +95,7 @@ func NewWhisperServerProvider(config WhisperServerConfig) *WhisperServerProvider
 
 	// Create base provider
 	baseProvider := common.NewBaseProvider(
-		"whisper_server",
+		provider.ProviderNameWhisperServer,
 		"Whisper Server (HTTP API)",
 		provider.ProviderTypeRemote,
 		"1.0.0",
@@ -223,7 +223,7 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		return nil, &provider.TranscriptionError{
 			Code:      "invalid_input",
 			Message:   "input file path is required",
-			Provider:  "whisper_server",
+			Provider:  provider.ProviderNameWhisperServer,
 			Retryable: false,
 		}
 	}
@@ -233,7 +233,7 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		return nil, &provider.TranscriptionError{
 			Code:      "file_not_found",
 			Message:   fmt.Sprintf("input file not found: %s", request.InputFilePath),
-			Provider:  "whisper_server",
+			Provider:  provider.ProviderNameWhisperServer,
 			Retryable: false,
 		}
 	}
@@ -244,7 +244,7 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		return nil, &provider.TranscriptionError{
 			Code:      "form_creation_failed",
 			Message:   fmt.Sprintf("failed to create multipart form: %v", err),
-			Provider:  "whisper_server",
+			Provider:  provider.ProviderNameWhisperServer,
 			Retryable: false,
 		}
 	}
@@ -256,7 +256,7 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		return nil, &provider.TranscriptionError{
 			Code:      "request_creation_failed",
 			Message:   fmt.Sprintf("failed to create HTTP request: %v", err),
-			Provider:  "whisper_server",
+			Provider:  provider.ProviderNameWhisperServer,
 			Retryable: false,
 		}
 	}
@@ -273,7 +273,7 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		return nil, &provider.TranscriptionError{
 			Code:      "request_failed",
 			Message:   fmt.Sprintf("HTTP request failed: %v", err),
-			Provider:  "whisper_server",
+			Provider:  provider.ProviderNameWhisperServer,
 			Retryable: true,
 		}
 	}
@@ -285,7 +285,7 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		return nil, &provider.TranscriptionError{
 			Code:      "response_read_failed",
 			Message:   fmt.Sprintf("failed to read response: %v", err),
-			Provider:  "whisper_server",
+			Provider:  provider.ProviderNameWhisperServer,
 			Retryable: true,
 		}
 	}
@@ -295,7 +295,7 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		return nil, &provider.TranscriptionError{
 			Code:      "api_error",
 			Message:   fmt.Sprintf("API returned status %d: %s", resp.StatusCode, string(responseData)),
-			Provider:  "whisper_server",
+			Provider:  provider.ProviderNameWhisperServer,
 			Retryable: resp.StatusCode >= 500, // Retry on server errors
 		}
 	}
@@ -306,7 +306,7 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		return nil, &provider.TranscriptionError{
 			Code:      "response_parse_failed",
 			Message:   fmt.Sprintf("failed to parse response: %v", err),
-			Provider:  "whisper_server",
+			Provider:  provider.ProviderNameWhisperServer,
 			Retryable: false,
 		}
 	}
@@ -321,7 +321,7 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		return nil, &provider.TranscriptionError{
 			Code:      "empty_transcription",
 			Message:   "no transcription text found in response",
-			Provider:  "whisper_server",
+			Provider:  provider.ProviderNameWhisperServer,
 			Retryable: false,
 			Suggestions: []string{"Check audio file format", "Verify whisper-server is running correctly"},
 		}
@@ -332,7 +332,7 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		return nil, &provider.TranscriptionError{
 			Code:      "hallucinated_transcription",
 			Message:   fmt.Sprintf("transcription appears to be hallucinated or nonsensical: %s", transcriptionText),
-			Provider:  "whisper_server",
+			Provider:  provider.ProviderNameWhisperServer,
 			Retryable: true,
 			Suggestions: []string{
 				"Audio file may be corrupted or empty",

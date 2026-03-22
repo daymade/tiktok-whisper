@@ -6,6 +6,7 @@ import (
 
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
+	"tiktok-whisper/internal/app/api/provider"
 	"tiktok-whisper/internal/app/temporal/activities"
 )
 
@@ -41,7 +42,7 @@ func TranscriptionWithFallbackWorkflow(ctx workflow.Context, req FallbackWorkflo
 
 	// Default providers if none specified
 	if len(req.Providers) == 0 {
-		req.Providers = []string{"whisper_cpp", "openai", "elevenlabs"}
+		req.Providers = []string{provider.ProviderNameWhisperCpp, provider.ProviderNameOpenAI, provider.ProviderNameElevenLabs}
 	}
 
 	var lastError error

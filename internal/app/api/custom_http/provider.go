@@ -74,7 +74,7 @@ func NewCustomHTTPProvider(settings map[string]interface{}) (*CustomHTTPProvider
 
 	// Create base provider
 	baseProvider := common.NewBaseProvider(
-		"custom_http",
+		provider.ProviderNameCustomHTTP,
 		"Custom HTTP Whisper Service",
 		provider.ProviderTypeRemote,
 		"1.0.0",

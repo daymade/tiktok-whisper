@@ -7,7 +7,7 @@ import (
 
 func init() {
 	// Register whisper_cpp provider with the factory
-	provider.RegisterProvider("whisper_cpp", createWhisperCppProvider)
+	provider.RegisterProvider(provider.ProviderNameWhisperCpp, createWhisperCppProvider)
 }
 
 // createWhisperCppProvider creates a whisper.cpp provider from configuration

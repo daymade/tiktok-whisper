@@ -6,6 +6,7 @@ import (
 
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
+	"tiktok-whisper/internal/app/api/provider"
 )
 
 // BatchWorkflowRequest represents the input for batch transcription workflow
@@ -198,8 +199,8 @@ func BatchWithRetryWorkflow(ctx workflow.Context, req BatchWorkflowRequest) (Bat
 	// Retry failed files with different provider if specified
 	retryReq := req
 	retryReq.Files = failedFiles
-	if req.Provider == "whisper_cpp" {
-		retryReq.Provider = "openai" // Fallback to OpenAI
+	if req.Provider == provider.ProviderNameWhisperCpp {
+		retryReq.Provider = provider.ProviderNameOpenAI // Fallback to OpenAI
 	}
 
 	retryResult, err := BatchTranscriptionWorkflow(ctx, retryReq)

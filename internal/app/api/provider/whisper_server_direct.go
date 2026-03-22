@@ -154,7 +154,7 @@ func (p *DirectWhisperServerProvider) TranscriptWithOptions(ctx context.Context,
 // GetProviderInfo returns provider information
 func (p *DirectWhisperServerProvider) GetProviderInfo() ProviderInfo {
 	return ProviderInfo{
-		Name:               "whisper_server",
+		Name:               ProviderNameWhisperServer,
 		DisplayName:        "Whisper Server (HTTP API)",
 		Type:               ProviderTypeRemote,
 		Version:            "1.0.0",

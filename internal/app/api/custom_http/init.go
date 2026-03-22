@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	provider.RegisterProvider("custom_http", createCustomHTTPProvider)
+	provider.RegisterProvider(provider.ProviderNameCustomHTTP, createCustomHTTPProvider)
 }
 
 func createCustomHTTPProvider(config map[string]interface{}) (provider.TranscriptionProvider, error) {

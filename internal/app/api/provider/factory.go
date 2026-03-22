@@ -15,17 +15,17 @@ func NewProviderFactory() *DefaultProviderFactory {
 // CreateProvider creates a provider instance based on type and configuration
 func (f *DefaultProviderFactory) CreateProvider(providerType string, config map[string]interface{}) (TranscriptionProvider, error) {
 	switch providerType {
-	case "whisper_cpp":
+	case ProviderNameWhisperCpp:
 		return f.createWhisperCppProvider(config)
-	case "openai":
+	case ProviderNameOpenAI:
 		return f.createOpenAIProvider(config)
-	case "elevenlabs":
+	case ProviderNameElevenLabs:
 		return f.createElevenLabsProvider(config)
-	case "ssh_whisper":
+	case ProviderNameSSHWhisper:
 		return f.createSSHWhisperProvider(config)
-	case "whisper_server":
+	case ProviderNameWhisperServer:
 		return f.createWhisperServerProvider(config)
-	case "custom_http":
+	case ProviderNameCustomHTTP:
 		return f.createCustomHTTPProvider(config)
 	default:
 		return nil, fmt.Errorf("unknown provider type: %s", providerType)
@@ -41,17 +41,17 @@ func (f *DefaultProviderFactory) GetAvailableProviders() []string {
 // GetProviderInfo returns provider information without creating an instance
 func (f *DefaultProviderFactory) GetProviderInfo(providerType string) (ProviderInfo, error) {
 	switch providerType {
-	case "whisper_cpp":
+	case ProviderNameWhisperCpp:
 		return f.getWhisperCppInfo(), nil
-	case "openai":
+	case ProviderNameOpenAI:
 		return f.getOpenAIInfo(), nil
-	case "elevenlabs":
+	case ProviderNameElevenLabs:
 		return f.getElevenLabsInfo(), nil
-	case "ssh_whisper":
+	case ProviderNameSSHWhisper:
 		return f.getSSHWhisperInfo(), nil
-	case "whisper_server":
+	case ProviderNameWhisperServer:
 		return f.getWhisperServerInfo(), nil
-	case "custom_http":
+	case ProviderNameCustomHTTP:
 		return f.getCustomHTTPInfo(), nil
 	default:
 		return ProviderInfo{}, fmt.Errorf("unknown provider type: %s", providerType)
@@ -60,7 +60,7 @@ func (f *DefaultProviderFactory) GetProviderInfo(providerType string) (ProviderI
 
 // createWhisperCppProvider creates a whisper.cpp provider
 func (f *DefaultProviderFactory) createWhisperCppProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	creator, err := GetProviderCreator("whisper_cpp")
+	creator, err := GetProviderCreator(ProviderNameWhisperCpp)
 	if err != nil {
 		return nil, fmt.Errorf("whisper_cpp provider not registered: %w", err)
 	}
@@ -69,7 +69,7 @@ func (f *DefaultProviderFactory) createWhisperCppProvider(config map[string]inte
 
 // createOpenAIProvider creates an OpenAI provider
 func (f *DefaultProviderFactory) createOpenAIProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	creator, err := GetProviderCreator("openai")
+	creator, err := GetProviderCreator(ProviderNameOpenAI)
 	if err != nil {
 		return nil, fmt.Errorf("openai provider not registered: %w", err)
 	}
@@ -78,7 +78,7 @@ func (f *DefaultProviderFactory) createOpenAIProvider(config map[string]interfac
 
 // createElevenLabsProvider creates an ElevenLabs provider
 func (f *DefaultProviderFactory) createElevenLabsProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	creator, err := GetProviderCreator("elevenlabs")
+	creator, err := GetProviderCreator(ProviderNameElevenLabs)
 	if err != nil {
 		return nil, fmt.Errorf("elevenlabs provider not registered: %w", err)
 	}
@@ -87,7 +87,7 @@ func (f *DefaultProviderFactory) createElevenLabsProvider(config map[string]inte
 
 // createSSHWhisperProvider creates an SSH whisper provider
 func (f *DefaultProviderFactory) createSSHWhisperProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	creator, err := GetProviderCreator("ssh_whisper")
+	creator, err := GetProviderCreator(ProviderNameSSHWhisper)
 	if err != nil {
 		return nil, fmt.Errorf("ssh_whisper provider not registered: %w", err)
 	}
@@ -96,7 +96,7 @@ func (f *DefaultProviderFactory) createSSHWhisperProvider(config map[string]inte
 
 // createWhisperServerProvider creates a whisper-server HTTP provider
 func (f *DefaultProviderFactory) createWhisperServerProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	creator, err := GetProviderCreator("whisper_server")
+	creator, err := GetProviderCreator(ProviderNameWhisperServer)
 	if err != nil {
 		return nil, fmt.Errorf("whisper_server provider not registered: %w", err)
 	}
@@ -105,7 +105,7 @@ func (f *DefaultProviderFactory) createWhisperServerProvider(config map[string]i
 
 // createCustomHTTPProvider creates a custom HTTP provider
 func (f *DefaultProviderFactory) createCustomHTTPProvider(config map[string]interface{}) (TranscriptionProvider, error) {
-	creator, err := GetProviderCreator("custom_http")
+	creator, err := GetProviderCreator(ProviderNameCustomHTTP)
 	if err != nil {
 		return nil, fmt.Errorf("custom_http provider not registered: %w", err)
 	}
@@ -116,7 +116,7 @@ func (f *DefaultProviderFactory) createCustomHTTPProvider(config map[string]inte
 
 func (f *DefaultProviderFactory) getWhisperCppInfo() ProviderInfo {
 	return ProviderInfo{
-		Name:        "whisper_cpp",
+		Name:        ProviderNameWhisperCpp,
 		DisplayName: "Whisper.cpp (Local)",
 		Type:        ProviderTypeLocal,
 		Version:     "1.0.0",
@@ -163,7 +163,7 @@ func (f *DefaultProviderFactory) getWhisperCppInfo() ProviderInfo {
 
 func (f *DefaultProviderFactory) getOpenAIInfo() ProviderInfo {
 	return ProviderInfo{
-		Name:        "openai",
+		Name:        ProviderNameOpenAI,
 		DisplayName: "OpenAI Whisper API",
 		Type:        ProviderTypeRemote,
 		Version:     "1.0.0",
@@ -200,7 +200,7 @@ func (f *DefaultProviderFactory) getOpenAIInfo() ProviderInfo {
 
 func (f *DefaultProviderFactory) getElevenLabsInfo() ProviderInfo {
 	return ProviderInfo{
-		Name:        "elevenlabs",
+		Name:        ProviderNameElevenLabs,
 		DisplayName: "ElevenLabs Speech-to-Text",
 		Type:        ProviderTypeRemote,
 		Version:     "1.0.0",
@@ -240,7 +240,7 @@ func (f *DefaultProviderFactory) getElevenLabsInfo() ProviderInfo {
 
 func (f *DefaultProviderFactory) getSSHWhisperInfo() ProviderInfo {
 	return ProviderInfo{
-		Name:        "ssh_whisper",
+		Name:        ProviderNameSSHWhisper,
 		DisplayName: "SSH Remote Whisper.cpp",
 		Type:        ProviderTypeHybrid,
 		Version:     "1.0.0",
@@ -313,7 +313,7 @@ func (f *DefaultProviderFactory) getSSHWhisperInfo() ProviderInfo {
 
 func (f *DefaultProviderFactory) getCustomHTTPInfo() ProviderInfo {
 	return ProviderInfo{
-		Name:        "custom_http",
+		Name:        ProviderNameCustomHTTP,
 		DisplayName: "Custom HTTP Whisper Service",
 		Type:        ProviderTypeRemote,
 		Version:     "1.0.0",
@@ -354,7 +354,7 @@ func (f *DefaultProviderFactory) getCustomHTTPInfo() ProviderInfo {
 
 func (f *DefaultProviderFactory) getWhisperServerInfo() ProviderInfo {
 	return ProviderInfo{
-		Name:        "whisper_server",
+		Name:        ProviderNameWhisperServer,
 		DisplayName: "Whisper Server (HTTP API)",
 		Type:        ProviderTypeRemote,
 		Version:     "1.0.0",

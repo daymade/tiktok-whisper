@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/activity"
+	"tiktok-whisper/internal/app/api/provider"
 	"tiktok-whisper/internal/app/temporal/pkg/common"
 	"tiktok-whisper/internal/app/temporal/pkg/whisper"
 )
@@ -50,7 +51,7 @@ func (a *SimpleTranscribeActivities) TranscribeFileSimple(ctx context.Context, r
 	result := TranscriptionResult{
 		FileID:         req.FileID,
 		Transcription:  output,
-		Provider:       "whisper_cpp",
+		Provider:       provider.ProviderNameWhisperCpp,
 		ProcessingTime: processingTime,
 	}
 
@@ -65,7 +66,7 @@ func (a *SimpleTranscribeActivities) TranscribeFileSimple(ctx context.Context, r
 // GetProviderStatus returns the status of a provider (simplified version)
 func (a *SimpleTranscribeActivities) GetProviderStatus(ctx context.Context, providerName string) (ProviderHealthStatus, error) {
 	// For simple version, only check whisper_cpp
-	if providerName != "whisper_cpp" {
+	if providerName != provider.ProviderNameWhisperCpp {
 		return ProviderHealthStatus{
 			ProviderName: providerName,
 			IsHealthy:    false,

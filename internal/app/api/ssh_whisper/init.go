@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	provider.RegisterProvider("ssh_whisper", createSSHWhisperProvider)
+	provider.RegisterProvider(provider.ProviderNameSSHWhisper, createSSHWhisperProvider)
 }
 
 func createSSHWhisperProvider(config map[string]interface{}) (provider.TranscriptionProvider, error) {

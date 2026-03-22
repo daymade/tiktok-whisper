@@ -352,7 +352,7 @@ func initializeProviderRegistry(logger *zap.Logger) (provider.ProviderRegistry, 
 // createDefaultConfig creates a default configuration from environment
 func createDefaultConfig() *config.ProvidersConfig {
 	cfg := &config.ProvidersConfig{
-		DefaultProvider: "whisper_cpp",
+		DefaultProvider: provider.ProviderNameWhisperCpp,
 		Providers:       make(map[string]config.ProviderConfig),
 	}
 	
@@ -361,8 +361,8 @@ func createDefaultConfig() *config.ProvidersConfig {
 	modelPath := getEnv("WHISPER_MODEL_PATH", "/models/ggml-large-v2.bin")
 	
 	if _, err := os.Stat(whisperPath); err == nil {
-		cfg.Providers["whisper_cpp"] = config.ProviderConfig{
-			Type:    "whisper_cpp",
+		cfg.Providers[provider.ProviderNameWhisperCpp] = config.ProviderConfig{
+			Type:    provider.ProviderNameWhisperCpp,
 			Enabled: true,
 			Settings: map[string]interface{}{
 				"binary_path": whisperPath,
@@ -375,8 +375,8 @@ func createDefaultConfig() *config.ProvidersConfig {
 	
 	// Configure OpenAI if API key exists
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
-		cfg.Providers["openai"] = config.ProviderConfig{
-			Type:    "openai",
+		cfg.Providers[provider.ProviderNameOpenAI] = config.ProviderConfig{
+			Type:    provider.ProviderNameOpenAI,
 			Enabled: true,
 			Auth: map[string]interface{}{
 				"api_key": apiKey,
@@ -388,15 +388,15 @@ func createDefaultConfig() *config.ProvidersConfig {
 		}
 		
 		// Use OpenAI as default if whisper_cpp not available
-		if _, exists := cfg.Providers["whisper_cpp"]; !exists {
-			cfg.DefaultProvider = "openai"
+		if _, exists := cfg.Providers[provider.ProviderNameWhisperCpp]; !exists {
+			cfg.DefaultProvider = provider.ProviderNameOpenAI
 		}
 	}
 	
 	// Configure whisper_server (HTTP API provider)
 	if whisperBackendURL := os.Getenv("WHISPER_BACKEND_URL"); whisperBackendURL != "" {
-		cfg.Providers["whisper_server"] = config.ProviderConfig{
-			Type:    "whisper_server",
+		cfg.Providers[provider.ProviderNameWhisperServer] = config.ProviderConfig{
+			Type:    provider.ProviderNameWhisperServer,
 			Enabled: true,
 			Settings: map[string]interface{}{
 				"base_url":        whisperBackendURL,
@@ -407,13 +407,13 @@ func createDefaultConfig() *config.ProvidersConfig {
 		}
 		
 		// Use whisper_server as default if available
-		cfg.DefaultProvider = "whisper_server"
+		cfg.DefaultProvider = provider.ProviderNameWhisperServer
 	}
 	
 	// Configure ElevenLabs if API key exists
 	if apiKey := os.Getenv("ELEVENLABS_API_KEY"); apiKey != "" {
-		cfg.Providers["elevenlabs"] = config.ProviderConfig{
-			Type:    "elevenlabs",
+		cfg.Providers[provider.ProviderNameElevenLabs] = config.ProviderConfig{
+			Type:    provider.ProviderNameElevenLabs,
 			Enabled: true,
 			Auth: map[string]interface{}{
 				"api_key": apiKey,

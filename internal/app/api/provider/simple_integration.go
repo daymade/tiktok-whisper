@@ -68,7 +68,7 @@ func NewSimpleProviderTranscriber() api.Transcriber {
 	} else {
 		providerName = config.DefaultProvider
 		if providerName == "" {
-			providerName = "whisper_cpp"
+			providerName = ProviderNameWhisperCpp
 		}
 	}
 

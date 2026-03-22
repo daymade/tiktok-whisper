@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"tiktok-whisper/internal/api/v1/dto"
+	"tiktok-whisper/internal/app/api/provider"
 	"tiktok-whisper/internal/app/model"
 	"tiktok-whisper/internal/app/repository"
 )
@@ -331,7 +332,7 @@ func (s *WhisperJobServiceImpl) ProcessJob(ctx context.Context, jobID string) er
 	}
 	
 	// Use the new processor for whisper_server provider
-	if job.Provider == "whisper_server" {
+	if job.Provider == provider.ProviderNameWhisperServer {
 		err = ProcessWhisperJobWithProvider(job)
 	} else {
 		// Fallback to original transcription service for other providers

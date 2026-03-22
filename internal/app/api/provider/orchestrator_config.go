@@ -64,17 +64,17 @@ type LoadBalancingConfig struct {
 // DefaultOrchestratorConfig returns a default orchestrator configuration
 func DefaultOrchestratorConfig() *OrchestratorConfig {
 	return &OrchestratorConfig{
-		FallbackChain: []string{"whisper_cpp", "openai"},
+		FallbackChain: []string{ProviderNameWhisperCpp, ProviderNameOpenAI},
 		PreferLocal:   true,
 		RouterRules: RouterRules{
 			ByFileSize: map[string]string{
-				"small":  "whisper_cpp",  // < 50MB
-				"medium": "whisper_cpp",  // 50-200MB
-				"large":  "openai",       // > 200MB
+				"small":  ProviderNameWhisperCpp,  // < 50MB
+				"medium": ProviderNameWhisperCpp,  // 50-200MB
+				"large":  ProviderNameOpenAI,      // > 200MB
 			},
 			ByLanguage: map[string]string{
-				"zh": "whisper_cpp",
-				"en": "openai",
+				"zh": ProviderNameWhisperCpp,
+				"en": ProviderNameOpenAI,
 			},
 		},
 		HealthCheckInterval: 30 * time.Second,

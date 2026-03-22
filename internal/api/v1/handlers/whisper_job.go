@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"tiktok-whisper/internal/api/v1/dto"
 	"tiktok-whisper/internal/api/v1/services"
+	"tiktok-whisper/internal/app/api/provider"
 )
 
 // WhisperJobHandler handles whisper job-related HTTP requests
@@ -228,17 +229,17 @@ func (h *WhisperJobHandler) GetPricing(c *gin.Context) {
 			"credits_per_minute": 10,
 			"minimum_credits":    5,
 			"providers": map[string]interface{}{
-				"whisper_cpp": map[string]interface{}{
+				provider.ProviderNameWhisperCpp: map[string]interface{}{
 					"name":               "Local Whisper",
 					"credits_per_minute": 5,
 					"description":        "Free local processing",
 				},
-				"openai": map[string]interface{}{
+				provider.ProviderNameOpenAI: map[string]interface{}{
 					"name":               "OpenAI Whisper",
 					"credits_per_minute": 10,
 					"description":        "$0.006 per minute",
 				},
-				"elevenlabs": map[string]interface{}{
+				provider.ProviderNameElevenLabs: map[string]interface{}{
 					"name":               "ElevenLabs",
 					"credits_per_minute": 15,
 					"description":        "Premium quality",

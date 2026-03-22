@@ -43,7 +43,7 @@ func NewSSHWhisperProvider(config SSHWhisperConfig) *SSHWhisperProvider {
 	}
 
 	baseProvider := common.NewBaseProvider(
-		"ssh_whisper",
+		provider.ProviderNameSSHWhisper,
 		"SSH Remote Whisper.cpp",
 		provider.ProviderTypeRemote,
 		"1.0.0",
@@ -182,7 +182,7 @@ func (ssp *SSHWhisperProvider) TranscriptWithOptions(ctx context.Context, reques
 		return nil, &provider.TranscriptionError{
 			Code:      "invalid_input",
 			Message:   "input file path is required",
-			Provider:  "ssh_whisper",
+			Provider:  provider.ProviderNameSSHWhisper,
 			Retryable: false,
 		}
 	}
@@ -192,7 +192,7 @@ func (ssp *SSHWhisperProvider) TranscriptWithOptions(ctx context.Context, reques
 		return nil, &provider.TranscriptionError{
 			Code:      "file_not_found",
 			Message:   fmt.Sprintf("input file not found: %s", request.InputFilePath),
-			Provider:  "ssh_whisper",
+			Provider:  provider.ProviderNameSSHWhisper,
 			Retryable: false,
 		}
 	}
@@ -203,7 +203,7 @@ func (ssp *SSHWhisperProvider) TranscriptWithOptions(ctx context.Context, reques
 		return nil, &provider.TranscriptionError{
 			Code:      "file_path_error",
 			Message:   fmt.Sprintf("failed to get absolute path: %v", err),
-			Provider:  "ssh_whisper",
+			Provider:  provider.ProviderNameSSHWhisper,
 			Retryable: false,
 		}
 	}
@@ -218,7 +218,7 @@ func (ssp *SSHWhisperProvider) TranscriptWithOptions(ctx context.Context, reques
 		return nil, &provider.TranscriptionError{
 			Code:      "file_transfer_failed",
 			Message:   fmt.Sprintf("failed to copy file to remote: %v", err),
-			Provider:  "ssh_whisper",
+			Provider:  provider.ProviderNameSSHWhisper,
 			Retryable: true,
 		}
 	}
@@ -287,7 +287,7 @@ func (ssp *SSHWhisperProvider) runRemoteWhisper(ctx context.Context, remoteFileP
 		return "", &provider.TranscriptionError{
 			Code:      "transcription_failed",
 			Message:   fmt.Sprintf("remote whisper execution failed: %v, output: %s", err, string(output)),
-			Provider:  "ssh_whisper",
+			Provider:  provider.ProviderNameSSHWhisper,
 			Retryable: true,
 		}
 	}
@@ -298,7 +298,7 @@ func (ssp *SSHWhisperProvider) runRemoteWhisper(ctx context.Context, remoteFileP
 		return "", &provider.TranscriptionError{
 			Code:      "empty_transcription",
 			Message:   "no transcription text found in output",
-			Provider:  "ssh_whisper",
+			Provider:  provider.ProviderNameSSHWhisper,
 			Retryable: false,
 			Suggestions: []string{"Check audio file format", "Verify model compatibility"},
 		}

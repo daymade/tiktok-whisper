@@ -220,10 +220,10 @@ func (cm *ConfigManager) UpdateProviderConfig(providerName string, config Provid
 // createDefaultConfig creates a default configuration
 func (cm *ConfigManager) createDefaultConfig() *ProviderConfiguration {
 	return &ProviderConfiguration{
-		DefaultProvider: "whisper_cpp",
+		DefaultProvider: ProviderNameWhisperCpp,
 		Providers: map[string]ProviderConfig{
-			"whisper_cpp": {
-				Type:    "whisper_cpp",
+			ProviderNameWhisperCpp: {
+				Type:    ProviderNameWhisperCpp,
 				Enabled: true,
 				Settings: map[string]interface{}{
 					"binary_path": "${WHISPER_CPP_BINARY:-./whisper.cpp/main}",
@@ -240,8 +240,8 @@ func (cm *ConfigManager) createDefaultConfig() *ProviderConfiguration {
 					RetryDelayMs: 1000,
 				},
 			},
-			"openai": {
-				Type:    "openai",
+			ProviderNameOpenAI: {
+				Type:    ProviderNameOpenAI,
 				Enabled: false, // Disabled by default since it requires API key
 				Auth: AuthConfig{
 					APIKey: "${OPENAI_API_KEY}",
@@ -261,8 +261,8 @@ func (cm *ConfigManager) createDefaultConfig() *ProviderConfiguration {
 					ExponentialBackoff: true,
 				},
 			},
-			"elevenlabs": {
-				Type:    "elevenlabs",
+			ProviderNameElevenLabs: {
+				Type:    ProviderNameElevenLabs,
 				Enabled: false, // Disabled by default
 				Auth: AuthConfig{
 					APIKey: "${ELEVENLABS_API_KEY}",
@@ -282,20 +282,20 @@ func (cm *ConfigManager) createDefaultConfig() *ProviderConfiguration {
 			},
 		},
 		Orchestrator: OrchestratorConfig{
-			FallbackChain:       []string{"whisper_cpp", "openai"},
+			FallbackChain:       []string{ProviderNameWhisperCpp, ProviderNameOpenAI},
 			HealthCheckInterval: 5 * time.Minute,
 			MaxRetries:          1,
 			RetryDelay:          2 * time.Second,
 			PreferLocal:         true,
 			RouterRules: RouterRules{
 				ByFileSize: map[string]string{
-					"small":  "whisper_cpp", // < 10MB
-					"medium": "whisper_cpp", // 10MB - 100MB
-					"large":  "openai",      // > 100MB
+					"small":  ProviderNameWhisperCpp, // < 10MB
+					"medium": ProviderNameWhisperCpp, // 10MB - 100MB
+					"large":  ProviderNameOpenAI,     // > 100MB
 				},
 				ByLanguage: map[string]string{
-					"zh": "whisper_cpp",
-					"en": "openai",
+					"zh": ProviderNameWhisperCpp,
+					"en": ProviderNameOpenAI,
 				},
 			},
 		},

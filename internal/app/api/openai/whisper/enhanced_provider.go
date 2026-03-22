@@ -94,7 +94,7 @@ func (ert *EnhancedRemoteTranscriber) TranscriptWithOptions(ctx context.Context,
 		return nil, &provider.TranscriptionError{
 			Code:      "invalid_input",
 			Message:   "input file path is required",
-			Provider:  "openai",
+			Provider:  provider.ProviderNameOpenAI,
 			Retryable: false,
 		}
 	}
@@ -104,7 +104,7 @@ func (ert *EnhancedRemoteTranscriber) TranscriptWithOptions(ctx context.Context,
 		return nil, &provider.TranscriptionError{
 			Code:      "file_not_found",
 			Message:   fmt.Sprintf("input file not found: %s", request.InputFilePath),
-			Provider:  "openai",
+			Provider:  provider.ProviderNameOpenAI,
 			Retryable: false,
 		}
 	}
@@ -226,7 +226,7 @@ func (ert *EnhancedRemoteTranscriber) handleAPIError(err error) error {
 			return &provider.TranscriptionError{
 				Code:        "authentication_failed",
 				Message:     "OpenAI API key is invalid or missing",
-				Provider:    "openai",
+				Provider:    provider.ProviderNameOpenAI,
 				Retryable:   false,
 				Suggestions: []string{"Check your OPENAI_API_KEY environment variable"},
 			}
@@ -234,7 +234,7 @@ func (ert *EnhancedRemoteTranscriber) handleAPIError(err error) error {
 			return &provider.TranscriptionError{
 				Code:        "rate_limit_exceeded",
 				Message:     "OpenAI API rate limit exceeded",
-				Provider:    "openai",
+				Provider:    provider.ProviderNameOpenAI,
 				Retryable:   true,
 				Suggestions: []string{"Wait a moment and try again", "Consider upgrading your OpenAI plan"},
 			}
@@ -242,7 +242,7 @@ func (ert *EnhancedRemoteTranscriber) handleAPIError(err error) error {
 			return &provider.TranscriptionError{
 				Code:        "file_too_large",
 				Message:     "Audio file is too large for OpenAI API",
-				Provider:    "openai",
+				Provider:    provider.ProviderNameOpenAI,
 				Retryable:   false,
 				Suggestions: []string{"Reduce file size", "Split into smaller chunks"},
 			}
@@ -250,7 +250,7 @@ func (ert *EnhancedRemoteTranscriber) handleAPIError(err error) error {
 			return &provider.TranscriptionError{
 				Code:        "invalid_file",
 				Message:     "Invalid audio file format or corrupted file",
-				Provider:    "openai",
+				Provider:    provider.ProviderNameOpenAI,
 				Retryable:   false,
 				Suggestions: []string{"Check file format", "Try converting to a supported format"},
 			}
@@ -258,7 +258,7 @@ func (ert *EnhancedRemoteTranscriber) handleAPIError(err error) error {
 			return &provider.TranscriptionError{
 				Code:      "api_error",
 				Message:   fmt.Sprintf("OpenAI API error: %v", apiErr.Message),
-				Provider:  "openai",
+				Provider:  provider.ProviderNameOpenAI,
 				Retryable: true,
 			}
 		}
@@ -268,7 +268,7 @@ func (ert *EnhancedRemoteTranscriber) handleAPIError(err error) error {
 	return &provider.TranscriptionError{
 		Code:      "unknown_error",
 		Message:   fmt.Sprintf("Transcription failed: %v", err),
-		Provider:  "openai",
+		Provider:  provider.ProviderNameOpenAI,
 		Retryable: true,
 	}
 }
@@ -276,7 +276,7 @@ func (ert *EnhancedRemoteTranscriber) handleAPIError(err error) error {
 // GetProviderInfo returns metadata about the OpenAI provider
 func (ert *EnhancedRemoteTranscriber) GetProviderInfo() provider.ProviderInfo {
 	return provider.ProviderInfo{
-		Name:        "openai",
+		Name:        provider.ProviderNameOpenAI,
 		DisplayName: "OpenAI Whisper API",
 		Type:        provider.ProviderTypeRemote,
 		Version:     "1.0.0",

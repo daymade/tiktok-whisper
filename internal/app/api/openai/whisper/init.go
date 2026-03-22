@@ -7,7 +7,7 @@ import (
 
 func init() {
 	// Register openai provider with the factory
-	provider.RegisterProvider("openai", createOpenAIProvider)
+	provider.RegisterProvider(provider.ProviderNameOpenAI, createOpenAIProvider)
 }
 
 // createOpenAIProvider creates an OpenAI Whisper provider from configuration
