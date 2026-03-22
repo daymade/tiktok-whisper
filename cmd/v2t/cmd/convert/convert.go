@@ -96,7 +96,6 @@ var Cmd = &cobra.Command{
 
 		// Set runtime configuration for provider selection and force mode
 		if providerName != "" || forceRetranscribe {
-			provider.InitializeRuntimeConfig()
 			provider.SetRuntimeConfig(&provider.RuntimeConfig{
 				ProviderName:      providerName,
 				ForceRetranscribe: forceRetranscribe,

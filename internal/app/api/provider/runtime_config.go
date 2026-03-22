@@ -4,20 +4,23 @@ import "sync"
 
 // RuntimeConfig holds runtime configuration for provider selection
 type RuntimeConfig struct {
-	ProviderName       string
-	ForceRetranscribe  bool
+	ProviderName      string
+	ForceRetranscribe bool
 }
 
 var (
-	runtimeConfig     *RuntimeConfig
-	runtimeConfigOnce sync.Once
-	runtimeConfigMu   sync.RWMutex
+	runtimeConfig   *RuntimeConfig
+	runtimeConfigMu sync.RWMutex
 )
 
-// SetRuntimeConfig sets the runtime configuration
+// SetRuntimeConfig sets the runtime configuration.
+// If config is nil, it initializes with an empty default.
 func SetRuntimeConfig(config *RuntimeConfig) {
 	runtimeConfigMu.Lock()
 	defer runtimeConfigMu.Unlock()
+	if config == nil {
+		config = &RuntimeConfig{}
+	}
 	runtimeConfig = config
 }
 
@@ -26,15 +29,6 @@ func GetRuntimeConfig() *RuntimeConfig {
 	runtimeConfigMu.RLock()
 	defer runtimeConfigMu.RUnlock()
 	return runtimeConfig
-}
-
-// InitializeRuntimeConfig initializes runtime config with defaults
-func InitializeRuntimeConfig() {
-	runtimeConfigOnce.Do(func() {
-		if runtimeConfig == nil {
-			runtimeConfig = &RuntimeConfig{}
-		}
-	})
 }
 
 // ResolveProviderType returns the active provider name, defaulting to "whisper_cpp".
