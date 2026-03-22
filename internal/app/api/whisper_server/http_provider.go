@@ -249,9 +249,20 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		}
 	}
 
-	// Create HTTP request
+	// Create HTTP request with dynamic timeout based on audio duration.
+	// whisper.cpp processes at ~0.1x RTF on M2; allow 0.5x RTF + 60s buffer.
+	requestTimeout := wsp.config.Timeout
+	if request.AudioDuration > 0 {
+		dynamicTimeout := time.Duration(request.AudioDuration/2)*time.Second + 60*time.Second
+		if dynamicTimeout > requestTimeout {
+			requestTimeout = dynamicTimeout
+		}
+	}
+	reqCtx, reqCancel := context.WithTimeout(ctx, requestTimeout)
+	defer reqCancel()
+
 	url := wsp.config.BaseURL + wsp.config.InferencePath
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, body)
+	httpReq, err := http.NewRequestWithContext(reqCtx, "POST", url, body)
 	if err != nil {
 		return nil, &provider.TranscriptionError{
 			Code:      "request_creation_failed",
@@ -267,8 +278,9 @@ func (wsp *WhisperServerProvider) TranscriptWithOptions(ctx context.Context, req
 		httpReq.Header.Set(key, value)
 	}
 
-	// Execute request
-	resp, err := wsp.client.Do(httpReq)
+	// Use a client without global timeout — per-request context handles it
+	reqClient := &http.Client{Transport: wsp.client.Transport}
+	resp, err := reqClient.Do(httpReq)
 	if err != nil {
 		return nil, &provider.TranscriptionError{
 			Code:      "request_failed",
@@ -676,25 +688,27 @@ func (wsp *WhisperServerProvider) isHallucinatedTranscription(text string) bool 
 	
 	// Detect common hallucination patterns
 	// 1. Excessive repetition of the same phrase
-	lines := strings.Split(text, "\n")
-	if len(lines) >= 2 { // Lowered threshold from 3 to 2
-		phraseCount := make(map[string]int)
-		for _, line := range lines {
-			normalized := strings.TrimSpace(strings.ToLower(line))
-			if normalized != "" {
-				phraseCount[normalized]++
-			}
+	// Filter empty lines first — trailing \n from Whisper creates empty splits
+	var nonEmptyLines []string
+	for _, line := range strings.Split(text, "\n") {
+		if trimmed := strings.TrimSpace(line); trimmed != "" {
+			nonEmptyLines = append(nonEmptyLines, trimmed)
 		}
-		
-		// If any phrase repeats more than 30% of the lines, it's likely hallucinated
+	}
+	if len(nonEmptyLines) >= 3 {
+		phraseCount := make(map[string]int)
+		for _, line := range nonEmptyLines {
+			phraseCount[strings.ToLower(line)]++
+		}
+
+		// If any phrase repeats more than 30% of non-empty lines, it's likely hallucinated
 		maxRepetition := 0
 		for _, count := range phraseCount {
 			if count > maxRepetition {
 				maxRepetition = count
 			}
 		}
-		// Lowered line threshold from 5 to 2 for aggressive detection
-		if float64(maxRepetition) > float64(len(lines))*0.3 && len(lines) >= 2 {
+		if float64(maxRepetition) > float64(len(nonEmptyLines))*0.3 {
 			return true
 		}
 	}

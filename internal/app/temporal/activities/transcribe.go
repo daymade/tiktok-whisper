@@ -57,9 +57,10 @@ func (a *TranscribeActivities) TranscribeFile(ctx context.Context, req Transcrip
 	// Create transcription request for provider
 	providerReq := &provider.TranscriptionRequest{
 		InputFilePath:   req.FilePath,
-		Provider:        req.Provider, // Add provider info for multipart form
+		Provider:        req.Provider,
 		Language:        req.Language,
 		ResponseFormat:  req.OutputFormat,
+		AudioDuration:   req.AudioDuration,
 		ProviderOptions: req.Options,
 		Context:         ctx,
 	}

@@ -62,6 +62,9 @@ type TranscriptionRequest struct {
 	// Provider-specific options
 	ProviderOptions map[string]interface{} `json:"provider_options,omitempty"`
 	
+	// Audio metadata (used for dynamic timeout calculation)
+	AudioDuration float64 `json:"audio_duration,omitempty"` // Duration in seconds
+
 	// Context for cancellation and timeouts
 	Context context.Context `json:"-"`
 }

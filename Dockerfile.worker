@@ -20,7 +20,7 @@ RUN CGO_ENABLED=1 go build -o temporal-worker ./internal/app/temporal/worker
 FROM alpine:latest
 
 # Install runtime dependencies
-RUN apk add --no-cache ca-certificates ffmpeg
+RUN apk add --no-cache ca-certificates ffmpeg netcat-openbsd
 
 # Create app user
 RUN adduser -D -g '' appuser

@@ -164,12 +164,13 @@ func SingleFileTranscriptionWorkflow(ctx workflow.Context, req SingleFileWorkflo
 	// Step 3: Perform transcription
 	var transcriptionResult activities.TranscriptionResult
 	err = workflow.ExecuteActivity(ctx, "TranscribeFile", activities.TranscriptionRequest{
-		FileID:       req.FileID,
-		FilePath:     localFilePath,
-		Provider:     req.Provider,
-		Language:     req.Language,
-		OutputFormat: req.OutputFormat,
-		Options:      req.Options,
+		FileID:        req.FileID,
+		FilePath:      localFilePath,
+		Provider:      req.Provider,
+		Language:      req.Language,
+		OutputFormat:  req.OutputFormat,
+		AudioDuration: float64(audioDuration),
+		Options:       req.Options,
 	}).Get(ctx, &transcriptionResult)
 	if err != nil {
 		logger.Error("Failed to transcribe file", "error", err)

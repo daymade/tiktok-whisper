@@ -4,12 +4,13 @@ import "time"
 
 // TranscriptionRequest represents a request to transcribe a file
 type TranscriptionRequest struct {
-	FileID       string                 `json:"file_id"`
-	FilePath     string                 `json:"file_path"`
-	Provider     string                 `json:"provider"`
-	Language     string                 `json:"language"`
-	OutputFormat string                 `json:"output_format"`
-	Options      map[string]interface{} `json:"options"`
+	FileID        string                 `json:"file_id"`
+	FilePath      string                 `json:"file_path"`
+	Provider      string                 `json:"provider"`
+	Language      string                 `json:"language"`
+	OutputFormat  string                 `json:"output_format"`
+	AudioDuration float64                `json:"audio_duration,omitempty"` // Seconds; used for dynamic timeout
+	Options       map[string]interface{} `json:"options"`
 }
 
 // TranscriptionResult represents the result of transcription

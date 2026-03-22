@@ -391,23 +391,20 @@ func createDefaultConfig() *config.ProvidersConfig {
 		}
 	}
 	
-	// Configure OpenAI if API key exists
-	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
+	// Configure OpenAI-compatible provider (third-party only, e.g., Qwen3-ASR via vLLM)
+	// REQUIRES OPENAI_BASE_URL — never falls back to api.openai.com
+	if baseURL := os.Getenv("OPENAI_BASE_URL"); baseURL != "" {
 		cfg.Providers[provider.ProviderNameOpenAI] = config.ProviderConfig{
 			Type:    provider.ProviderNameOpenAI,
 			Enabled: true,
 			Auth: map[string]interface{}{
-				"api_key": apiKey,
+				"api_key": getEnv("OPENAI_API_KEY", "sk-no-key-required"),
 			},
 			Settings: map[string]interface{}{
-				"model":           "whisper-1",
+				"model":           getEnv("OPENAI_WHISPER_MODEL", "Qwen/Qwen3-ASR-1.7B"),
 				"response_format": "text",
+				"base_url":        baseURL,
 			},
-		}
-		
-		// Use OpenAI as default if whisper_cpp not available
-		if _, exists := cfg.Providers[provider.ProviderNameWhisperCpp]; !exists {
-			cfg.DefaultProvider = provider.ProviderNameOpenAI
 		}
 	}
 	
