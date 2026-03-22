@@ -580,12 +580,32 @@ func simulateFileConversion(conv *converter.Converter, dao repository.Transcript
 	transcription, err := transcriber.Transcript(filePath)
 	if err != nil {
 		// Record error to database
-		dao.RecordToDB(user, inputDir, fileName, fileName, 0, "", time.Now(), 1, err.Error())
+		dao.RecordToDB(repository.RecordInput{
+			User:               user,
+			InputDir:           inputDir,
+			FileName:           fileName,
+			Mp3FileName:        fileName,
+			AudioDuration:      0,
+			Transcription:      "",
+			LastConversionTime: time.Now(),
+			HasError:           1,
+			ErrorMessage:       err.Error(),
+		})
 		return err
 	}
 
 	// Record success to database
-	dao.RecordToDB(user, inputDir, fileName, fileName, 100, transcription, time.Now(), 0, "")
+	dao.RecordToDB(repository.RecordInput{
+		User:               user,
+		InputDir:           inputDir,
+		FileName:           fileName,
+		Mp3FileName:        fileName,
+		AudioDuration:      100,
+		Transcription:      transcription,
+		LastConversionTime: time.Now(),
+		HasError:           0,
+		ErrorMessage:       "",
+	})
 	return nil
 }
 

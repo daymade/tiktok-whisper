@@ -116,17 +116,17 @@ func testDatabaseOperations(t *testing.T, dao repository.TranscriptionDAO) {
 	assert.Equal(t, sql.ErrNoRows, err)
 
 	// Test record insertion
-	dao.RecordToDB(
-		user,
-		"/test/input",
-		fileName,
-		fileName,
-		100,
-		"Test transcription for database operations",
-		time.Now(),
-		0,
-		"",
-	)
+	dao.RecordToDB(repository.RecordInput{
+		User:               user,
+		InputDir:           "/test/input",
+		FileName:           fileName,
+		Mp3FileName:        fileName,
+		AudioDuration:      100,
+		Transcription:      "Test transcription for database operations",
+		LastConversionTime: time.Now(),
+		HasError:           0,
+		ErrorMessage:       "",
+	})
 
 	// Test file check (should exist now)
 	id, err := dao.CheckIfFileProcessed(fileName)
@@ -174,17 +174,17 @@ func TestDatabaseConnectionPooling(t *testing.T) {
 				fileName := fmt.Sprintf("pool_file_%d_%d.mp3", goroutineID, j)
 
 				// Record to database
-				dao.RecordToDB(
-					user,
-					"/test/pool",
-					fileName,
-					fileName,
-					100+j,
-					fmt.Sprintf("Pooling test transcription %d-%d", goroutineID, j),
-					time.Now(),
-					0,
-					"",
-				)
+				dao.RecordToDB(repository.RecordInput{
+					User:               user,
+					InputDir:           "/test/pool",
+					FileName:           fileName,
+					Mp3FileName:        fileName,
+					AudioDuration:      100 + j,
+					Transcription:      fmt.Sprintf("Pooling test transcription %d-%d", goroutineID, j),
+					LastConversionTime: time.Now(),
+					HasError:           0,
+					ErrorMessage:       "",
+				})
 
 				// Check if file exists
 				_, err := dao.CheckIfFileProcessed(fileName)
@@ -237,7 +237,17 @@ func TestDatabaseTransactionHandling(t *testing.T) {
 	user := "transaction_user"
 	fileName := "transaction_test.mp3"
 
-	dao.RecordToDB(user, "/test", fileName, fileName, 100, "Transaction test", time.Now(), 0, "")
+	dao.RecordToDB(repository.RecordInput{
+		User:               user,
+		InputDir:           "/test",
+		FileName:           fileName,
+		Mp3FileName:        fileName,
+		AudioDuration:      100,
+		Transcription:      "Transaction test",
+		LastConversionTime: time.Now(),
+		HasError:           0,
+		ErrorMessage:       "",
+	})
 
 	// Verify record exists
 	id, err := dao.CheckIfFileProcessed(fileName)
@@ -246,7 +256,17 @@ func TestDatabaseTransactionHandling(t *testing.T) {
 
 	// Test error handling
 	errorFileName := "error_test.mp3"
-	dao.RecordToDB(user, "/test", errorFileName, errorFileName, 100, "Error test", time.Now(), 1, "Simulated error")
+	dao.RecordToDB(repository.RecordInput{
+		User:               user,
+		InputDir:           "/test",
+		FileName:           errorFileName,
+		Mp3FileName:        errorFileName,
+		AudioDuration:      100,
+		Transcription:      "Error test",
+		LastConversionTime: time.Now(),
+		HasError:           1,
+		ErrorMessage:       "Simulated error",
+	})
 
 	// Verify error record exists
 	transcriptions, err := dao.GetAllByUser(user)
@@ -425,7 +445,17 @@ func TestResourceCleanupVerification(t *testing.T) {
 		// Note: NewSQLiteDB may panic on error rather than returning error
 
 		// Use the database
-		dao.RecordToDB("cleanup_user", "/test", "cleanup.mp3", "cleanup.mp3", 100, "cleanup test", time.Now(), 0, "")
+		dao.RecordToDB(repository.RecordInput{
+			User:               "cleanup_user",
+			InputDir:           "/test",
+			FileName:           "cleanup.mp3",
+			Mp3FileName:        "cleanup.mp3",
+			AudioDuration:      100,
+			Transcription:      "cleanup test",
+			LastConversionTime: time.Now(),
+			HasError:           0,
+			ErrorMessage:       "",
+		})
 
 		// Close and verify file exists
 		err := dao.Close()
@@ -506,7 +536,17 @@ func TestDatabaseMigrationResilience(t *testing.T) {
 	defer dao.Close()
 
 	// Add some data
-	dao.RecordToDB("migration_user", "/test", "migration.mp3", "migration.mp3", 100, "migration test", time.Now(), 0, "")
+	dao.RecordToDB(repository.RecordInput{
+		User:               "migration_user",
+		InputDir:           "/test",
+		FileName:           "migration.mp3",
+		Mp3FileName:        "migration.mp3",
+		AudioDuration:      100,
+		Transcription:      "migration test",
+		LastConversionTime: time.Now(),
+		HasError:           0,
+		ErrorMessage:       "",
+	})
 
 	// Verify data exists
 	transcriptions, err := dao.GetAllByUser("migration_user")

@@ -189,7 +189,7 @@ func TestPostgresDB_RecordToDB_Unit(t *testing.T) {
 			errorMessage:  "",
 			mockSetup: func() {
 				mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO transcriptions`)).
-					WithArgs("test_user", "/test/input", "test.mp3", "test.mp3", 120, "Test transcription", sqlmock.AnyArg(), 0, "").
+					WithArgs("test_user", "/test/input", "test.mp3", "test.mp3", 120, "Test transcription", sqlmock.AnyArg(), 0, "", "").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 		},
@@ -205,7 +205,7 @@ func TestPostgresDB_RecordToDB_Unit(t *testing.T) {
 			errorMessage:  "Test error",
 			mockSetup: func() {
 				mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO transcriptions`)).
-					WithArgs("test_user", "/test/input", "error.mp3", "error.mp3", 0, "", sqlmock.AnyArg(), 1, "Test error").
+					WithArgs("test_user", "/test/input", "error.mp3", "error.mp3", 0, "", sqlmock.AnyArg(), 1, "Test error", "").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 		},
@@ -219,17 +219,17 @@ func TestPostgresDB_RecordToDB_Unit(t *testing.T) {
 
 			// Test successful cases only (error cases call log.Fatalf which terminates process)
 			assert.NotPanics(t, func() {
-				postgresDB.RecordToDB(
-					tc.user,
-					tc.inputDir,
-					tc.fileName,
-					tc.mp3FileName,
-					tc.audioDuration,
-					tc.transcription,
-					time.Now(),
-					tc.hasError,
-					tc.errorMessage,
-				)
+				postgresDB.RecordToDB(repository.RecordInput{
+					User:               tc.user,
+					InputDir:           tc.inputDir,
+					FileName:           tc.fileName,
+					Mp3FileName:        tc.mp3FileName,
+					AudioDuration:      tc.audioDuration,
+					Transcription:      tc.transcription,
+					LastConversionTime: time.Now(),
+					HasError:           tc.hasError,
+					ErrorMessage:       tc.errorMessage,
+				})
 			})
 
 			// Verify all expectations were met
@@ -382,22 +382,22 @@ func TestPostgresDB_SpecialCharacters_Unit(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mock to expect the exact parameterized query
 			mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO transcriptions`)).
-				WithArgs(tc.user, "/test", tc.fileName, tc.fileName, 120, tc.text, sqlmock.AnyArg(), 0, "").
+				WithArgs(tc.user, "/test", tc.fileName, tc.fileName, 120, tc.text, sqlmock.AnyArg(), 0, "", "").
 				WillReturnResult(sqlmock.NewResult(1, 1))
 
 			// Should handle special characters safely
 			assert.NotPanics(t, func() {
-				postgresDB.RecordToDB(
-					tc.user,
-					"/test",
-					tc.fileName,
-					tc.fileName,
-					120,
-					tc.text,
-					time.Now(),
-					0,
-					"",
-				)
+				postgresDB.RecordToDB(repository.RecordInput{
+					User:               tc.user,
+					InputDir:           "/test",
+					FileName:           tc.fileName,
+					Mp3FileName:        tc.fileName,
+					AudioDuration:      120,
+					Transcription:      tc.text,
+					LastConversionTime: time.Now(),
+					HasError:           0,
+					ErrorMessage:       "",
+				})
 			})
 
 			// Verify expectations

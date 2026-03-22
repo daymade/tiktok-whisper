@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"tiktok-whisper/internal/app/model"
-	"time"
+	"tiktok-whisper/internal/app/repository"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -39,10 +39,9 @@ func (sdb *SQLiteDB) DeleteByID(id int) error {
 	return err
 }
 
-func (sdb *SQLiteDB) RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string,
-	lastConversionTime time.Time, hasError int, errorMessage string, providerType string) {
+func (sdb *SQLiteDB) RecordToDB(input repository.RecordInput) {
 	insertSQL := `INSERT INTO transcriptions (user, input_dir, file_name, mp3_file_name, audio_duration, transcription, last_conversion_time, has_error, error_message, provider_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
-	_, err := sdb.db.Exec(insertSQL, user, inputDir, fileName, mp3FileName, audioDuration, transcription, lastConversionTime, hasError, errorMessage, providerType)
+	_, err := sdb.db.Exec(insertSQL, input.User, input.InputDir, input.FileName, input.Mp3FileName, input.AudioDuration, input.Transcription, input.LastConversionTime, input.HasError, input.ErrorMessage, input.ProviderType)
 	if err != nil {
 		log.Fatalf("Failed to insert data into database: %v\n", err)
 	}

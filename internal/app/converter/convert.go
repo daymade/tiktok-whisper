@@ -109,8 +109,18 @@ func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory stri
 	if err != nil {
 		log.Printf("Transcription error: %v\n", err)
 		fileName := filepath.Base(audioAbsPath)
-		c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, 0, "",
-			time.Now(), 1, fmt.Sprintf("Transcription error: %v", err), providerType)
+		c.db.RecordToDB(repository.RecordInput{
+			User:               userNickname,
+			InputDir:           audioAbsPath,
+			FileName:           fileName,
+			Mp3FileName:        fileName,
+			AudioDuration:      0,
+			Transcription:      "",
+			LastConversionTime: time.Now(),
+			HasError:           1,
+			ErrorMessage:       fmt.Sprintf("Transcription error: %v", err),
+			ProviderType:       providerType,
+		})
 		return
 	}
 
@@ -122,8 +132,18 @@ func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory stri
 	err = files.WriteToFile(transcription, transcriptionFilepath)
 	if err != nil {
 		log.Printf("Error writing to audioAbsPath: %v\n", err)
-		c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, 0, transcription,
-			time.Now(), 1, fmt.Sprintf("File write error: %v", err), providerType)
+		c.db.RecordToDB(repository.RecordInput{
+			User:               userNickname,
+			InputDir:           audioAbsPath,
+			FileName:           fileName,
+			Mp3FileName:        fileName,
+			AudioDuration:      0,
+			Transcription:      transcription,
+			LastConversionTime: time.Now(),
+			HasError:           1,
+			ErrorMessage:       fmt.Sprintf("File write error: %v", err),
+			ProviderType:       providerType,
+		})
 		return
 	}
 
@@ -133,8 +153,18 @@ func (c *Converter) processFile(audioAbsPath string, transcriptionDirectory stri
 		duration = 0
 	}
 
-	c.db.RecordToDB(userNickname, audioAbsPath, fileName, fileName, duration, transcription,
-		time.Now(), 0, "", providerType)
+	c.db.RecordToDB(repository.RecordInput{
+		User:               userNickname,
+		InputDir:           audioAbsPath,
+		FileName:           fileName,
+		Mp3FileName:        fileName,
+		AudioDuration:      duration,
+		Transcription:      transcription,
+		LastConversionTime: time.Now(),
+		HasError:           0,
+		ErrorMessage:       "",
+		ProviderType:       providerType,
+	})
 	
 	log.Printf("Transcription saved to: %s\n", transcriptionFilepath)
 }
@@ -241,15 +271,35 @@ func (c *Converter) convertToText(userNickname string, fileName string, fileFull
 
 	err := audio.ConvertToMp3(fileName, fileFullPath, mp3FilePath)
 	if err != nil {
-		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, 0, "",
-			time.Now(), 1, fmt.Sprintf("FFmpeg error: %v", err), providerType)
+		c.db.RecordToDB(repository.RecordInput{
+			User:               userNickname,
+			InputDir:           fileFullPath,
+			FileName:           fileName,
+			Mp3FileName:        mp3FileName,
+			AudioDuration:      0,
+			Transcription:      "",
+			LastConversionTime: time.Now(),
+			HasError:           1,
+			ErrorMessage:       fmt.Sprintf("FFmpeg error: %v", err),
+			ProviderType:       providerType,
+		})
 		return fmt.Errorf("FFmpeg error: %v", err)
 	}
 
 	duration, err := audio.GetAudioDuration(mp3FilePath)
 	if err != nil {
-		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, 0, "",
-			time.Now(), 1, fmt.Sprintf("Failed to get audio duration: %v", err), providerType)
+		c.db.RecordToDB(repository.RecordInput{
+			User:               userNickname,
+			InputDir:           fileFullPath,
+			FileName:           fileName,
+			Mp3FileName:        mp3FileName,
+			AudioDuration:      0,
+			Transcription:      "",
+			LastConversionTime: time.Now(),
+			HasError:           1,
+			ErrorMessage:       fmt.Sprintf("Failed to get audio duration: %v", err),
+			ProviderType:       providerType,
+		})
 		return fmt.Errorf("failed to get audio duration: %v", err)
 	}
 
@@ -257,13 +307,34 @@ func (c *Converter) convertToText(userNickname string, fileName string, fileFull
 	if err != nil {
 		log.Printf("transcripting failed for %v, err: %v", fileName, err)
 
-		c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, duration, "",
-			time.Now(), 1, fmt.Sprintf("Transcription error: %v", err), providerType)
+		c.db.RecordToDB(repository.RecordInput{
+			User:               userNickname,
+			InputDir:           fileFullPath,
+			FileName:           fileName,
+			Mp3FileName:        mp3FileName,
+			AudioDuration:      duration,
+			Transcription:      "",
+			LastConversionTime: time.Now(),
+			HasError:           1,
+			ErrorMessage:       fmt.Sprintf("Transcription error: %v", err),
+			ProviderType:       providerType,
+		})
 
 		return fmt.Errorf("transcription error: %v", err)
 	}
 
-	c.db.RecordToDB(userNickname, fileFullPath, fileName, mp3FileName, duration, transcription, time.Now(), 0, "", providerType)
+	c.db.RecordToDB(repository.RecordInput{
+		User:               userNickname,
+		InputDir:           fileFullPath,
+		FileName:           fileName,
+		Mp3FileName:        mp3FileName,
+		AudioDuration:      duration,
+		Transcription:      transcription,
+		LastConversionTime: time.Now(),
+		HasError:           0,
+		ErrorMessage:       "",
+		ProviderType:       providerType,
+	})
 
 	log.Println("transcription completed for file: ", fileName)
 	fmt.Println(transcription)

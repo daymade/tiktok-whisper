@@ -5,6 +5,22 @@ import (
 	"time"
 )
 
+// RecordInput holds all parameters for recording a transcription to the database.
+// Using a struct eliminates the 10-parameter positional sprawl and prevents
+// silent string-argument swaps.
+type RecordInput struct {
+	User               string
+	InputDir           string
+	FileName           string
+	Mp3FileName        string
+	AudioDuration      int
+	Transcription      string
+	LastConversionTime time.Time
+	HasError           int
+	ErrorMessage       string
+	ProviderType       string
+}
+
 type TranscriptionDAO interface {
 	Close() error
 
@@ -14,6 +30,5 @@ type TranscriptionDAO interface {
 
 	DeleteByID(id int) error
 
-	RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string,
-		lastConversionTime time.Time, hasError int, errorMessage string, providerType string)
+	RecordToDB(input RecordInput)
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"tiktok-whisper/internal/app/repository"
 )
 
 // ExampleWithTestDB demonstrates how to use the database test helpers
@@ -99,7 +100,17 @@ func ExampleMockTranscriptionDAO() {
 	_ = id // id == 1
 
 	// Test recording new transcription
-	mockDAO.RecordToDB("new_user", "/input", "new.mp3", "new.mp3", 180, "New transcription", time.Now(), 0, "")
+	mockDAO.RecordToDB(repository.RecordInput{
+		User:               "new_user",
+		InputDir:           "/input",
+		FileName:           "new.mp3",
+		Mp3FileName:        "new.mp3",
+		AudioDuration:      180,
+		Transcription:      "New transcription",
+		LastConversionTime: time.Now(),
+		HasError:           0,
+		ErrorMessage:       "",
+	})
 
 	// Check the recorded call
 	calls := mockDAO.GetRecordCalls()
@@ -239,7 +250,17 @@ func TestMockFactories(t *testing.T) {
 		assert.Equal(t, 100, id)
 
 		// Test RecordToDB
-		mock.RecordToDB("new_user", "/input", "new.mp3", "new.mp3", 180, "New transcription", time.Now(), 0, "")
+		mock.RecordToDB(repository.RecordInput{
+			User:               "new_user",
+			InputDir:           "/input",
+			FileName:           "new.mp3",
+			Mp3FileName:        "new.mp3",
+			AudioDuration:      180,
+			Transcription:      "New transcription",
+			LastConversionTime: time.Now(),
+			HasError:           0,
+			ErrorMessage:       "",
+		})
 
 		calls := mock.GetRecordCalls()
 		assert.Equal(t, 1, len(calls))

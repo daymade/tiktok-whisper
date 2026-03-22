@@ -136,7 +136,7 @@ type MockTranscriptionDAO struct {
 	processedFiles   map[string]int
 	closeFunc        func() error
 	getAllByUserFunc func(userNickname string) ([]model.Transcription, error)
-	recordToDBFunc   func(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string, lastConversionTime time.Time, hasError int, errorMessage string)
+	recordToDBFunc   func(input repository.RecordInput)
 	checkFileFunc    func(fileName string) (int, error)
 	closeCalled      bool
 	recordCalls      []RecordCall
@@ -233,43 +233,43 @@ func (m *MockTranscriptionDAO) DeleteByID(id int) error {
 }
 
 // RecordToDB implements the TranscriptionDAO interface
-func (m *MockTranscriptionDAO) RecordToDB(user, inputDir, fileName, mp3FileName string, audioDuration int, transcription string, lastConversionTime time.Time, hasError int, errorMessage string, providerType string) {
+func (m *MockTranscriptionDAO) RecordToDB(input repository.RecordInput) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	call := RecordCall{
-		User:               user,
-		InputDir:           inputDir,
-		FileName:           fileName,
-		Mp3FileName:        mp3FileName,
-		AudioDuration:      audioDuration,
-		Transcription:      transcription,
-		LastConversionTime: lastConversionTime,
-		HasError:           hasError,
-		ErrorMessage:       errorMessage,
-		ProviderType:       providerType,
+		User:               input.User,
+		InputDir:           input.InputDir,
+		FileName:           input.FileName,
+		Mp3FileName:        input.Mp3FileName,
+		AudioDuration:      input.AudioDuration,
+		Transcription:      input.Transcription,
+		LastConversionTime: input.LastConversionTime,
+		HasError:           input.HasError,
+		ErrorMessage:       input.ErrorMessage,
+		ProviderType:       input.ProviderType,
 	}
 	m.recordCalls = append(m.recordCalls, call)
 
 	if m.recordToDBFunc != nil {
-		m.recordToDBFunc(user, inputDir, fileName, mp3FileName, audioDuration, transcription, lastConversionTime, hasError, errorMessage)
+		m.recordToDBFunc(input)
 		return
 	}
 
 	// Add to transcriptions
 	transcriptionRecord := model.Transcription{
 		ID:                 len(m.transcriptions) + 1,
-		User:               user,
-		LastConversionTime: lastConversionTime,
-		Mp3FileName:        mp3FileName,
-		AudioDuration:      float64(audioDuration),
-		Transcription:      transcription,
-		ErrorMessage:       errorMessage,
+		User:               input.User,
+		LastConversionTime: input.LastConversionTime,
+		Mp3FileName:        input.Mp3FileName,
+		AudioDuration:      float64(input.AudioDuration),
+		Transcription:      input.Transcription,
+		ErrorMessage:       input.ErrorMessage,
 	}
 	m.transcriptions = append(m.transcriptions, transcriptionRecord)
 
 	// Mark file as processed
-	m.processedFiles[fileName] = transcriptionRecord.ID
+	m.processedFiles[input.FileName] = transcriptionRecord.ID
 }
 
 // GetRecordCalls returns all calls made to RecordToDB

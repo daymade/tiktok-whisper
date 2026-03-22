@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"tiktok-whisper/internal/app/repository"
 	"tiktok-whisper/internal/app/testutil"
 
 	_ "github.com/lib/pq"
@@ -96,17 +97,17 @@ func TestPostgresDB_FullIntegration(t *testing.T) {
 		}
 
 		// 2. Record a new transcription
-		postgresDB.RecordToDB(
-			user,
-			"/test/integration",
-			fileName,
-			fileName,
-			300,
-			transcription,
-			time.Now(),
-			0,
-			"",
-		)
+		postgresDB.RecordToDB(repository.RecordInput{
+			User:               user,
+			InputDir:           "/test/integration",
+			FileName:           fileName,
+			Mp3FileName:        fileName,
+			AudioDuration:      300,
+			Transcription:      transcription,
+			LastConversionTime: time.Now(),
+			HasError:           0,
+			ErrorMessage:       "",
+		})
 
 		// 3. Check if file is now processed
 		id, err := postgresDB.CheckIfFileProcessed(fileName)
@@ -168,17 +169,17 @@ func TestPostgresDB_ConcurrentAccess_Integration(t *testing.T) {
 					fileName := testutil.RandomTestAudioFile()
 					transcription := testutil.RandomTestTranscriptionText()
 
-					postgresDB.RecordToDB(
-						user,
-						"/test/concurrent",
-						fileName,
-						fileName,
-						120,
-						transcription,
-						time.Now(),
-						0,
-						"",
-					)
+					postgresDB.RecordToDB(repository.RecordInput{
+						User:               user,
+						InputDir:           "/test/concurrent",
+						FileName:           fileName,
+						Mp3FileName:        fileName,
+						AudioDuration:      120,
+						Transcription:      transcription,
+						LastConversionTime: time.Now(),
+						HasError:           0,
+						ErrorMessage:       "",
+					})
 
 					// Test concurrent CheckIfFileProcessed calls
 					_, _ = postgresDB.CheckIfFileProcessed(fileName)
@@ -256,17 +257,17 @@ func TestPostgresDB_DataIntegrity_Integration(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				postgresDB.RecordToDB(
-					tc.user,
-					"/test/integrity",
-					tc.fileName,
-					tc.fileName,
-					tc.duration,
-					tc.transcription,
-					time.Now(),
-					0,
-					"",
-				)
+				postgresDB.RecordToDB(repository.RecordInput{
+					User:               tc.user,
+					InputDir:           "/test/integrity",
+					FileName:           tc.fileName,
+					Mp3FileName:        tc.fileName,
+					AudioDuration:      tc.duration,
+					Transcription:      tc.transcription,
+					LastConversionTime: time.Now(),
+					HasError:           0,
+					ErrorMessage:       "",
+				})
 
 				// Verify data was stored correctly
 				var storedUser, storedTranscription string
@@ -321,17 +322,17 @@ func TestPostgresDB_TransactionHandling_Integration(t *testing.T) {
 		initialCount := testutil.GetTestDataCount(t, db)
 
 		// This should succeed
-		postgresDB.RecordToDB(
-			"transaction_test_user",
-			"/test/transaction",
-			"valid_file.mp3",
-			"valid_file.mp3",
-			120,
-			"Valid transcription",
-			time.Now(),
-			0,
-			"",
-		)
+		postgresDB.RecordToDB(repository.RecordInput{
+			User:               "transaction_test_user",
+			InputDir:           "/test/transaction",
+			FileName:           "valid_file.mp3",
+			Mp3FileName:        "valid_file.mp3",
+			AudioDuration:      120,
+			Transcription:      "Valid transcription",
+			LastConversionTime: time.Now(),
+			HasError:           0,
+			ErrorMessage:       "",
+		})
 
 		afterValidCount := testutil.GetTestDataCount(t, db)
 		if afterValidCount != initialCount+1 {
@@ -490,17 +491,17 @@ func BenchmarkPostgresDB_RecordToDB(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			postgresDB.RecordToDB(
-				"benchmark_user",
-				"/benchmark/input",
-				"benchmark_file.mp3",
-				"benchmark_file.mp3",
-				120,
-				"Benchmark transcription text for performance testing",
-				time.Now(),
-				0,
-				"",
-			)
+			postgresDB.RecordToDB(repository.RecordInput{
+				User:               "benchmark_user",
+				InputDir:           "/benchmark/input",
+				FileName:           "benchmark_file.mp3",
+				Mp3FileName:        "benchmark_file.mp3",
+				AudioDuration:      120,
+				Transcription:      "Benchmark transcription text for performance testing",
+				LastConversionTime: time.Now(),
+				HasError:           0,
+				ErrorMessage:       "",
+			})
 		}
 	})
 }

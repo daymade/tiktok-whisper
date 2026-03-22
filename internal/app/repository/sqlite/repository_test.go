@@ -188,18 +188,18 @@ func TestSQLiteDB_RecordToDB(t *testing.T) {
 				}
 
 				// Record the data
-				sqliteDB.RecordToDB(
-					tc.user,
-					tc.inputDir,
-					tc.fileName,
-					tc.mp3FileName,
-					tc.audioDuration,
-					tc.transcription,
-					time.Now(),
-					tc.hasError,
-					tc.errorMessage,
-				"whisper_cpp",
-				)
+				sqliteDB.RecordToDB(repository.RecordInput{
+					User:               tc.user,
+					InputDir:           tc.inputDir,
+					FileName:           tc.fileName,
+					Mp3FileName:        tc.mp3FileName,
+					AudioDuration:      tc.audioDuration,
+					Transcription:      tc.transcription,
+					LastConversionTime: time.Now(),
+					HasError:           tc.hasError,
+					ErrorMessage:       tc.errorMessage,
+					ProviderType:       "whisper_cpp",
+				})
 
 				// Verify the record was inserted
 				var count int
@@ -334,18 +334,18 @@ func TestSQLiteDB_ConcurrentAccess(t *testing.T) {
 					fileName := testutil.RandomTestAudioFile()
 					transcription := testutil.RandomTestTranscriptionText()
 
-					sqliteDB.RecordToDB(
-						user,
-						"/test/concurrent",
-						fileName,
-						fileName,
-						120,
-						transcription,
-						time.Now(),
-						0,
-						"",
-						"whisper_cpp",
-					)
+					sqliteDB.RecordToDB(repository.RecordInput{
+						User:               user,
+						InputDir:           "/test/concurrent",
+						FileName:           fileName,
+						Mp3FileName:        fileName,
+						AudioDuration:      120,
+						Transcription:      transcription,
+						LastConversionTime: time.Now(),
+						HasError:           0,
+						ErrorMessage:       "",
+						ProviderType:       "whisper_cpp",
+					})
 
 					// Also test concurrent reads
 					_, err := sqliteDB.GetAllByUser(user)
@@ -415,18 +415,18 @@ func TestSQLiteDB_DataIntegrity(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				sqliteDB.RecordToDB(
-					tc.user,
-					"/test/integrity",
-					tc.fileName,
-					tc.fileName,
-					tc.duration,
-					tc.transcription,
-					time.Now(),
-					0,
-					"",
-					"whisper_cpp",
-				)
+				sqliteDB.RecordToDB(repository.RecordInput{
+					User:               tc.user,
+					InputDir:           "/test/integrity",
+					FileName:           tc.fileName,
+					Mp3FileName:        tc.fileName,
+					AudioDuration:      tc.duration,
+					Transcription:      tc.transcription,
+					LastConversionTime: time.Now(),
+					HasError:           0,
+					ErrorMessage:       "",
+					ProviderType:       "whisper_cpp",
+				})
 
 				// Verify data was stored correctly
 				transcriptions, err := sqliteDB.GetAllByUser(tc.user)
@@ -474,18 +474,18 @@ func BenchmarkSQLiteDB_RecordToDB(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			sqliteDB.RecordToDB(
-				"benchmark_user",
-				"/benchmark/input",
-				"benchmark_file.mp3",
-				"benchmark_file.mp3",
-				120,
-				"Benchmark transcription text for performance testing",
-				time.Now(),
-				0,
-				"",
-				"whisper_cpp",
-			)
+			sqliteDB.RecordToDB(repository.RecordInput{
+				User:               "benchmark_user",
+				InputDir:           "/benchmark/input",
+				FileName:           "benchmark_file.mp3",
+				Mp3FileName:        "benchmark_file.mp3",
+				AudioDuration:      120,
+				Transcription:      "Benchmark transcription text for performance testing",
+				LastConversionTime: time.Now(),
+				HasError:           0,
+				ErrorMessage:       "",
+				ProviderType:       "whisper_cpp",
+			})
 		}
 	})
 }
@@ -497,18 +497,18 @@ func BenchmarkSQLiteDB_GetAllByUser(b *testing.B) {
 
 		// Seed some data for benchmarking
 		for i := 0; i < 100; i++ {
-			sqliteDB.RecordToDB(
-				"benchmark_user",
-				"/benchmark/input",
-				"benchmark_file.mp3",
-				"benchmark_file.mp3",
-				120,
-				"Benchmark transcription text for performance testing",
-				time.Now(),
-				0,
-				"",
-				"whisper_cpp",
-			)
+			sqliteDB.RecordToDB(repository.RecordInput{
+				User:               "benchmark_user",
+				InputDir:           "/benchmark/input",
+				FileName:           "benchmark_file.mp3",
+				Mp3FileName:        "benchmark_file.mp3",
+				AudioDuration:      120,
+				Transcription:      "Benchmark transcription text for performance testing",
+				LastConversionTime: time.Now(),
+				HasError:           0,
+				ErrorMessage:       "",
+				ProviderType:       "whisper_cpp",
+			})
 		}
 
 		b.ResetTimer()
@@ -555,18 +555,18 @@ func TestSQLiteDB_MemoryUsage(t *testing.T) {
 		// Perform various operations and measure memory
 		benchmark.Measure("record_operations", func() {
 			for i := 0; i < 100; i++ {
-				sqliteDB.RecordToDB(
-					"memory_test_user",
-					"/test/memory",
-					"memory_test.mp3",
-					"memory_test.mp3",
-					120,
-					"Memory usage test transcription",
-					time.Now(),
-					0,
-					"",
-					"whisper_cpp",
-				)
+				sqliteDB.RecordToDB(repository.RecordInput{
+					User:               "memory_test_user",
+					InputDir:           "/test/memory",
+					FileName:           "memory_test.mp3",
+					Mp3FileName:        "memory_test.mp3",
+					AudioDuration:      120,
+					Transcription:      "Memory usage test transcription",
+					LastConversionTime: time.Now(),
+					HasError:           0,
+					ErrorMessage:       "",
+					ProviderType:       "whisper_cpp",
+				})
 			}
 		})
 

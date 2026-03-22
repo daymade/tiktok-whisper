@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"tiktok-whisper/internal/app/api"
 	"tiktok-whisper/internal/app/api/openai/whisper"
+	"tiktok-whisper/internal/app/repository"
 	"tiktok-whisper/internal/app/repository/pg"
 	"tiktok-whisper/internal/app/repository/sqlite"
 	"tiktok-whisper/internal/app/testutil"
@@ -437,7 +438,17 @@ func testSQLiteResilience(t *testing.T) {
 	defer readonlyDB.Close()
 
 	// Write operations should fail
-	readonlyDB.RecordToDB("test", "/test", "test.mp3", "test.mp3", 100, "test transcription", time.Now(), 0, "")
+	readonlyDB.RecordToDB(repository.RecordInput{
+		User:               "test",
+		InputDir:           "/test",
+		FileName:           "test.mp3",
+		Mp3FileName:        "test.mp3",
+		AudioDuration:      100,
+		Transcription:      "test transcription",
+		LastConversionTime: time.Now(),
+		HasError:           0,
+		ErrorMessage:       "",
+	})
 	// Note: This might not fail immediately due to WAL mode, but it's a realistic test
 }
 
