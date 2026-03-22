@@ -392,8 +392,8 @@ func ExampleEnhancedMockLogger() {
 	logger.AssertExpectations(nil) // would pass *testing.T in real usage
 }
 
-// ExampleEnhancedMockLoggerWithTestify demonstrates testify integration
-func ExampleEnhancedMockLoggerWithTestify() {
+// ExampleNewEnhancedMockLogger_withTestify demonstrates testify integration.
+func ExampleNewEnhancedMockLogger_withTestify() {
 	logger := NewEnhancedMockLogger()
 
 	// Set up expectations with structured data

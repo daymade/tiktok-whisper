@@ -94,6 +94,12 @@ func (p *BatchProcessor) ProcessBatch(ctx context.Context, transcriptions []*vec
 
 	// Process in batches
 	for i := 0; i < len(transcriptions); i += batchSize {
+		select {
+		case <-ctx.Done():
+			return result, nil
+		default:
+		}
+
 		// Check for stop signal
 		select {
 		case <-p.stopChan:
@@ -120,9 +126,21 @@ func (p *BatchProcessor) ProcessBatch(ctx context.Context, transcriptions []*vec
 		var mu sync.Mutex
 
 		for _, t := range batch {
+			select {
+			case <-ctx.Done():
+				break
+			default:
+			}
+
 			wg.Add(1)
 			go func(transcription *vector.Transcription) {
 				defer wg.Done()
+
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
 
 				err := p.orchestrator.ProcessTranscription(ctx, transcription.ID, transcription.TranscriptionText)
 
@@ -138,6 +156,10 @@ func (p *BatchProcessor) ProcessBatch(ctx context.Context, transcriptions []*vec
 		}
 
 		wg.Wait()
+
+		if ctx.Err() != nil {
+			return result, nil
+		}
 
 		// Progress logging
 		progress := float64(i+len(batch)) / float64(len(transcriptions)) * 100

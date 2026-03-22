@@ -21,6 +21,9 @@ type MockEmbeddingOrchestrator struct {
 
 func (m *MockEmbeddingOrchestrator) ProcessTranscription(ctx context.Context, transcriptionID int, text string) error {
 	args := m.Called(ctx, transcriptionID, text)
+	if fn, ok := args.Get(0).(func(context.Context, int, string) error); ok {
+		return fn(ctx, transcriptionID, text)
+	}
 	if args.Get(0) == nil {
 		return nil
 	}
@@ -52,7 +55,7 @@ func TestBatchProcessor(t *testing.T) {
 	mockOrchestrator.On("ProcessTranscription", mock.Anything, 1, "First transcription").Return(nil)
 	mockOrchestrator.On("ProcessTranscription", mock.Anything, 2, "Second transcription").Return(nil)
 	mockOrchestrator.On("ProcessTranscription", mock.Anything, 3, "Third transcription").Return(nil)
-	mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+	mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 
 	// Act
 	result, err := processor.ProcessBatch(context.Background(), transcriptions, 2)
@@ -81,7 +84,7 @@ func TestBatchProcessorWithErrors(t *testing.T) {
 	// Setup mocks - first succeeds, second fails
 	mockOrchestrator.On("ProcessTranscription", mock.Anything, 1, "First transcription").Return(nil)
 	mockOrchestrator.On("ProcessTranscription", mock.Anything, 2, "Second transcription").Return(assert.AnError)
-	mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+	mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 
 	// Act
 	result, err := processor.ProcessBatch(context.Background(), transcriptions, 2)
@@ -113,7 +116,7 @@ func TestBatchProcessorProcessAll(t *testing.T) {
 	mockStorage.On("GetTranscriptionsWithoutEmbeddings", mock.Anything, "gemini", mock.Anything).Return(transcriptions, nil)
 	mockOrchestrator.On("ProcessTranscription", mock.Anything, 1, "First transcription").Return(nil)
 	mockOrchestrator.On("ProcessTranscription", mock.Anything, 2, "Second transcription").Return(nil)
-	mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+	mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 
 	// Act
 	err := processor.ProcessAllTranscriptions(context.Background(), []string{"openai", "gemini"}, 10)
@@ -139,7 +142,7 @@ func TestBatchProcessorProgress(t *testing.T) {
 			{ID: 1, TranscriptionText: "First transcription", User: "user1"},
 		}
 		mockOrchestrator.On("ProcessTranscription", mock.Anything, 1, "First transcription").Return(nil)
-		mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		mockLogger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 
 		processor.ProcessBatch(context.Background(), transcriptions, 1)
 	}()

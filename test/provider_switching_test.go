@@ -6,7 +6,26 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"tiktok-whisper/internal/app/api/provider"
 )
+
+func buildProviderTestBinary(t *testing.T) string {
+	t.Helper()
+
+	repoRoot, err := filepath.Abs("..")
+	if err != nil {
+		t.Fatalf("resolve repo root: %v", err)
+	}
+
+	binaryPath := filepath.Join(t.TempDir(), "test-v2t")
+	cmd := exec.Command("go", "build", "-o", binaryPath, "./cmd/v2t/")
+	cmd.Dir = repoRoot
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to build binary: %v", err)
+	}
+	return binaryPath
+}
 
 func TestProviderSwitching(t *testing.T) {
 	// Skip if not in integration test mode
@@ -14,12 +33,7 @@ func TestProviderSwitching(t *testing.T) {
 		t.Skip("Skipping integration test")
 	}
 
-	// Build the binary
-	cmd := exec.Command("go", "build", "-o", "test-v2t", "./cmd/v2t/")
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer os.Remove("test-v2t")
+	binaryPath := buildProviderTestBinary(t)
 
 	// Create test audio file path
 	testAudioPath := filepath.Join("data", "test.mp3")
@@ -65,8 +79,8 @@ func TestProviderSwitching(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command("./test-v2t", tt.args...)
-			output, err := cmd.CombinedOutput()
+				cmd := exec.Command(binaryPath, tt.args...)
+				output, err := cmd.CombinedOutput()
 			
 			if tt.expectError {
 				if err == nil {
@@ -137,11 +151,11 @@ providers:
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create temporary config file
-			tmpfile, err := os.CreateTemp("", "providers-*.yaml")
-			if err != nil {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// Create temporary config file
+				tmpfile, err := os.CreateTemp("", "providers-*.yaml")
+				if err != nil {
 				t.Fatal(err)
 			}
 			defer os.Remove(tmpfile.Name())
@@ -149,25 +163,23 @@ providers:
 			if _, err := tmpfile.Write([]byte(tt.configContent)); err != nil {
 				t.Fatal(err)
 			}
-			if err := tmpfile.Close(); err != nil {
-				t.Fatal(err)
-			}
-
-			// Test with the config
-			cmd := exec.Command("./test-v2t", "providers", "config", "-c", tmpfile.Name())
-			output, err := cmd.CombinedOutput()
-
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none. Output: %s", output)
-				} else if tt.errorContains != "" && !strings.Contains(string(output), tt.errorContains) {
-					t.Errorf("Expected error containing '%s', got: %s", tt.errorContains, output)
+				if err := tmpfile.Close(); err != nil {
+					t.Fatal(err)
 				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v. Output: %s", err, output)
+
+				_, err = provider.NewConfigManager(tmpfile.Name()).LoadConfig()
+
+				if tt.expectError {
+					if err == nil {
+						t.Errorf("Expected error but got none")
+					} else if tt.errorContains != "" && !strings.Contains(err.Error(), tt.errorContains) {
+						t.Errorf("Expected error containing '%s', got: %s", tt.errorContains, err)
+					}
+				} else {
+					if err != nil {
+						t.Errorf("Unexpected error: %v", err)
+					}
 				}
-			}
-		})
+			})
 	}
 }

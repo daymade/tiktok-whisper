@@ -42,6 +42,10 @@ type DLQResponse struct {
 	} `json:"entry,omitempty"`
 }
 
+func shouldLogUnconfiguredDLQ(attempt int32) bool {
+	return attempt <= 1
+}
+
 // NewDLQClient creates a new DLQ client
 func NewDLQClient() *DLQClient {
 	endpoint := os.Getenv("NEXTJS_API_ENDPOINT")
@@ -69,7 +73,7 @@ func NewDLQClient() *DLQClient {
 func (c *DLQClient) AddFailedWorkflow(ctx context.Context, entry DLQEntry) error {
 	// Skip if no API endpoint configured (graceful degradation)
 	if c.endpoint == "" || c.apiKey == "" {
-		if activity.GetInfo(ctx).Attempt == 0 {
+		if shouldLogUnconfiguredDLQ(activity.GetInfo(ctx).Attempt) {
 			// Only log on first attempt to avoid spam
 			logger := activity.GetLogger(ctx)
 			logger.Warn("DLQ not configured, skipping failed workflow logging",

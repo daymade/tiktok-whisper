@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"strings"
@@ -29,6 +30,17 @@ import (
 	"tiktok-whisper/internal/app/temporal/workflows"
 )
 
+func probeTCPEndpoint(endpoint string, timeout time.Duration) (bool, string) {
+	if endpoint == "" {
+		return false, "endpoint not configured"
+	}
+	conn, err := net.DialTimeout("tcp", endpoint, timeout)
+	if err != nil {
+		return false, err.Error()
+	}
+	_ = conn.Close()
+	return true, ""
+}
 
 func main() {
 	// Load environment variables
@@ -65,6 +77,9 @@ func main() {
 	}
 	defer temporalClient.Close()
 
+	temporalConnected := true
+	temporalError := ""
+
 	// Initialize v2t provider registry
 	providerRegistry, err := initializeProviderRegistry(logger)
 	if err != nil {
@@ -83,6 +98,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to create storage activities", zap.Error(err))
 	}
+	minioConnected, minioError := probeTCPEndpoint(minioEndpoint, 2*time.Second)
 
 	// Create Douyin activities
 	douyinAPIEndpoint := common.GetEnv("DOUYIN_API_ENDPOINT", "")
@@ -145,7 +161,9 @@ func main() {
 	}
 
 	// Register activities
+	simpleTranscribeActivities := activities.NewSimpleTranscribeActivities()
 	w.RegisterActivity(transcribeActivities.TranscribeFile)
+	w.RegisterActivity(simpleTranscribeActivities.TranscribeFileSimple)
 	w.RegisterActivity(transcribeActivities.GetProviderStatus)
 	w.RegisterActivity(transcribeActivities.ListAvailableProviders)
 	w.RegisterActivity(transcribeActivities.GetRecommendedProvider)
@@ -183,12 +201,14 @@ func main() {
 		StartedAt: time.Now(),
 		Status:    "running",
 		Temporal: ConnectionStatus{
-			Connected: true,
+			Connected: temporalConnected,
 			Endpoint:  config.HostPort,
+			Error:     temporalError,
 		},
 		MinIO: ConnectionStatus{
-			Connected: true,
+			Connected: minioConnected,
 			Endpoint:  minioEndpoint,
+			Error:     minioError,
 		},
 	}
 	
@@ -214,6 +234,9 @@ func main() {
 		}
 		
 		healthStatus.Providers = append(healthStatus.Providers, status)
+	}
+	if !hasAvailableProvider(healthStatus) {
+		logger.Warn("Worker started without any healthy providers")
 	}
 	
 	// Initialize Prometheus metrics
@@ -274,8 +297,7 @@ func initializeProviderRegistry(logger *zap.Logger) (provider.ProviderRegistry, 
 	if _, err := os.Stat(configPath); err == nil {
 		cfg, err = config.LoadProvidersConfig(configPath)
 		if err != nil {
-			logger.Warn("Failed to load provider config, using defaults", zap.Error(err))
-			cfg = createDefaultConfig()
+			return nil, fmt.Errorf("failed to load provider config %s: %w", configPath, err)
 		}
 	} else {
 		logger.Info("Config file not found, using environment-based configuration")
@@ -323,26 +345,22 @@ func initializeProviderRegistry(logger *zap.Logger) (provider.ProviderRegistry, 
 		// Create provider
 		p, err := factory.CreateProvider(providerConfig.Type, configMap)
 		if err != nil {
-			logger.Error("Failed to create provider", 
-				zap.String("name", name),
-				zap.Error(err))
-			continue
+			return nil, fmt.Errorf("failed to create provider %s: %w", name, err)
 		}
 		
 		// Register provider
 		if err := reg.RegisterProvider(name, p); err != nil {
-			logger.Error("Failed to register provider",
-				zap.String("name", name),
-				zap.Error(err))
+			return nil, fmt.Errorf("failed to register provider %s: %w", name, err)
 		}
+	}
+	if len(reg.ListProviders()) == 0 {
+		return nil, fmt.Errorf("no enabled providers could be initialized")
 	}
 	
 	// Set default provider
 	if cfg.DefaultProvider != "" {
 		if err := reg.SetDefaultProvider(cfg.DefaultProvider); err != nil {
-			logger.Warn("Failed to set default provider", 
-				zap.String("provider", cfg.DefaultProvider),
-				zap.Error(err))
+			return nil, fmt.Errorf("failed to set default provider %s: %w", cfg.DefaultProvider, err)
 		}
 	}
 
@@ -470,4 +488,3 @@ func toZapFields(keyvals []interface{}) []zap.Field {
 	}
 	return fields
 }
-

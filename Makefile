@@ -63,6 +63,16 @@ fmt:
 lint:
 	golangci-lint run
 
+# Regenerate swagger docs
+.PHONY: swagger
+swagger:
+	swag init -g cmd/v2t/cmd/api.go -o docs --parseDependency
+
+# Ensure generated swagger artifacts are committed
+.PHONY: swagger-check
+swagger-check:
+	git diff --exit-code -- docs/docs.go docs/swagger.json docs/swagger.yaml
+
 # Install dependencies
 .PHONY: deps
 deps:
@@ -110,6 +120,8 @@ help:
 	@echo "  make wire           - Generate wire dependencies"
 	@echo "  make fmt            - Format code"
 	@echo "  make lint           - Run linter"
+	@echo "  make swagger        - Regenerate swagger artifacts"
+	@echo "  make swagger-check  - Fail if generated swagger artifacts drift"
 	@echo "  make deps           - Install dependencies"
 	@echo "  make db-migrate     - Run database migration"
 	@echo "  make db-check       - Check database status"

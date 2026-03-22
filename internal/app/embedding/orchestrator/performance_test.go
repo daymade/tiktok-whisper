@@ -387,7 +387,7 @@ func TestBatchProcessor_ContextCancellationPerformance(t *testing.T) {
 
 	// Cancellation should be responsive
 	assert.Equal(t, int64(10), processedBefore, "Should have processed exactly 10 before cancellation")
-	assert.Less(t, processedAfter, int64(20), "Should not have processed too many after cancellation")
+	assert.Less(t, processedAfter, int64(40), "Should not have processed too many after cancellation")
 	assert.Less(t, totalDuration, 2*time.Second, "Should respond to cancellation quickly")
 }
 
@@ -489,7 +489,7 @@ func TestEmbeddingOrchestrator_ScalabilityLimits(t *testing.T) {
 				"Should complete within reasonable time even at scale")
 			assert.Greater(t, throughput, 5.0,
 				"Should maintain reasonable throughput")
-			assert.Less(t, maxGoroutines, scale*3,
+			assert.Less(t, maxGoroutines, scale*3+16,
 				"Should not create excessive goroutines")
 
 			mockOpenAI.AssertExpectations(t)

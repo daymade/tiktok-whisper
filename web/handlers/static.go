@@ -12,6 +12,12 @@ type StaticHandler struct {
 	staticDir string
 }
 
+var blockedStaticFiles = map[string]struct{}{
+	"debug.html":       {},
+	"simple-test.html": {},
+	"test.html":        {},
+}
+
 // NewStaticHandler creates a new static file handler
 func NewStaticHandler() *StaticHandler {
 	// Get the current working directory
@@ -37,6 +43,11 @@ func (h *StaticHandler) ServeStatic(w http.ResponseWriter, r *http.Request) {
 	// Remove leading slash
 	if strings.HasPrefix(path, "/") {
 		path = path[1:]
+	}
+
+	if _, blocked := blockedStaticFiles[filepath.Base(path)]; blocked {
+		http.NotFound(w, r)
+		return
 	}
 
 	// Serve static files

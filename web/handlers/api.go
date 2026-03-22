@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -23,6 +24,26 @@ type APIHandler struct {
 // NewAPIHandler creates a new API handler
 func NewAPIHandler(db *sql.DB) *APIHandler {
 	return &APIHandler{db: db}
+}
+
+func applyCORS(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return
+	}
+
+	allowedOrigins := strings.Split(os.Getenv("WEB_ALLOWED_ORIGINS"), ",")
+	for _, candidate := range allowedOrigins {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if candidate == origin {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+			return
+		}
+	}
 }
 
 // EmbeddingData represents an embedding with metadata
@@ -104,7 +125,7 @@ func (h *APIHandler) GetEmbeddings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	applyCORS(w, r)
 	json.NewEncoder(w).Encode(embeddings)
 }
 
@@ -173,7 +194,7 @@ func (h *APIHandler) SearchEmbeddings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	applyCORS(w, r)
 	json.NewEncoder(w).Encode(results)
 }
 
@@ -210,7 +231,7 @@ func (h *APIHandler) GetClusters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	applyCORS(w, r)
 	json.NewEncoder(w).Encode(clusters)
 }
 

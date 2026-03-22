@@ -18,6 +18,27 @@ import (
 type SingleFileWorkflowRequest = common.SingleFileWorkflowRequest
 type SingleFileWorkflowResult = common.SingleFileWorkflowResult
 
+func buildTranscriptionObjectKey(now time.Time, fileID string) string {
+	return fmt.Sprintf("transcriptions/%s/%s.txt", now.Format("2006-01-02"), fileID)
+}
+
+func buildTempTranscriptionPath(tempDir, fileID string) string {
+	return fmt.Sprintf("%s/%s.txt", tempDir, fileID)
+}
+
+func getRequiredWorkflowEnv(ctx workflow.Context, key string) (string, error) {
+	var value string
+	if err := workflow.SideEffect(ctx, func(workflow.Context) interface{} {
+		return os.Getenv(key)
+	}).Get(&value); err != nil {
+		return "", err
+	}
+	if value == "" {
+		return "", fmt.Errorf("%s environment variable is required", key)
+	}
+	return value, nil
+}
+
 // SingleFileTranscriptionWorkflow processes a single file transcription
 func SingleFileTranscriptionWorkflow(ctx workflow.Context, req SingleFileWorkflowRequest) (SingleFileWorkflowResult, error) {
 	logger := workflow.GetLogger(ctx)
@@ -163,22 +184,19 @@ func SingleFileTranscriptionWorkflow(ctx workflow.Context, req SingleFileWorkflo
 	// Step 3: Store transcription result
 	if req.UseMinIO {
 		// Save transcription to MinIO
-		transcriptionKey := fmt.Sprintf("transcriptions/%s/%s.txt",
-			time.Now().Format("2006-01-02"),
-			req.FileID)
+		transcriptionKey := buildTranscriptionObjectKey(workflow.Now(ctx), req.FileID)
 
 		// Create temp file for transcription
-		// V2T_TEMP_DIR environment variable is required for shared temp directory
-		tempDir := os.Getenv("V2T_TEMP_DIR")
-		if tempDir == "" {
-			err := fmt.Errorf("V2T_TEMP_DIR environment variable is required")
+		// V2T_TEMP_DIR is captured via SideEffect so workflow replay stays deterministic.
+		tempDir, err := getRequiredWorkflowEnv(ctx, "V2T_TEMP_DIR")
+		if err != nil {
 			logger.Error("Missing required environment variable", "error", err)
 			return SingleFileWorkflowResult{
 				FileID: req.FileID,
 				Error:  err.Error(),
 			}, err
 		}
-		tempPath := fmt.Sprintf("%s/%s.txt", tempDir, req.FileID)
+		tempPath := buildTempTranscriptionPath(tempDir, req.FileID)
 		err = workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
 			return saveTranscriptionContent(tempPath, transcriptionResult.Transcription)
 		}).Get(&err)

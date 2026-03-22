@@ -18,8 +18,8 @@ func (m *MockOrchestratorInterface) ProcessTranscription(ctx context.Context, tr
 	return args.Error(0)
 }
 
-// ExampleTestEmbeddingOrchestrator demonstrates using EnhancedMockLogger with orchestrator testing
-func ExampleTestEmbeddingOrchestrator() {
+// ExampleMockOrchestratorInterface demonstrates using EnhancedMockLogger with orchestrator testing.
+func ExampleMockOrchestratorInterface() {
 	// This example shows how to use EnhancedMockLogger to test embedding orchestrator behavior
 	logger := NewEnhancedMockLogger().WithMockingEnabled(true)
 

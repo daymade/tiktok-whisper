@@ -21,6 +21,12 @@ type MockEmbeddingProvider struct {
 
 func (m *MockEmbeddingProvider) GenerateEmbedding(ctx context.Context, text string) ([]float32, error) {
 	args := m.Called(ctx, text)
+	if fn, ok := args.Get(0).(func(context.Context, string) ([]float32, error)); ok {
+		return fn(ctx, text)
+	}
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).([]float32), args.Error(1)
 }
 
@@ -36,6 +42,9 @@ type MockVectorStorage struct {
 
 func (m *MockVectorStorage) StoreEmbedding(ctx context.Context, transcriptionID int, provider string, embedding []float32) error {
 	args := m.Called(ctx, transcriptionID, provider, embedding)
+	if fn, ok := args.Get(0).(func(context.Context, int, string, []float32) error); ok {
+		return fn(ctx, transcriptionID, provider, embedding)
+	}
 	return args.Error(0)
 }
 
@@ -46,6 +55,9 @@ func (m *MockVectorStorage) GetEmbedding(ctx context.Context, transcriptionID in
 
 func (m *MockVectorStorage) StoreDualEmbeddings(ctx context.Context, transcriptionID int, openaiEmbedding, geminiEmbedding []float32) error {
 	args := m.Called(ctx, transcriptionID, openaiEmbedding, geminiEmbedding)
+	if fn, ok := args.Get(0).(func(context.Context, int, []float32, []float32) error); ok {
+		return fn(ctx, transcriptionID, openaiEmbedding, geminiEmbedding)
+	}
 	return args.Error(0)
 }
 
@@ -746,16 +758,16 @@ func TestBatchProcessor_ProcessUserTranscriptions(t *testing.T) {
 					{ID: 2, User: "test_user", TranscriptionText: "Test 2"},
 				}, nil)
 
-				orchestrator.On("ProcessTranscription", mock.Anything, 1, "Test 1").Return(nil)
-				orchestrator.On("ProcessTranscription", mock.Anything, 2, "Test 2").Return(nil)
+					orchestrator.On("ProcessTranscription", mock.Anything, 1, "Test 1").Return(nil)
+					orchestrator.On("ProcessTranscription", mock.Anything, 2, "Test 2").Return(nil)
 
-				logger.On("Info", mock.MatchedBy(func(msg string) bool {
-					return msg == "Starting user-specific batch processing"
-				}), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+					logger.On("Info", mock.MatchedBy(func(msg string) bool {
+						return msg == "Starting user-specific batch processing"
+					}), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 
-				logger.On("Info", mock.MatchedBy(func(msg string) bool {
-					return msg == "Batch processing progress"
-				}), mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+					logger.On("Info", mock.MatchedBy(func(msg string) bool {
+						return msg == "Batch processing progress"
+					}), mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 
 				logger.On("Info", mock.MatchedBy(func(msg string) bool {
 					return msg == "Completed user-specific batch processing"
@@ -793,7 +805,7 @@ func TestBatchProcessor_ProcessUserTranscriptions(t *testing.T) {
 				orchestrator.On("ProcessTranscription", mock.Anything, 2, "Test 2").Return(nil)
 				orchestrator.On("ProcessTranscription", mock.Anything, 3, "Test 3").Return(nil)
 
-				logger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+				logger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 			},
 			expectError: false,
 		},
@@ -843,7 +855,7 @@ func TestBatchProcessor_ProcessUserTranscriptions(t *testing.T) {
 
 				orchestrator.On("ProcessTranscription", mock.Anything, 1, "Unicode test").Return(nil)
 
-				logger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+				logger.On("Info", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 			},
 			expectError: false,
 		},
@@ -1013,6 +1025,9 @@ type MockEmbeddingOrchestratorInterface struct {
 
 func (m *MockEmbeddingOrchestratorInterface) ProcessTranscription(ctx context.Context, transcriptionID int, text string) error {
 	args := m.Called(ctx, transcriptionID, text)
+	if fn, ok := args.Get(0).(func(context.Context, int, string) error); ok {
+		return fn(ctx, transcriptionID, text)
+	}
 	return args.Error(0)
 }
 

@@ -5,10 +5,14 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
+
+var envWithDefaultPattern = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\:-([^}]*)\}`)
 
 // ProviderConfiguration represents the complete provider configuration
 type ProviderConfiguration struct {
@@ -315,21 +319,20 @@ func (cm *ConfigManager) createDefaultConfig() *ProviderConfiguration {
 // expandEnvironmentVariables expands environment variable references in the config
 func (cm *ConfigManager) expandEnvironmentVariables(config *ProviderConfiguration) error {
 	for name, providerConfig := range config.Providers {
-		// Expand API key
-		if providerConfig.Auth.APIKey != "" {
-			expanded := os.ExpandEnv(providerConfig.Auth.APIKey)
-			providerConfig.Auth.APIKey = expanded
-		}
-		
-		// Expand base URL
-		if providerConfig.Auth.BaseURL != "" {
-			expanded := os.ExpandEnv(providerConfig.Auth.BaseURL)
-			providerConfig.Auth.BaseURL = expanded
-		}
-		
+		providerConfig.Auth.APIKey = expandEnvValue(providerConfig.Auth.APIKey)
+		providerConfig.Auth.BaseURL = expandEnvValue(providerConfig.Auth.BaseURL)
+
 		// Expand headers
 		for key, value := range providerConfig.Auth.Headers {
-			providerConfig.Auth.Headers[key] = os.ExpandEnv(value)
+			providerConfig.Auth.Headers[key] = expandEnvValue(value)
+		}
+
+		if providerConfig.Settings != nil {
+			expandedSettings, ok := expandEnvInValue(providerConfig.Settings).(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("failed to expand settings for provider %s", name)
+			}
+			providerConfig.Settings = expandedSettings
 		}
 		
 		// Update the config
@@ -338,7 +341,7 @@ func (cm *ConfigManager) expandEnvironmentVariables(config *ProviderConfiguratio
 	
 	// Expand global temp dir
 	if config.Global.TempDir != "" {
-		config.Global.TempDir = os.ExpandEnv(config.Global.TempDir)
+		config.Global.TempDir = expandEnvValue(config.Global.TempDir)
 	}
 	
 	return nil
@@ -377,6 +380,17 @@ func (cm *ConfigManager) validateConfig(config *ProviderConfiguration) error {
 		if providerConfig.ErrorHandling.MaxRetries < 0 {
 			return fmt.Errorf("provider '%s' has invalid max retries", name)
 		}
+
+		if providerConfig.Enabled && providerConfig.Type == ProviderNameWhisperCpp {
+			binaryPath, _ := providerConfig.Settings["binary_path"].(string)
+			modelPath, _ := providerConfig.Settings["model_path"].(string)
+			if strings.TrimSpace(binaryPath) == "" {
+				return fmt.Errorf("whisper_cpp provider requires 'binary_path' setting")
+			}
+			if strings.TrimSpace(modelPath) == "" {
+				return fmt.Errorf("whisper_cpp provider requires 'model_path' setting")
+			}
+		}
 	}
 	
 	return nil
@@ -391,4 +405,44 @@ func GetDefaultConfigPath() string {
 	
 	// Fallback to current directory
 	return "./config/providers.yaml"
+}
+
+func expandEnvValue(value string) string {
+	if value == "" {
+		return value
+	}
+
+	withDefaults := envWithDefaultPattern.ReplaceAllStringFunc(value, func(match string) string {
+		parts := envWithDefaultPattern.FindStringSubmatch(match)
+		if len(parts) != 3 {
+			return match
+		}
+		if envValue, ok := os.LookupEnv(parts[1]); ok && envValue != "" {
+			return envValue
+		}
+		return parts[2]
+	})
+
+	return os.ExpandEnv(withDefaults)
+}
+
+func expandEnvInValue(value interface{}) interface{} {
+	switch v := value.(type) {
+	case string:
+		return expandEnvValue(v)
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(v))
+		for key, inner := range v {
+			out[key] = expandEnvInValue(inner)
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, len(v))
+		for i, inner := range v {
+			out[i] = expandEnvInValue(inner)
+		}
+		return out
+	default:
+		return value
+	}
 }

@@ -13,39 +13,21 @@ import (
 
 // SimpleProviderTranscriber provides a simple integration of the provider framework
 type SimpleProviderTranscriber struct {
-	provider TranscriptionProvider
-	config   *ProviderConfiguration
+	provider     TranscriptionProvider
+	config       *ProviderConfiguration
+	providerName string
 }
 
 // NewSimpleProviderTranscriber creates a transcriber that uses the provider framework
 func NewSimpleProviderTranscriber() api.Transcriber {
-	// Determine config path - priority order:
-	// 1. Local providers.yaml
-	// 2. Home directory ~/.tiktok-whisper/providers.yaml
 	localConfig := "providers.yaml"
 	homeConfig := filepath.Join(os.Getenv("HOME"), ".tiktok-whisper", "providers.yaml")
-	_, localErr := os.Stat(localConfig)
-	_, homeErr := os.Stat(homeConfig)
-	localExists := localErr == nil
-	homeExists := homeErr == nil
-
-	// Fail fast if both exist — ambiguous config is worse than no config
-	if localExists && homeExists {
-		absLocal, _ := filepath.Abs(localConfig)
-		log.Fatalf("CONFLICT: Two provider configs found. Remove one or use --config to specify:\n"+
-			"  ./providers.yaml  → %s\n"+
-			"  ~/.tiktok-whisper/providers.yaml → %s\n",
-			absLocal, homeConfig)
+	configPath, warning, err := resolveProviderConfigPath(localConfig, homeConfig)
+	if warning != "" {
+		log.Printf("WARNING: %s", warning)
 	}
-
-	var configPath string
-	switch {
-	case localExists:
-		configPath = localConfig
-	case homeExists:
-		configPath = homeConfig
-	default:
-		log.Fatalf("No providers.yaml found. Expected at ./providers.yaml or %s", homeConfig)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	absConfigPath, _ := filepath.Abs(configPath)
@@ -99,8 +81,9 @@ func NewSimpleProviderTranscriber() api.Transcriber {
 	log.Printf("Using provider: %s (%s)", providerName, providerConfig.Type)
 
 	return &SimpleProviderTranscriber{
-		provider: provider,
-		config:   config,
+		provider:     provider,
+		config:       config,
+		providerName: providerName,
 	}
 }
 
@@ -127,7 +110,7 @@ func (t *SimpleProviderTranscriber) Transcript(inputFilePath string) (string, er
 	// Get provider settings
 	var language string
 	var prompt string
-	if providerConfig, exists := t.config.Providers[t.config.DefaultProvider]; exists {
+	if providerConfig, exists := t.config.Providers[t.providerName]; exists {
 		if lang, ok := providerConfig.Settings["language"].(string); ok {
 			language = lang
 		}
@@ -150,4 +133,23 @@ func (t *SimpleProviderTranscriber) Transcript(inputFilePath string) (string, er
 	}
 
 	return response.Text, nil
+}
+
+func resolveProviderConfigPath(localConfig, homeConfig string) (string, string, error) {
+	_, localErr := os.Stat(localConfig)
+	_, homeErr := os.Stat(homeConfig)
+	localExists := localErr == nil
+	homeExists := homeErr == nil
+
+	switch {
+	case homeExists && localExists:
+		absLocal, _ := filepath.Abs(localConfig)
+		return homeConfig, fmt.Sprintf("both provider configs exist; preferring %s and ignoring %s", homeConfig, absLocal), nil
+	case homeExists:
+		return homeConfig, "", nil
+	case localExists:
+		return localConfig, "", nil
+	default:
+		return "", "", fmt.Errorf("no providers.yaml found. Expected at %s or %s", homeConfig, localConfig)
+	}
 }

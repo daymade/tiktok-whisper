@@ -35,6 +35,28 @@ type ProviderStatus struct {
 	Error     string `json:"error,omitempty"`
 }
 
+func hasAvailableProvider(status *HealthStatus) bool {
+	for _, provider := range status.Providers {
+		if provider.Available {
+			return true
+		}
+	}
+	return false
+}
+
+func isReady(status *HealthStatus) bool {
+	if !status.Temporal.Connected {
+		return false
+	}
+	if !hasAvailableProvider(status) {
+		return false
+	}
+	if status.MinIO.Endpoint != "" && !status.MinIO.Connected {
+		return false
+	}
+	return true
+}
+
 // startHealthServer starts the health check HTTP server
 func startHealthServer(port string, status *HealthStatus) {
 	mux := http.NewServeMux()
@@ -56,7 +78,7 @@ func startHealthServer(port string, status *HealthStatus) {
 	
 	// Readiness probe
 	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
-		if status.Temporal.Connected {
+		if isReady(status) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("READY"))
 		} else {

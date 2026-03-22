@@ -69,6 +69,14 @@ func (o *EmbeddingOrchestrator) processDualEmbeddings(ctx context.Context, trans
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					openaiErr = fmt.Errorf("openai provider panic: %v", r)
+					o.logger.Error("OpenAI provider panicked",
+						"transcriptionID", transcriptionID, "error", openaiErr)
+					errors <- openaiErr
+				}
+			}()
 			openaiEmbedding, openaiErr = openaiProvider.GenerateEmbedding(ctx, text)
 			if openaiErr != nil {
 				o.logger.Error("Failed to generate OpenAI embedding",
@@ -83,6 +91,14 @@ func (o *EmbeddingOrchestrator) processDualEmbeddings(ctx context.Context, trans
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					geminiErr = fmt.Errorf("gemini provider panic: %v", r)
+					o.logger.Error("Gemini provider panicked",
+						"transcriptionID", transcriptionID, "error", geminiErr)
+					errors <- geminiErr
+				}
+			}()
 			geminiEmbedding, geminiErr = geminiProvider.GenerateEmbedding(ctx, text)
 			if geminiErr != nil {
 				o.logger.Error("Failed to generate Gemini embedding",
@@ -128,6 +144,14 @@ func (o *EmbeddingOrchestrator) processSingleProvider(ctx context.Context, trans
 		wg.Add(1)
 		go func(name string, p provider.EmbeddingProvider) {
 			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					err := fmt.Errorf("%s provider panic: %v", name, r)
+					o.logger.Error("Provider panicked",
+						"provider", name, "transcriptionID", transcriptionID, "error", err)
+					errors <- err
+				}
+			}()
 
 			embedding, err := p.GenerateEmbedding(ctx, text)
 			if err != nil {

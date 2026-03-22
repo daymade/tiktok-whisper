@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/swaggo/files"
 	"github.com/swaggo/gin-swagger"
-	"go.uber.org/zap"
 	"tiktok-whisper/internal/api/middleware"
 	authmiddleware "tiktok-whisper/internal/api/middleware"
 	v1routes "tiktok-whisper/internal/api/v1/routes"
@@ -90,7 +89,7 @@ func NewServer(
 	if os.Getenv("ENABLE_MINIO") == "true" || os.Getenv("MINIO_ENDPOINT") != "" {
 		minioService, err := services.NewMinioStorageService()
 		if err != nil {
-			logger.Warn("Failed to create MinIO storage service, using mock", zap.Error(err))
+			logger.Warn("Failed to create MinIO storage service, using mock", "error", err)
 			storageService = services.NewMockStorageService()
 		} else {
 			storageService = minioService

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
-	"log"
 	"os"
 )
 
@@ -21,7 +20,7 @@ func GetConnection() (*sql.DB, error) {
 
 	postgresDB, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatalf("Failed to open database: %v\n", err)
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 	return postgresDB, nil
 }

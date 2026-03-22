@@ -37,6 +37,49 @@ type BatchWorkflowResult struct {
 	ProcessingTime time.Duration               `json:"processing_time"`
 }
 
+func buildBatchFileIndex(files []BatchFile) map[string]int {
+	index := make(map[string]int, len(files))
+	for i, file := range files {
+		index[file.FileID] = i
+	}
+	return index
+}
+
+func mergeBatchRetryResults(firstResult, retryResult BatchWorkflowResult) BatchWorkflowResult {
+	results := make([]SingleFileWorkflowResult, len(firstResult.Results))
+	copy(results, firstResult.Results)
+
+	successCount := 0
+	failureCount := 0
+	index := make(map[string]int, len(results))
+	for i, result := range results {
+		index[result.FileID] = i
+	}
+
+	for _, retry := range retryResult.Results {
+		if i, ok := index[retry.FileID]; ok {
+			results[i] = retry
+		}
+	}
+
+	for _, result := range results {
+		if result.Error == "" {
+			successCount++
+		} else {
+			failureCount++
+		}
+	}
+
+	return BatchWorkflowResult{
+		BatchID:        firstResult.BatchID,
+		TotalFiles:     firstResult.TotalFiles,
+		SuccessCount:   successCount,
+		FailureCount:   failureCount,
+		Results:        results,
+		ProcessingTime: firstResult.ProcessingTime + retryResult.ProcessingTime,
+	}
+}
+
 // BatchTranscriptionWorkflow processes multiple files in parallel
 func BatchTranscriptionWorkflow(ctx workflow.Context, req BatchWorkflowRequest) (BatchWorkflowResult, error) {
 	logger := workflow.GetLogger(ctx)
@@ -64,9 +107,11 @@ func BatchTranscriptionWorkflow(ctx workflow.Context, req BatchWorkflowRequest) 
 	// Results channel
 	resultsChan := workflow.NewBufferedChannel(ctx, len(req.Files))
 	defer resultsChan.Close()
+	fileIndex := buildBatchFileIndex(req.Files)
 
 	// Process files in parallel
 	for _, file := range req.Files {
+		file := file
 		workflow.Go(ctx, func(ctx workflow.Context) {
 			// Acquire semaphore
 			var token struct{}
@@ -119,14 +164,16 @@ func BatchTranscriptionWorkflow(ctx workflow.Context, req BatchWorkflowRequest) 
 	}
 
 	// Collect results
-	results := make([]SingleFileWorkflowResult, 0, len(req.Files))
+	results := make([]SingleFileWorkflowResult, len(req.Files))
 	successCount := 0
 	failureCount := 0
 
 	for i := 0; i < len(req.Files); i++ {
 		var result SingleFileWorkflowResult
 		resultsChan.Receive(ctx, &result)
-		results = append(results, result)
+		if idx, ok := fileIndex[result.FileID]; ok {
+			results[idx] = result
+		}
 
 		if result.Error == "" {
 			successCount++
@@ -209,14 +256,5 @@ func BatchWithRetryWorkflow(ctx workflow.Context, req BatchWorkflowRequest) (Bat
 	}
 
 	// Merge results
-	finalResult := BatchWorkflowResult{
-		BatchID:        req.BatchID,
-		TotalFiles:     firstResult.TotalFiles,
-		SuccessCount:   firstResult.SuccessCount + retryResult.SuccessCount,
-		FailureCount:   retryResult.FailureCount,
-		Results:        append(firstResult.Results, retryResult.Results...),
-		ProcessingTime: firstResult.ProcessingTime + retryResult.ProcessingTime,
-	}
-
-	return finalResult, nil
+	return mergeBatchRetryResults(firstResult, retryResult), nil
 }

@@ -471,6 +471,9 @@ tiktok-whisper_*
 test-v2t
 providers-test.yaml
 test_batch/
+_deprecated_backup_20250806/
+logs/
+1.txt
 
 # Server files
 server.pid

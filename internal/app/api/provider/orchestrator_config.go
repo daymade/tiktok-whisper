@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"time"
 )
 
@@ -170,7 +171,9 @@ func (s *SmartProviderSelector) isHealthy(providerName string) bool {
 	if !exists || time.Since(lastCheck) > s.config.HealthCheckInterval {
 		// Perform health check
 		if provider, err := s.registry.GetProvider(providerName); err == nil {
-			healthy := provider.HealthCheck(nil) == nil
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			healthy := provider.HealthCheck(ctx) == nil
 			s.healthStatus[providerName] = healthy
 			s.lastHealthCheck[providerName] = time.Now()
 			return healthy

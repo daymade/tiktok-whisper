@@ -43,6 +43,7 @@ func (s *TranscriptionServiceImpl) CreateTranscription(ctx context.Context, req 
 	}
 
 	// Create transcription record in database
+	now := time.Now()
 	transcription := &model.TranscriptionFull{
 		User:         req.UserID,
 		FileName:     req.FilePath,
@@ -51,8 +52,8 @@ func (s *TranscriptionServiceImpl) CreateTranscription(ctx context.Context, req 
 		ProviderType: req.Provider,
 		Language:     req.Language,
 		ModelName:    req.Model,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 
 	// Save to database

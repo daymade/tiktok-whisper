@@ -50,7 +50,8 @@ func SimpleSingleFileWorkflow(ctx workflow.Context, req SingleFileWorkflowReques
 	}
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
-	// Perform transcription
+	// Perform transcription. This workflow is intentionally local-file only and does
+	// not depend on MinIO or environment-derived workflow state.
 	var transcriptionResult TranscriptionResult
 	err := workflow.ExecuteActivity(ctx, "TranscribeFileSimple", TranscriptionRequest{
 		FileID:       req.FileID,

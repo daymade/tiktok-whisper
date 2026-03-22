@@ -77,7 +77,10 @@ func (suite *PgVectorTestSuite) setupTestDatabase() *sql.DB {
 	require.NoError(suite.T(), err)
 
 	err = db.Ping()
-	require.NoError(suite.T(), err)
+	if err != nil {
+		_ = db.Close()
+		suite.T().Skipf("Skipping PostgreSQL tests: default connection unavailable: %v", err)
+	}
 
 	suite.createTestSchema(db)
 	return db
