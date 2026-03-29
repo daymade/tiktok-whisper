@@ -13,6 +13,16 @@ import (
 )
 
 func GetProjectRoot() (string, error) {
+	// Prefer executable path: works even when the binary was compiled in a
+	// different directory (e.g. a git worktree that has since been deleted).
+	if exe, err := os.Executable(); err == nil {
+		if resolved, err := filepath.EvalSymlinks(exe); err == nil {
+			if root, err := findGoModRoot(filepath.Dir(resolved)); err == nil {
+				return root, nil
+			}
+		}
+	}
+	// Fall back to compile-time source path (works for `go test`).
 	_, filename, _, _ := runtime.Caller(0)
 	return findGoModRoot(filename)
 }
