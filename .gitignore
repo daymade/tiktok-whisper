@@ -457,13 +457,16 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,windows,pycharm
 
-# binary
-v2t
-v2t.exe
-v2t_*
-tiktok-whisper
-tiktok-whisper.exe
-tiktok-whisper_*
+# binary — anchor to repo root.
+# An unanchored `v2t` matches the cmd/v2t/ source dir too and silently
+# swallows new subpackages (cmd/v2t/cmd/embed/, etl/, ...), breaking
+# fresh-clone `make build`. Same hazard for `tiktok-whisper`.
+/v2t
+/v2t.exe
+/v2t_*
+/tiktok-whisper
+/tiktok-whisper.exe
+/tiktok-whisper_*
 
 # Test and temporary files
 *.txt
