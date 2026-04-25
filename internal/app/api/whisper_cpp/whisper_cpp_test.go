@@ -368,15 +368,19 @@ sleep 0.1
 
 // TestLocalTranscriber_ArgumentsValidation tests that the correct arguments are passed
 func TestLocalTranscriber_ArgumentsValidation(t *testing.T) {
+	// Production now runs whisper-cli inside a private tmp dir, so the mock
+	// can't write capture files relative to its own CWD. Pass an absolute
+	// capture path through an env var that the mock script reads.
+	argsFile := filepath.Join(t.TempDir(), "args.txt")
+	t.Setenv("MOCK_ARGS_FILE", argsFile)
+
 	script := `#!/bin/bash
 # Capture arguments for validation
-echo "$@" > ./args.txt
+echo "$@" > "$MOCK_ARGS_FILE"
 echo "Test" > ./1.txt
 `
 	mockBinary := createMockBinary(t, script)
 	defer os.Remove(mockBinary)
-	defer os.Remove("./1.txt")
-	defer os.Remove("./args.txt")
 
 	modelPath := "/test/model.bin"
 	lt := NewLocalTranscriber(mockBinary, modelPath)
@@ -390,7 +394,7 @@ echo "Test" > ./1.txt
 	}
 
 	// Read captured arguments
-	argsData, err := os.ReadFile("./args.txt")
+	argsData, err := os.ReadFile(argsFile)
 	if err != nil {
 		t.Fatalf("Failed to read args file: %v", err)
 	}

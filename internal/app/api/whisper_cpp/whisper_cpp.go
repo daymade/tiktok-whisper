@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"tiktok-whisper/internal/app/audio"
 	"tiktok-whisper/internal/app/util/files"
@@ -46,6 +48,15 @@ func (lt *LocalTranscriber) Transcript(inputFilePath string) (string, error) {
 		log.Printf("Successfully converted input file to a 16kHz WAV file\n")
 	}
 
+	// Run whisper-cli inside an isolated temp dir so the relative `-of ./1`
+	// output never lands in the caller's CWD. Without this, concurrent
+	// invocations race on `./1.txt` and the file leaks across runs.
+	tmpDir, err := os.MkdirTemp("", "v2t-whisper-cpp-")
+	if err != nil {
+		return "", fmt.Errorf("failed to create whisper temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
 	outputFile := "./1"
 
 	args := []string{
@@ -59,6 +70,7 @@ func (lt *LocalTranscriber) Transcript(inputFilePath string) (string, error) {
 	}
 
 	command := exec.Command(lt.binaryPath, args...)
+	command.Dir = tmpDir
 	var stdout, stderr bytes.Buffer
 	command.Stdout = &stdout
 	command.Stderr = &stderr
@@ -73,7 +85,7 @@ func (lt *LocalTranscriber) Transcript(inputFilePath string) (string, error) {
 
 	log.Printf("Successfully ran transcription command\n")
 
-	output, err := files.ReadOutputFile(outputFile + ".txt")
+	output, err := files.ReadOutputFile(filepath.Join(tmpDir, outputFile+".txt"))
 	if err != nil {
 		log.Printf("Error reading output file: %v\n", err)
 		return "", fmt.Errorf("failed to read output file: %v", err)
