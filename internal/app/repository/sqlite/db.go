@@ -6,6 +6,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"sync"
 	"tiktok-whisper/internal/app/util/files"
@@ -25,6 +26,13 @@ func GetConnection() (*sql.DB, error) {
 		}
 
 		dbPath := filepath.Join(projectRoot, "data/transcription.db")
+
+		// SQLite's mode=rwc creates the db file if missing but does not
+		// create the parent directory. Without this, fresh clones (and
+		// any worktree) fail with "unable to open database file".
+		if mkErr := os.MkdirAll(filepath.Dir(dbPath), 0o755); mkErr != nil {
+			log.Fatalf("Failed to create db directory %s: %v\n", filepath.Dir(dbPath), mkErr)
+		}
 
 		connection, err = sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared&mode=rwc", dbPath))
 

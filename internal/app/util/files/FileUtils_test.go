@@ -11,21 +11,26 @@ import (
 )
 
 func TestGetProjectRoot(t *testing.T) {
-	// Test should work from any directory in the project
+	// Test should work from any directory in the project (including a git
+	// worktree where the leaf dir is named after the worktree, not the
+	// module).
 	got, err := GetProjectRoot()
 	if err != nil {
 		t.Fatalf("GetProjectRoot() error = %v", err)
 	}
 
-	// Verify that go.mod exists at the returned path
+	// Verify that go.mod exists at the returned path.
 	goModPath := filepath.Join(got, "go.mod")
-	if _, err := os.Stat(goModPath); os.IsNotExist(err) {
-		t.Errorf("GetProjectRoot() returned path without go.mod: %v", got)
+	goModBytes, err := os.ReadFile(goModPath)
+	if err != nil {
+		t.Fatalf("GetProjectRoot() returned path without readable go.mod: %v (%v)", got, err)
 	}
 
-	// Should end with the project name
-	if !strings.HasSuffix(got, "tiktok-whisper") {
-		t.Errorf("GetProjectRoot() path doesn't end with project name: %v", got)
+	// The robust invariant is "go.mod's module declaration matches" —
+	// not "the directory name matches". Worktrees and renamed clones
+	// break the latter while keeping the former.
+	if !strings.Contains(string(goModBytes), "module tiktok-whisper") {
+		t.Errorf("GetProjectRoot() returned path whose go.mod is not the tiktok-whisper module: %v", got)
 	}
 }
 

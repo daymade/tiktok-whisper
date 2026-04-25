@@ -1,36 +1,24 @@
 package sqlite
 
 import (
-	"fmt"
-	"log"
 	"testing"
 )
 
+// TestGetConnection only verifies that GetConnection returns a usable
+// connection — it does NOT assert anything about schema. A previous version
+// of this test queried sqlite_master for the `transcriptions` table, which
+// silently passed on a developer machine that had a populated DB from prior
+// runs but failed in any fresh clone or worktree. Schema-shape verification
+// belongs in a migration / integration test that explicitly bootstraps the
+// table first.
 func TestGetConnection(t *testing.T) {
-	tests := []struct {
-		name    string
-		wantErr bool
-	}{
-		{
-			name:    "getSqliteConn",
-			wantErr: false,
-		},
+	db, err := GetConnection()
+	if err != nil {
+		t.Fatalf("GetConnection() error = %v", err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			db, err := GetConnection()
-			defer db.Close()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetConnection() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+	defer db.Close()
 
-			var createTableSQL string
-			err = db.QueryRow("SELECT sql FROM sqlite_master WHERE type='table' AND name='transcriptions';").Scan(&createTableSQL)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println("Create table SQL:", createTableSQL)
-		})
+	if err := db.Ping(); err != nil {
+		t.Errorf("DB ping failed after GetConnection: %v", err)
 	}
 }
